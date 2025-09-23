@@ -18,12 +18,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
 
     implementation("io.micrometer:micrometer-registry-prometheus")
 
     implementation("org.projectlombok:lombok")
-    implementation("com.google.code.gson:gson:2.10.1")
-    implementation("io.swagger:swagger-annotations:1.6.6")
     implementation("org.openapitools:jackson-databind-nullable:0.2.6")
     implementation("net.logstash.logback:logstash-logback-encoder:8.0")
 
@@ -49,8 +48,12 @@ openApiGenerate {
     generatorName.set("java")
     inputSpec.set("$projectDir/openapi/individuals-api.yaml")
     outputDir.set("${project.layout.buildDirectory.asFile.get()}/generated-sources/openapi")
+    typeMappings.set(mapOf("DateTime" to "ZonedDateTime"))
+    importMappings.set(mapOf("ZonedDateTime" to "java.time.ZonedDateTime"))
     configOptions.put("useJakartaEe", "true")
+    configOptions.put("useBeanValidation", "true")
     configOptions.put("library", "webclient")
+    configOptions.put("dateLibrary","java8")
     apiPackage.set("com.example.api")
     modelPackage.set("com.example.dto")
 }

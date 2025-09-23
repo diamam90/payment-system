@@ -124,10 +124,13 @@ components:
         email:
           type: string
           format: email
+          nullable: false
         password:
           type: string
+          nullable: false
         confirm_password:
           type: string
+          nullable: false
 
     UserLoginRequest:
       type: object
@@ -136,8 +139,10 @@ components:
         email:
           type: string
           format: email
+          nullable: false
         password:
           type: string
+          nullable: false
 
     TokenRefreshRequest:
       type: object
@@ -145,6 +150,7 @@ components:
       properties:
         refresh_token:
           type: string
+          nullable: false
 
     TokenResponse:
       type: object

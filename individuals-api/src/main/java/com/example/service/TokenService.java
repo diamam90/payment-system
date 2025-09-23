@@ -9,5 +9,4 @@ public interface TokenService {
 
     Mono<KeycloakTokenResponse> refreshToken(String refreshToken);
 
-    Mono<KeycloakTokenResponse> adminToken();
 }

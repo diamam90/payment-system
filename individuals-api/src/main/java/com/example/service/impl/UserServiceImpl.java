@@ -4,17 +4,18 @@ import com.example.client.KeycloakClient;
 import com.example.dto.TokenResponse;
 import com.example.dto.UserInfoResponse;
 import com.example.dto.UserRegistrationRequest;
-import com.example.dto.keycloak.KeycloakTokenResponse;
 import com.example.exception.BadRequestException;
 import com.example.mapper.KeycloakMapper;
 import com.example.service.TokenService;
 import com.example.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import static com.example.dto.keycloak.KeycloakUserRegistrationRequest.withPasswordType;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -23,40 +24,46 @@ public class UserServiceImpl implements UserService {
     private final KeycloakClient client;
     private final KeycloakMapper mapper;
 
+    private static final String LOG_PREFIX = UserServiceImpl.class.getSimpleName();
+
     @Override
     public Mono<TokenResponse> register(UserRegistrationRequest request) {
         return validateRequest(request)
-                .then(getAdminAccessToken())
-                .flatMap(token -> registrationClient(token, request))
-                .then(getTokenResponse(request))
-                .log("user service registration");
+                .then(registrationClient(request))
+                .then(accessToken(request.getEmail(), request.getPassword()))
+                .log(LOG_PREFIX + ":registration");
     }
 
     @Override
     public Mono<UserInfoResponse> currentUser(String userId) {
-        return getAdminAccessToken()
-                .flatMap(token -> client.userInfo(userId, token).map(mapper::userInfoResponse))
-                .log("user service get current user");
+        return client.userInfo(userId)
+                .map(mapper::userInfoResponse)
+                .log(LOG_PREFIX + ":current user");
     }
 
-    private Mono<String> getAdminAccessToken() {
-        return tokenService.adminToken().map(KeycloakTokenResponse::accessToken);
-    }
-
-    private Mono<Void> registrationClient(String adminToken, UserRegistrationRequest request) {
-        var keycloakRequest = withPasswordType(request.getEmail(), request.getPassword());
-        return client.registration(keycloakRequest, adminToken);
-    }
-
-    private Mono<TokenResponse> getTokenResponse(UserRegistrationRequest request) {
-        return tokenService.accessToken(request.getEmail(), request.getPassword())
+    @Override
+    public Mono<TokenResponse> accessToken(String email, String password) {
+        return tokenService.accessToken(email, password)
                 .map(mapper::tokenResponse);
     }
 
-    private Mono<Void> validateRequest(UserRegistrationRequest request) {
-        if (!request.getPassword().equals(request.getConfirmPassword())) {
-            return Mono.error(new BadRequestException("Password and confirm password is not equal"));
-        }
-        return Mono.empty();
+    @Override
+    public Mono<TokenResponse> refreshToken(String refreshToken) {
+        return tokenService.refreshToken(refreshToken)
+                .map(mapper::tokenResponse);
+    }
+
+    private Mono<Void> registrationClient(UserRegistrationRequest request) {
+        var keycloakRequest = withPasswordType(request.getEmail(), request.getPassword());
+        return client.registration(keycloakRequest);
+    }
+
+
+    private Mono<UserRegistrationRequest> validateRequest(UserRegistrationRequest request) {
+        return Mono.just(request).map(req -> {
+            if (!req.getPassword().equals(req.getConfirmPassword())) {
+                throw new BadRequestException("Password and confirm password is not equal");
+            } else return req;
+        });
     }
 }

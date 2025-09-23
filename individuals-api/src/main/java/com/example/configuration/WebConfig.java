@@ -16,7 +16,7 @@ public class WebConfig {
     @Bean
     WebClient keyCloakClient() {
         var baseUrl = properties.getKeycloak().getBaseUrl();
-        log.debug("keycloak base url :{}", baseUrl);
+        log.debug("keycloak base url: {}", baseUrl);
         return WebClient.builder()
                 .baseUrl(baseUrl)
                 .build();

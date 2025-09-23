@@ -10,4 +10,8 @@ public interface UserService {
     Mono<TokenResponse> register(UserRegistrationRequest request);
 
     Mono<UserInfoResponse> currentUser(String userId);
+
+    Mono<TokenResponse> accessToken(String email,String password);
+
+    Mono<TokenResponse> refreshToken(String refreshToken);
 }

@@ -35,11 +35,5 @@ public class CommonExceptionHandler {
 
         return ResponseEntity.status(ex.getStatusCode()).body(response);
     }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> accessDeniedException(Exception ex) {
-        log.error(ex.getMessage());
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-    }
 }
 

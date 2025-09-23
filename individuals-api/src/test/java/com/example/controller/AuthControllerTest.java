@@ -1,79 +1,52 @@
 package com.example.controller;
 
-import com.example.IndividualsApiApplication;
-import com.example.client.KeycloakClient;
-import com.example.configuration.AppProperties;
-import com.example.configuration.WebConfig;
-import com.example.dto.TokenRefreshRequest;
+import com.example.config.AppTestConfig;
+import com.example.configuration.SecurityConfig;
 import com.example.dto.TokenResponse;
 import com.example.dto.UserInfoResponse;
 import com.example.dto.UserRegistrationRequest;
-import com.example.dto.keycloak.KeycloakTokenResponse;
 import com.example.mapper.KeycloakMapper;
-import com.example.service.TokenService;
 import com.example.service.UserService;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
+import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
-import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.stream.Stream;
 
 import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.springSecurity;
 
-@ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = IndividualsApiApplication.class)
+@Import({SecurityConfig.class,
+        AppTestConfig.class,
+        KeycloakMapper.class})
+@WebFluxTest(controllers = AuthController.class)
 class AuthControllerTest {
 
-    @Autowired
-    ApplicationContext ctx;
-
-    @MockitoBean
-    TokenService tokenService;
     @MockitoBean
     UserService userService;
     @MockitoBean
-    KeycloakClient keycloakClient;
-    @MockitoBean
     ReactiveJwtDecoder decoder;
-    @MockitoBean
-    WebConfig config;
-
     @Autowired
-    KeycloakMapper mapper;
     WebTestClient client;
-
-    @BeforeEach
-    void setup() {
-        client = WebTestClient
-                .bindToApplicationContext(ctx)
-                .apply(springSecurity())
-                .configureClient()
-                .build();
-    }
 
     @Test
     void registration() {
-
         when(userService.register(regRequest()))
                 .thenReturn(Mono.just(tokenResponse()));
 
         client.post()
-                .uri("/v1/api/registration")
+                .uri("/api/v1/registration")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(regRequestJson())
                 .accept(MediaType.APPLICATION_JSON)
@@ -82,13 +55,23 @@ class AuthControllerTest {
                 .expectBody().json(tokenResponseJson(), JsonCompareMode.STRICT);
     }
 
+    @ParameterizedTest
+    @MethodSource("invalidRegRequestJson")
+    void registrationWithInvalidRequestShouldReturn400(String requestJson) {
+        client.post().uri("/api/v1/registration")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestJson)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange().expectStatus().isBadRequest();
+    }
+
     @Test
     void login() {
-        when(tokenService.accessToken("user1@user.user", "password"))
-                .thenReturn(Mono.just(keycloakTokenResponse()));
+        when(userService.accessToken("user1@user.user", "password"))
+                .thenReturn(Mono.just(tokenResponse()));
 
         client.post()
-                .uri("/v1/api/login")
+                .uri("/api/v1/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(loginRequestJson())
                 .exchange()
@@ -98,10 +81,10 @@ class AuthControllerTest {
 
     @Test
     void refreshToken() {
-        when(tokenService.refreshToken("refresh token value")).thenReturn(Mono.just(keycloakTokenResponse()));
+        when(userService.refreshToken("refresh token value")).thenReturn(Mono.just(tokenResponse()));
 
         client.post()
-                .uri("/v1/api/refresh-token")
+                .uri("/api/v1/refresh-token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue("""
                         {
@@ -118,20 +101,19 @@ class AuthControllerTest {
         when(userService.currentUser("user-id-228")).thenReturn(Mono.just(userInfoResponse()));
         when(decoder.decode("azaza")).thenReturn(Mono.just(jwt()));
         client.get()
-                .uri("/v1/api/me")
+                .uri("/api/v1/me")
                 .headers(headers -> headers.setBearerAuth("azaza"))
                 .exchange()
                 .expectStatus().isOk()
-                .expectBody().jsonPath("email").isEqualTo("user1@user.user");
-        // TODO десериализация OffsetDateTime to number?
-//                .json(userInfoResponseJson(), JsonCompareMode.STRICT); deserialize?
+                .expectBody().jsonPath("email").isEqualTo("user1@user.user")
+                .json(userInfoResponseJson(), JsonCompareMode.STRICT);
     }
 
     @Test
     void meWithoutTokenReturns401() {
         when(userService.currentUser("user-id-228")).thenReturn(Mono.just(userInfoResponse()));
         client.get()
-                .uri("/v1/api/me")
+                .uri("/api/v1/me")
                 .exchange()
                 .expectStatus().isUnauthorized();
     }
@@ -145,6 +127,28 @@ class AuthControllerTest {
                     "confirm_password": "password"
                 }
                 """;
+    }
+
+    private static Stream<String> invalidRegRequestJson() {
+        var r1 = """
+                {
+                    "password": "password",
+                    "confirm_password": "password"
+                }
+                """;
+        var r2 = """
+                {
+                    "email": "user1@user.user",
+                    "confirm_password": "password"
+                }
+                """;
+        var r3 = """
+                {
+                    "email": "user1@user.user",
+                    "password": "password"
+                }
+                """;
+        return Stream.of(r1, r2, r3);
     }
 
     private String tokenResponseJson() {
@@ -187,12 +191,6 @@ class AuthControllerTest {
         return request;
     }
 
-    private TokenRefreshRequest tokenRefreshRequest() {
-        var request = new TokenRefreshRequest();
-        request.setRefreshToken("refresh token value");
-        return request;
-    }
-
     private TokenResponse tokenResponse() {
         var token = new TokenResponse();
         token.setTokenType("access_token");
@@ -203,19 +201,11 @@ class AuthControllerTest {
         return token;
     }
 
-    private KeycloakTokenResponse keycloakTokenResponse() {
-        return new KeycloakTokenResponse("access token value",
-                "refresh token value",
-                24,
-                25,
-                "access_token");
-    }
-
     private UserInfoResponse userInfoResponse() {
         var response = new UserInfoResponse();
         response.setEmail("user1@user.user");
         response.setId("user-id-228");
-        response.setCreatedAt(OffsetDateTime.of(2025, 5, 5, 0, 0, 0, 0, ZoneOffset.UTC));
+        response.setCreatedAt(ZonedDateTime.of(2025, 5, 5, 0, 0, 0, 0, ZoneOffset.UTC));
         return response;
     }
 

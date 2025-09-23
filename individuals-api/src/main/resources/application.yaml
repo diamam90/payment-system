@@ -25,3 +25,7 @@ individuals-api:
     password: admin
     realm: payment
     clientId: individuals-api
+
+logging:
+  level:
+    com.example: debug

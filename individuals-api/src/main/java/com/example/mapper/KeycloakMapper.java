@@ -25,7 +25,7 @@ public class KeycloakMapper {
         var info = new UserInfoResponse();
         info.setId(response.id());
         info.setEmail(response.username());
-        info.setCreatedAt(Instant.ofEpochMilli(response.createdTimestamp()).atOffset(ZoneOffset.UTC));
+        info.setCreatedAt(Instant.ofEpochMilli(response.createdTimestamp()).atZone(ZoneOffset.UTC));
         return info;
     }
 }
