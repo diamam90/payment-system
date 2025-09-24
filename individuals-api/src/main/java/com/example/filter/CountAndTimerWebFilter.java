@@ -1,5 +1,7 @@
 package com.example.filter;
 
+import com.example.annotation.MetricNames;
+import com.example.annotation.MetricTags;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -41,13 +43,13 @@ public class CountAndTimerWebFilter implements WebFilter {
             var uri = context.getRequest().getURI().getPath();
             var code = context.getResponse().getStatusCode();
 
-            registry.counter("custom_web_request_counter",
-                            "uri", context.request.getURI().getPath(),
-                            "status", String.valueOf(code))
+            registry.counter(MetricNames.HTTP_REQUEST.getCode(),
+                            MetricTags.URI.getCode(), context.request.getURI().getPath(),
+                            MetricTags.STATUS.getCode(), String.valueOf(code))
                     .increment();
 
-            registry.timer("custom_web_request_timer",
-                            "uri", uri)
+            registry.timer(MetricNames.HTTP_TIMER_REQUEST.getCode(),
+                            MetricTags.URI.getCode(), uri)
                     .record(registry.config().clock().wallTime() - context.startMillis, TimeUnit.MILLISECONDS);
         }
     }

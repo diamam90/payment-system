@@ -16,7 +16,7 @@ Rel(dev,indApi, "Http-запросы (регистрация, логин, /me)",
 Rel(indApi,keycloak, "Rest запросы в Keycloak","HTTP")
 Rel(keycloak, keycloakPs, "JDBC","SQL")
 Rel(indApi,loki,"Logging","stdout->Docker->Loki")
-Rel(indApi, prometheus, "Отправка Метрик", "Micrometer")
+Rel(prometheus,indApi, "Сбор метрик", "Micrometer")
 Rel(grafana,prometheus, "Визуализация метрик")
 Rel(grafana,loki, "Визуализация логов")
 

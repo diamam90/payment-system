@@ -1,5 +1,7 @@
 package com.example.service.impl;
 
+import com.example.annotation.MetricNames;
+import com.example.annotation.RequestCounter;
 import com.example.client.KeycloakClient;
 import com.example.dto.TokenResponse;
 import com.example.dto.UserInfoResponse;
@@ -26,6 +28,7 @@ public class UserServiceImpl implements UserService {
 
     private static final String LOG_PREFIX = UserServiceImpl.class.getSimpleName();
 
+    @RequestCounter(metric = MetricNames.HTTP_REGISTRATION)
     @Override
     public Mono<TokenResponse> register(UserRegistrationRequest request) {
         return validateRequest(request)
@@ -41,6 +44,7 @@ public class UserServiceImpl implements UserService {
                 .log(LOG_PREFIX + ":current user");
     }
 
+    @RequestCounter(metric = MetricNames.HTTP_LOGIN)
     @Override
     public Mono<TokenResponse> accessToken(String email, String password) {
         return tokenService.accessToken(email, password)

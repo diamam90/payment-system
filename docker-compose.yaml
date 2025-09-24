@@ -73,7 +73,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     healthcheck:
       test: [ "CMD", "wget", "--spider", "http://localhost:9090/-/healthy" ]
       interval: 10s
@@ -87,7 +87,7 @@ services:
       - "3100:3100"
     command: --config.file=/etc/loki/local-config.yaml
     volumes:
-      - ./loki/local-config.yaml:/etc/loki/local-config.yaml
+      - ./infrastructure/loki/local-config.yaml:/etc/loki/local-config.yaml
     healthcheck:
       test: ["CMD", "wget","--spider", "http://localhost:3100/ready"]
       interval: 10s
@@ -108,8 +108,8 @@ services:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
     volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning
-      - ./grafana/dashboards:/var/lib/dashboards
+      - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning
+      - ./infrastructure/grafana/dashboards:/var/lib/dashboards
     healthcheck:
       test: ["CMD","wget","--spider","http://localhost:3000/api/heatlh"]
       interval: 10s

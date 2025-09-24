@@ -11,10 +11,9 @@ Component(dto, "DTO (сгенерированные)", "Open API DTO", "Сген
 Component(keycloakDto, "DTO", "Keycloak API DTO", "Модели для взаимодействия с keycloak")
 
 Rel(authController, userService, "вызов")
-Rel(authController, tokenService,"вызов")
 Rel(userService, tokenService, "вызов")
-Rel(tokenService,keycloak, "вызов")
 Rel(userService, keycloak, "вызов")
+Rel(tokenService,keycloak, "вызов")
 Rel(authController, dto, "использует")
 Rel(keycloak, keycloakDto,"использует")
 
