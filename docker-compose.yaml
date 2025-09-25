@@ -1,14 +1,7 @@
-x-def-logging: &default-logging
-  logging:
-    driver: loki
-    options:
-      loki-url: "http://localhost:3100/loki/api/v1/push"
-      loki-batch-size: "400"
-
 services:
   individuals-api:
     build: ./individuals-api
-    container_name: "individuals-api"
+    container_name: individuals-api
     ports:
       - "8081:8081"
     environment:
@@ -25,8 +18,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    <<: *default-logging
-
 
   keycloak:
     image: "quay.io/keycloak/keycloak:26.2"
@@ -67,13 +58,27 @@ services:
       timeout: 5s
       retries: 5
 
+  alloy:
+    container_name: alloy
+    image: grafana/alloy:v1.10.2
+    ports:
+      - "12345:12345"
+    command: run --storage.path=/var/lib/alloy/data --server.http.listen-addr=0.0.0.0:12345 /etc/alloy/config.alloy
+    volumes:
+      - ./infrastructure/grafana/alloy/config.alloy:/etc/alloy/config.alloy
+      - /var/run/docker.sock.raw:/var/run/docker.sock
+    depends_on:
+      loki:
+        condition: service_healthy
+
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
     ports:
       - "9090:9090"
-    volumes:
-      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - --web.enable-remote-write-receiver
+      - --config.file=/etc/prometheus/prometheus.yml
     healthcheck:
       test: [ "CMD", "wget", "--spider", "http://localhost:9090/-/healthy" ]
       interval: 10s

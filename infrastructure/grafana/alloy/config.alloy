@@ -1,0 +1,64 @@
+// ###############################
+// #### Metrics Configuration ####
+// ###############################
+
+prometheus.scrape "scraper" {
+    targets = [
+        {
+            "__address__" = "individuals-api:8081",
+            "__metrics_path__" = "/actuator/prometheus",
+            "instance" = "individuals-api",
+        },
+    ]
+    scrape_interval = "10s"
+    scrape_timeout = "5s"
+
+    forward_to = [prometheus.remote_write.writer.receiver]
+}
+
+prometheus.remote_write "writer" {
+    endpoint {
+        url = "http://prometheus:9090/api/v1/write"
+    }
+}
+
+// ###############################
+// #### Logging Configuration ####
+// ###############################
+
+// Discover Docker containers and extract metadata.
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+// Define a relabeling rule to create a service name from the container name.
+discovery.relabel "logs_integrations_docker" {
+      targets = []
+
+      rule {
+          source_labels = ["__meta_docker_container_name"]
+          regex = "/(.*)"
+          target_label = "container_name"
+      }
+
+     rule {
+        target_label = "instance"
+        replacement  = constants.hostname
+    }
+
+  }
+
+
+// Configure a loki.source.docker component to collect logs from Docker containers.
+loki.source.docker "default" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.docker.containers.targets
+  relabel_rules = discovery.relabel.logs_integrations_docker.rules
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
