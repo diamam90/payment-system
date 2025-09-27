@@ -13,6 +13,13 @@ repositories {
     mavenLocal()
 }
 
+var properties = mapOf(
+    "jacksonDatabindNullableVersion" to "0.2.6",
+    "logbackEncoderVersion" to "8.0",
+    "testContainersKeycloakVersion" to "3.4.0",
+    "testContainersJunitVersion" to "1.21.3"
+)
+
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-security")
@@ -25,16 +32,16 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-prometheus")
 
     implementation("org.projectlombok:lombok")
-    implementation("org.openapitools:jackson-databind-nullable:0.2.6")
-    implementation("net.logstash.logback:logstash-logback-encoder:8.0")
+    implementation("org.openapitools:jackson-databind-nullable:${properties["jacksonDatabindNullableVersion"]}")
+    implementation("net.logstash.logback:logstash-logback-encoder:${properties["logbackEncoderVersion"]}")
 
     annotationProcessor("org.projectlombok:lombok")
 
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("com.github.dasniko:testcontainers-keycloak:3.4.0")
-    testImplementation("org.testcontainers:junit-jupiter:1.21.3")
+    testImplementation("com.github.dasniko:testcontainers-keycloak:${properties["testContainersKeycloakVersion"]}")
+    testImplementation("org.testcontainers:junit-jupiter:${properties["testContainersJunitVersion"]}")
 }
 
 
@@ -55,7 +62,7 @@ openApiGenerate {
     configOptions.put("useJakartaEe", "true")
     configOptions.put("useBeanValidation", "true")
     configOptions.put("library", "webclient")
-    configOptions.put("dateLibrary","java8")
+    configOptions.put("dateLibrary", "java8")
     apiPackage.set("com.example.api")
     modelPackage.set("com.example.dto")
 }
