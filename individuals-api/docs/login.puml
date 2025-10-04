@@ -1,0 +1,10 @@
+@startuml
+actor Client
+participant API
+participant Keycloak
+
+Client -> API: POST /api/v1/login(username,password)
+API -> Keycloak: AuthenticationRequest
+Keycloak -> API: access_token, refresh_token
+API -> Client: tokens
+@enduml

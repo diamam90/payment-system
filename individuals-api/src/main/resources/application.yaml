@@ -1,0 +1,31 @@
+server:
+  port: 8081
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8080/realms/payment/protocol/openid-connect/certs
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+individuals-api:
+  keycloak:
+    baseUrl: http://localhost:8080
+    username: admin
+    password: admin
+    realm: payment
+    clientId: individuals-api
+
+logging:
+  level:
+    com.example: debug

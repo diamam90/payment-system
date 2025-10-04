@@ -1,0 +1,10 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://individuals-keycloak:8080/realms/payment/protocol/openid-connect/certs
+
+individuals-api:
+  keycloak:
+    baseUrl: http://individuals-keycloak:8080

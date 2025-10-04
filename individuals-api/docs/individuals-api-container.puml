@@ -1,0 +1,26 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(dev, "External Client")
+
+System_Boundary(indSystem,"Individuals Auth System"){
+    Container(indApi,"Individuals API","Spring Boot WebFlux","Http-запросы (логин, получение токена, /me)","JSON/REST")
+    Container(keycloak, "Keycloak", "Keycloak 24","Управление пользователями")
+    Container(keycloakPs, "Keycloak Postgres","PostgreSQL", "Хранение пользователей Keycloak")
+    Container(prometheus, "Prometheus","Monitoring","Хранение метрик сервисов")
+    Container(alloy, "Grafana Alloy", "Collector", "Сборщик логов и метрик")
+    Container(loki, "Loki", "Grafana Loki","Сбор логов сервисов")
+    Container(grafana,"Grafana","Grafana","Визуализация метрик и логов")
+}
+
+Rel(dev,indApi, "Http-запросы (регистрация, логин, /me)", "JSON/REST")
+Rel(indApi,keycloak, "Rest запросы в Keycloak","HTTP")
+Rel(keycloak, keycloakPs, "JDBC","SQL")
+Rel(alloy,indApi,"Пул логов","discovery docker")
+Rel(alloy,indApi,"Пул метрик","HTTP")
+Rel(alloy,prometheus, "Пуш метрик", "Micrometer")
+Rel(alloy,loki, "Пуш логов", "HTTP")
+Rel(grafana,prometheus, "Визуализация метрик")
+Rel(grafana,loki, "Визуализация логов")
+
+@enduml
