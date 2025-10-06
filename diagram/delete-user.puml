@@ -1,0 +1,25 @@
+@startuml
+actor Client
+participant IndividualsApi
+participant PersonService
+participant Keycloak
+
+Client -> IndividualsApi: DELETE /api/v1/users/{userId} (JWT)
+IndividualsApi -> IndividualsApi: autorization
+alt access granted
+IndividualsApi -> PersonService: DELETE /api/v1/users/{userId}
+PersonService -> IndividualsApi: no content
+IndividualsApi -> Keycloak: delete user
+alt keycloak success
+Keycloak -> IndividualsApi: deleted
+IndividualsApi -> Client: no content
+else keycloak fail
+Keycloak -> IndividualsApi: exception
+IndividualsApi -> PersonService: POST /api/v1/users
+PersonService -> IndividualsApi: 201
+IndividualsApi -> Client: errorResponse
+end
+else access denied
+IndividualsApi -> Client: access denied
+end
+@enduml

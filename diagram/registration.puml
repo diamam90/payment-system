@@ -1,0 +1,22 @@
+@startuml
+actor Client
+participant IndividualsApi
+participant PersonService
+participant Keycloak
+
+Client -> IndividualsApi: POST /api/v1/registration
+IndividualsApi -> PersonService: POST /api/v1/users
+PersonService -> IndividualsApi: created, userId
+IndividualsApi -> Keycloak: Create Keycloak User
+alt Keycloak success
+    Keycloak -> IndividualsApi: OK
+    IndividualsApi -> Keycloak: RequestToken
+    Keycloak -> IndividualsApi: access_token, refresh_token
+    IndividualsApi -> Client: tokens
+else Keycloak fail
+    Keycloak -> IndividualsApi: FAIL
+    IndividualsApi -> PersonService: DELETE /api/v1/users/userId
+    PersonService -> IndividualsApi: 204
+    IndividualsApi -> Client: Fail
+end
+@enduml

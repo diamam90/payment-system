@@ -10,19 +10,19 @@
 
 ## Регистрация пользователя
  
-![Регистрация пользователя](flowpictures/registration.png)
+![Регистрация пользователя](../diagram/flowpictures/registration.png)
 
 ## Логин пользователя
 
-![Логин пользователя](flowpictures/login.png)
+![Логин пользователя](../diagram/flowpictures/login.png)
 
 ## Обновление токена
 
-![Логин пользователя](flowpictures/refresh-token.png)
+![Логин пользователя](../diagram/flowpictures/refresh-token.png)
 
 ## Получение информации о текущем пользователе
 
-![Логин пользователя](flowpictures/user-info.png)
+![Логин пользователя](../diagram/flowpictures/user-info.png)
 
 Для запуска проекта необходимо:
 1. Установить [Docker Desktop](https://docs.docker.com/get-started/introduction/get-docker-desktop/)

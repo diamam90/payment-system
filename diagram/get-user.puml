@@ -1,0 +1,15 @@
+@startuml
+actor Client
+participant IndividualsApi
+participant PersonService
+
+Client -> IndividualsApi: GET /api/v1/users?filter (JWT)
+IndividualsApi-> IndividualsApi: autorization
+alt access granted
+IndividualsApi -> PersonService: GET /api/v1/users?filter
+PersonService->IndividualsApi: UserDto
+IndividualsApi -> Client: UserDto
+else access denied
+IndividualsApi -> Client: access denied
+end
+@enduml

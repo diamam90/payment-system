@@ -1,0 +1,21 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Container(indApi,"person-service","Spring boot")
+
+Component(userController, "UserController", "Rest Controller", "Обрабатывает запросы individuals-api")
+Component(userService,"UserService","Сервис","Создание, обновление, удаление пользователей")
+Component(userRepository, "User Repository", "Хранение пользователй")
+Component(countryRepository,"Country Repository", "Хранение информации о странах")
+Component(individualsRepository,"Individuals Repository", "Хранение личной информации о пользователях")
+Component(addressRepository,"Address Repository", "Хранение информации об адресах пользователей")
+Component(personDto, "DTO (сгенерированные)", "DTO для взаимодействия с Person Service")
+
+Rel(userController, userService, "вызов")
+Rel(userController, personDto, "использует")
+Rel(userService, userRepository, "вызов")
+Rel(userRepository, addressRepository, "вызов")
+Rel(userRepository, individualsRepository, "вызов")
+Rel(addressRepository, countryRepository, "вызов")
+
+@enduml

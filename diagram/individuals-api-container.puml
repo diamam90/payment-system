@@ -5,16 +5,21 @@ Container(indApi,"individuals-api","Spring boot WebFlux")
 
 Component(authController, "AuthController", "Rest Controller", "Обрабатывает http-запросы клиента")
 Component(userService,"UserService","Сервис","Создание пользователя и получение информации")
+Component(personClient, "PersonClient", "Клиент для взаимодействия с Person Service")
 Component(tokenService,"TokenService","Сервис","Логин и обновление токена")
 Component(keycloak,"KeycloakClient", "WebClient Adapter","Взаимодействуют с Keycloak Rest API")
-Component(dto, "DTO (сгенерированные)", "Open API DTO", "Сгенерированные модели запросов/ответов")
+
+Component(personDto, "DTO (сгенерированные)", "DTO для взаимодействия с Person Service")
+Component(authDto, "DTO (сгенерированные)", "Open API DTO", "Сгенерированные модели запросов/ответов")
 Component(keycloakDto, "DTO", "Keycloak API DTO", "Модели для взаимодействия с keycloak")
 
 Rel(authController, userService, "вызов")
 Rel(userService, tokenService, "вызов")
+Rel(userService, personClient, "вызов")
+Rel(personClient, personDto, "использует")
 Rel(userService, keycloak, "вызов")
 Rel(tokenService,keycloak, "вызов")
-Rel(authController, dto, "использует")
+Rel(authController, authDto, "использует")
 Rel(keycloak, keycloakDto,"использует")
 
 @enduml
