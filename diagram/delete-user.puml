@@ -7,19 +7,27 @@ participant Keycloak
 Client -> IndividualsApi: DELETE /api/v1/users/{userId} (JWT)
 IndividualsApi -> IndividualsApi: autorization
 alt access granted
-IndividualsApi -> PersonService: DELETE /api/v1/users/{userId}
-PersonService -> IndividualsApi: no content
-IndividualsApi -> Keycloak: delete user
-alt keycloak success
-Keycloak -> IndividualsApi: deleted
-IndividualsApi -> Client: no content
-else keycloak fail
-Keycloak -> IndividualsApi: exception
-IndividualsApi -> PersonService: POST /api/v1/users
-PersonService -> IndividualsApi: 201
-IndividualsApi -> Client: errorResponse
-end
+    IndividualsApi -> PersonService: DELETE /api/v1/users/{userId}
+    alt PersonService user deleted
+
+        PersonService -> IndividualsApi: no content
+        IndividualsApi -> Keycloak: delete keycloak user
+
+        alt keycloak success
+            Keycloak -> IndividualsApi: deleted
+            IndividualsApi -> Client: no content
+        else keycloak exception
+            Keycloak -> IndividualsApi: exception
+            IndividualsApi -> PersonService: POST /api/v1/users compensate
+            PersonService -> IndividualsApi: 201
+            IndividualsApi -> Client: ErrorResponse
+        end
+    else PersonService exception
+        PersonService -> IndividualsApi: exception
+        IndividualsApi -> Client: ErrorResponse
+    end
+
 else access denied
-IndividualsApi -> Client: access denied
+IndividualsApi -> Client: ErrorResponse
 end
 @enduml

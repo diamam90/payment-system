@@ -15,9 +15,7 @@ System_Boundary(paymentSystem, "Payment system") {
     Container(tempo, "Grafana Tempo","Хранилище трассировок")
     Container(alloy, "Grafana Alloy", "MELT agent")
     Container(grafana,  "Grafana", "Визуализация логов/метрик/трейсов")
-    Container(kcDbExporter, "Keycloak DB exporter", "Экспортер логов Keycloak Database")
-    Container(personDbExporter, "Person DB exporter", "Экспортер логов Person Database")
-
+    Container(nexus,"Nexus","Репозиторий")
 }
 
 Rel(client, indApi, "Http запросы")
@@ -25,13 +23,12 @@ Rel(indApi,personService, "Http", "Управление пользователя
 Rel(indApi, kc, "Http", "Регистрация/аутентификация пользователей")
 Rel(kc, kcDb,"JDBC","Хранение пользователей")
 Rel(personService, personDb,"JDBC", "Регистрация пользователей")
+Rel(personService, nexus, "JAR", "Выгрузка sdk")
 
-Rel(personDbExporter, personDb, "Metrics", "Метрики БД")
-Rel(kcDbExporter, kcDb, "Metrics", "Метрики БД")
 Rel(alloy, indApi, "Metrics", "Сбор метрик")
 Rel(alloy, personService, "Metrics", "Сбор метрик")
-Rel(alloy, personDbExporter, "Metrics","Сбор метрик")
-Rel(alloy, kcDbExporter, "Metrics", "Сбор метрик")
+Rel(alloy, personDb, "Metrics","Сбор метрик БД")
+Rel(alloy, kcDb, "Metrics", "Сбор метрик БД")
 
 Rel(alloy, loki,"Логи","Выгрузка логов")
 Rel(alloy, tempo,"Трассировка","Выгрузка трассировок")

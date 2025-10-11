@@ -6,10 +6,17 @@ participant PersonService
 Client -> IndividualsApi: GET /api/v1/users?filter (JWT)
 IndividualsApi-> IndividualsApi: autorization
 alt access granted
-IndividualsApi -> PersonService: GET /api/v1/users?filter
-PersonService->IndividualsApi: UserDto
-IndividualsApi -> Client: UserDto
+    IndividualsApi -> PersonService: GET /api/v1/users?filter
+
+    alt PersonService success
+        PersonService -> IndividualsApi: Individual
+        IndividualsApi -> Client: UserDto
+    else PersonService exception
+        PersonService -> IndividualsApi: exception
+        IndividualsApi -> Client: ErrorResponse
+    end
+
 else access denied
-IndividualsApi -> Client: access denied
+    IndividualsApi -> Client: ErrorResponse
 end
 @enduml

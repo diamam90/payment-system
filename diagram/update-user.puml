@@ -6,10 +6,17 @@ participant PersonService
 Client -> IndividualsApi: POST /api/v1/users/{userId} (JWT)
 IndividualsApi -> IndividualsApi: autorization
 alt access granted
-IndividualsApi-> PersonService: POST /api/v1/users/{userId}
-PersonService -> IndividualsApi: UserDto
-IndividualsApi -> Client: UserDto
+    IndividualsApi-> PersonService: POST /api/v1/users/{userId}
+
+    alt PersonService success
+        PersonService -> IndividualsApi: Individual
+        IndividualsApi -> Client: UserDto
+    else PersonService exception
+        PersonService -> IndividualsApi: exception
+        IndividualsApi -> Client: ErrorResponse
+    end
+
 else access denied
-IndividualsApi -> Client: access denied
+    IndividualsApi -> Client: ErrorResponse
 end
 @enduml
