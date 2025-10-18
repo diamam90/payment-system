@@ -13,11 +13,17 @@ services:
         condition: service_healthy
       prometheus:
         condition: service_healthy
+      nexus:
+        condition: service_healthy
+      person-service:
+        condition: service_healthy
     healthcheck:
       test: ["CMD","wget","--spider","localhost:8081/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - payment_system_network
 
   keycloak:
     image: "quay.io/keycloak/keycloak:26.2"
@@ -33,7 +39,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./individuals-api/src/main/resources/realm-config.json:/opt/keycloak/data/import/realm-config.json
+      - ./infrastructure/keycloak/realm-config.json:/opt/keycloak/data/import/realm-config.json
     depends_on:
       keycloak-postgres:
         condition: service_healthy
@@ -42,6 +48,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - payment_system_network
 
   keycloak-postgres:
     image: postgres:17
@@ -57,6 +65,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - payment_system_network
 
   alloy:
     container_name: alloy
@@ -65,11 +75,13 @@ services:
       - "12345:12345"
     command: run --storage.path=/var/lib/alloy/data --server.http.listen-addr=0.0.0.0:12345 /etc/alloy/config.alloy
     volumes:
-      - ./infrastructure/grafana/alloy/config.alloy:/etc/alloy/config.alloy
+      - ./infrastructure/alloy/config.alloy:/etc/alloy/config.alloy
       - /var/run/docker.sock.raw:/var/run/docker.sock
     depends_on:
       loki:
         condition: service_healthy
+    networks:
+      - payment_system_network
 
   prometheus:
     image: prom/prometheus:latest
@@ -84,6 +96,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - payment_system_network
 
   loki:
     image: grafana/loki:2.9.2
@@ -98,6 +112,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - payment_system_network
 
   grafana:
     image: grafana/grafana:10.3.1
@@ -120,3 +136,72 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - payment_system_network
+
+  nexus:
+    image: sonatype/nexus3:3.85.0-alpine
+    container_name: nexus
+    ports:
+      - "8800:8081"
+    environment:
+      NEXUS_SECURITY_INITIAL_PASSWORD: admin
+      NEXUS_SECURITY_RANDOMPASSWORD: false
+    healthcheck:
+      test: ["CMD","curl","-I","http://localhost:8081/service/rest/v1/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - payment_system_network
+
+  person-service:
+    build: ./person-service
+    container_name: person-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8082:8082"
+    healthcheck:
+      test: ["CMD","curl","-I","http://localhost:8082/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      person-db:
+        condition: service_healthy
+    networks:
+      - payment_system_network
+
+  person-db:
+    image: postgres:17
+    container_name: person-db
+    environment:
+      POSTGRES_DB: person
+      POSTGRES_USER: personadmin
+      POSTGRES_PASSWORD: personadmin
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d person -U personadmin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payment_system_network
+
+networks:
+  payment_system_network:
+    driver: bridge
+
+#  axon-server:
+#    image: axoniq/axonserver:2025.2.0-nonroot
+#    container_name: axon
+#    ports:
+#      - "8024:8024"
+#      - "8124:8124"
+#    healthcheck:
+#      test: ["CMD", "curl","-f", "http://localhost:8024/actuator/health"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5

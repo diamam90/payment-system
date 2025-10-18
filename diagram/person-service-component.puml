@@ -3,15 +3,19 @@
 
 Container(indApi,"person-service","Spring boot")
 
-Component(indController, "IndividualController", "Rest Controller", "Обрабатывает запросы individuals-api")
-Component(indService,"IndividualService","Сервис","Создание, обновление, удаление пользователей")
+Component(indController, "Individual Controller", "Rest Controller", "Обрабатывает запросы individuals-api")
+Component(indService,"Individual Service","Сервис","Создание, обновление, удаление пользователей")
+Component(countryService, "Country Service", "Сервис", "Справочник стран")
 Component(indRepository, "Individual Repository", "Хранение пользователй")
-Component(indRepositoryAudit,"IndividualsRepositoryAudit", "Аудит для Individuals Repository")
+Component(countryRepository, "Country Repository", "Репозиторий","Хранилище стран")
+Component(indRepositoryAudit,"Individuals Repository Audit", "Аудит для Individuals Repository")
 Component(personDto, "DTO (сгенерированные)", "DTO для взаимодействия с Person Service")
 
 Rel(indController, indService, "вызов")
 Rel(indController, personDto, "использует")
 Rel(indService, indRepository, "вызов")
+Rel(indService,countryService, "вызов")
+Rel(countryService, countryRepository,"вызов")
 Rel(indRepository, indRepositoryAudit, "использует")
 
 @enduml

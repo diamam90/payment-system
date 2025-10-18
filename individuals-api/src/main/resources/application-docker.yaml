@@ -8,3 +8,9 @@ spring:
 individuals-api:
   keycloak:
     baseUrl: http://individuals-keycloak:8080
+
+individuals:
+  url: http://person-service:8082
+
+private:
+  url: http://person-service:8082

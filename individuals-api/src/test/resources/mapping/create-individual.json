@@ -1,0 +1,22 @@
+{
+  "request": {
+    "urlPath": "/api/v1/individuals",
+    "method": "POST"
+  },
+  "response": {
+    "status": 201,
+    "jsonBody": {
+        "id": "00000000-0000-0000-0000-000000000001",
+        "email": "email@admin.ru",
+        "firstName": "alex",
+        "lastName": "Ivanov",
+        "passportNumber": "12344321",
+        "phoneNumber": "22222",
+        "verifiedAt": "2025-05-05T10:00:00+03:00",
+        "archivedAt": "2025-05-05T10:00:00+03:00"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

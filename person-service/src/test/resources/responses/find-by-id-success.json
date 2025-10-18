@@ -1,0 +1,19 @@
+{
+  "id": "00000000-0000-0000-0000-000000000022",
+  "phoneNumber": "256",
+  "passportNumber": "123456",
+  "status": "active",
+  "archivedAt": "2025-05-05T10:00:00Z",
+  "verifiedAt": "2025-06-06T10:00:00Z",
+  "firstName": "Alexa",
+  "lastName": "Alexov",
+  "secretKey": "alex secret",
+  "email": "alex@alexov.mail",
+  "address": {
+    "address": "alexa address",
+    "country": "russia",
+    "city": "alex city",
+    "zipCode": "alex zip code",
+    "state": "alex state"
+  }
+}

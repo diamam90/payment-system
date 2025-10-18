@@ -1,0 +1,17 @@
+{
+  "firstName": "ffffirst",
+  "lastName": "llllast",
+  "secretKey": "secret",
+  "passportNumber": "1111",
+  "phoneNumber": "121212",
+  "email": "ya@mail.g",
+  "verifiedAt": "2022-02-02T03:03:03Z",
+  "address": {
+    "country": "Hungary",
+    "zipCode": "111 111",
+    "state": "h state",
+    "city": "h city",
+    "address": "h address",
+    "archived": "2022-02-02T03:03:03Z"
+  }
+}

@@ -21,11 +21,13 @@ management:
 individuals-api:
   keycloak:
     baseUrl: http://localhost:8080
-    username: admin
-    password: admin
+    username: payment_admin
+    password: payment_admin
     realm: payment
     clientId: individuals-api
-
+    clientSecret: "**********"
+  person:
+    base-url: http://localhost:8082
 logging:
   level:
     com.example: debug

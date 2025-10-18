@@ -1,0 +1,12 @@
+{
+  "request": {
+    "urlPathTemplate": "/private/api/v1/individuals/{individualId}",
+    "method": "DELETE"
+  },
+  "response": {
+    "status": 204,
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

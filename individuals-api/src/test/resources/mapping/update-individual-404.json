@@ -1,0 +1,22 @@
+{
+  "request": {
+    "urlPathTemplate": "/api/v1/individuals/{individualId}",
+    "pathParameters": {
+      "individualId": {
+        "doesNotContain": "00000000-0000-0000-0000-000011110000"
+      }
+    },
+    "method": "POST"
+  },
+  "response": {
+    "status": 404,
+    "jsonBody": {
+      "error": "Individual with id {{request.path.individualId}} not found",
+      "status": 404
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "transformers": ["response-template"]
+  }
+}
