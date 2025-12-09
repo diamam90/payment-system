@@ -32,6 +32,7 @@ public class IndividualMapper {
             if (Objects.nonNull(user.getAddress())) {
                 var address = user.getAddress();
                 var addressDto = new IndividualResponseAddress();
+                addressDto.setId(address.getId());
                 addressDto.setAddress(address.getAddress());
                 addressDto.setCity(address.getCity());
                 addressDto.setCountry(address.getCountry().getName());

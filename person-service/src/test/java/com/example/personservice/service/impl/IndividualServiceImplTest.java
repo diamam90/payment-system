@@ -167,7 +167,8 @@ class IndividualServiceImplTest {
         individualService.softDelete(id);
         assertThat(individual)
                 .hasFieldOrPropertyWithValue("id", id)
-                .hasFieldOrPropertyWithValue("status", Status.INACTIVE.getStatusCode());;
+                .hasFieldOrPropertyWithValue("status", Status.INACTIVE.getStatusCode());
+        ;
     }
 
     @Test

@@ -27,7 +27,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-
 @AutoConfigureWebTestClient
 public class PersonControllerIT extends BaseIntegrationTest {
 
@@ -126,7 +125,7 @@ public class PersonControllerIT extends BaseIntegrationTest {
         // given
         var requestBody = userRequest();
         var adminToken = adminToken().block();
-        var userId = createUser("user@aaa.ru", "34222", adminToken).block();
+        var userId = createUser("user@aaa.ru", "34222", adminToken, individualId).block();
 
         var tokenResponse = userTokenResponse("user@aaa.ru", "34222").block();
         var userToken = tokenResponse.accessToken();
@@ -158,13 +157,15 @@ public class PersonControllerIT extends BaseIntegrationTest {
     @Test
     void update_WhenIndividualNotFound_ShouldReturn404() {
         // given
+
+        var individualId = UUID.fromString("00000000-0000-0000-0000-000000000010");
+
         var requestBody = userRequest();
         var adminToken = adminToken().block();
-        var userId = createUser("user@aaa.ru", "34222", adminToken).block();
+        var userId = createUser("user@aaa.ru", "34222", adminToken, individualId).block();
 
         var tokenResponse = userTokenResponse("user@aaa.ru", "34222").block();
         var userToken = tokenResponse.accessToken();
-        var individualId = UUID.fromString("00000000-0000-0000-0000-000000000010");
 
         // when
         var response = client.post()
@@ -208,13 +209,10 @@ public class PersonControllerIT extends BaseIntegrationTest {
 
         var email = "test@email.test";
         var userId = createUser(email, "34222", adminToken).block();
-        var tokenResponse = userTokenResponse(email, "34222").block();
-        var userToken = tokenResponse.accessToken();
-
         // when
         var response = client.get()
                 .uri("/api/v1/individuals?email={email}", email)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + userToken)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
                 .exchange()
                 .expectStatus().isOk()
                 .returnResult(UserResponse.class)
@@ -245,16 +243,12 @@ public class PersonControllerIT extends BaseIntegrationTest {
     @Test
     void findByEmail_WhenIndividualNotFound_ShouldReturn404() {
         var adminToken = adminToken().block();
-
         var email = "email@not.exist";
         var userId = createUser(email, "34222", adminToken).block();
-        var tokenResponse = userTokenResponse(email, "34222").block();
-        var userToken = tokenResponse.accessToken();
-
         // when
         var response = client.get()
                 .uri("/api/v1/individuals?email={email}", email)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + userToken)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
                 .exchange()
                 .expectStatus().isNotFound()
                 .returnResult(ErrorResponse.class)
@@ -272,7 +266,7 @@ public class PersonControllerIT extends BaseIntegrationTest {
         var adminToken = adminToken().block();
         var individualId = UUID.fromString("00000000-0000-0000-0000-000000000003");
         var email = "user@aaa.ru";
-        var userId = createUser(email, "34222", adminToken).block();
+        var userId = createUser(email, "34222", adminToken, individualId).block();
         var tokenResponse = userTokenResponse(email, "34222").block();
         var userToken = tokenResponse.accessToken();
 
@@ -305,7 +299,7 @@ public class PersonControllerIT extends BaseIntegrationTest {
         var adminToken = adminToken().block();
         var individualId = UUID.fromString("00000000-0000-0000-0000-000000000005");
         var email = "user@aaa.ru";
-        var userId = createUser(email, "34222", adminToken).block();
+        var userId = createUser(email, "34222", adminToken, individualId).block();
         var tokenResponse = userTokenResponse(email, "34222").block();
         var userToken = tokenResponse.accessToken();
 

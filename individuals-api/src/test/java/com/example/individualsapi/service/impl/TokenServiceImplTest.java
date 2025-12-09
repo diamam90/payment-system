@@ -1,6 +1,7 @@
 package com.example.individualsapi.service.impl;
 
 import com.example.individualsapi.client.KeycloakClient;
+import com.example.individualsapi.configuration.AdminTokenHolder;
 import com.example.individualsapi.configuration.AppProperties;
 import com.example.individualsapi.service.TokenService;
 import org.junit.jupiter.api.BeforeAll;
@@ -16,20 +17,16 @@ import static org.mockito.Mockito.when;
 class TokenServiceImplTest {
 
     KeycloakClient client = Mockito.mock(KeycloakClient.class);
+    AdminTokenHolder tokenHolder = Mockito.mock(AdminTokenHolder.class);
     static AppProperties properties = Mockito.mock(AppProperties.class);
 
-    TokenService tokenService = new TokenServiceImpl(client, properties);
-
-    static String admin = "adm";
-    static String adminPassword = "pas";
+    TokenService tokenService = new TokenServiceImpl(client, properties, tokenHolder);
 
     @BeforeAll
     public static void keycloakSettings() {
         AppProperties.KeycloakProperties keycloak = new AppProperties.KeycloakProperties();
         keycloak.setClientId(clientId);
         keycloak.setClientSecret(clientSecret);
-        keycloak.setPassword(adminPassword);
-        keycloak.setUsername(admin);
 
         when(properties.getKeycloak()).thenReturn(keycloak);
     }

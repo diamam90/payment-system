@@ -18,8 +18,6 @@ public class AppProperties {
     @Setter
     public static class KeycloakProperties {
         private String baseUrl;
-        private String username;
-        private String password;
         private String realm;
         private String clientId;
         private String clientSecret;

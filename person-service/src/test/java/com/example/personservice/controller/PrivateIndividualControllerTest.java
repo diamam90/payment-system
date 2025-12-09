@@ -1,7 +1,6 @@
 package com.example.personservice.controller;
 
 import com.example.personservice.config.SecurityConfig;
-import com.example.personservice.controller.PrivateIndividualController;
 import com.example.personservice.service.IndividualService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +30,7 @@ class PrivateIndividualControllerTest {
 
     private static final UUID id = UUID.fromString("00000000-0000-0000-0000-000000000022");
 
-    @WithMockUser(username = "user", authorities = {"payment_system_admin"})
+    @WithMockUser(username = "user", authorities = {"individuals_wr"})
     @Test
     void shouldDeleteById() throws Exception {
         mvc.perform(delete("/private/api/v1/individuals/{id}", id))
@@ -40,7 +39,7 @@ class PrivateIndividualControllerTest {
         verify(individualService).hardDelete(id);
     }
 
-    @WithMockUser(username = "user", authorities = {"payment_system_admin"})
+    @WithMockUser(username = "user", authorities = {"individuals_wr"})
     @Test
     void shouldActivateUser() throws Exception {
         mvc.perform(post("/private/api/v1/individuals/{id}", id))

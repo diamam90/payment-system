@@ -15,6 +15,7 @@ import com.example.individualsapi.service.UserService;
 import com.example.person.dto.IndividualResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -42,14 +43,16 @@ public class UserServiceImpl implements UserService {
                 .map(personService::create)
                 .map(IndividualResponse::getId)
                 .flatMap(
-                        id ->
-                                registrationClient(request, id)
-                                        .onErrorMap(ex -> {
-                                            log.error("Exception {} has been thrown while register user in keycloak", ex.getMessage());
-                                            personService.compensateCreation(id);
-                                            return ex;
-                                        }).doOnNext(_ -> log.info("Registered user with individual id {}  in keycloak", id))
-                )
+                        id -> {
+                            var keycloakRequest = withPasswordType(request.getEmail(), request.getPassword(), id);
+                            return tokenService.adminToken()
+                                    .flatMap(token -> keycloakClient.registration(keycloakRequest, token))
+                                    .onErrorMap(ex -> {
+                                        log.error("Exception {} has been thrown while register user in keycloak", ex.getMessage());
+                                        personService.compensateCreation(id);
+                                        return ex;
+                                    }).doOnNext(_ -> log.info("Registered user with individual id {}  in keycloak", id));
+                        })
                 .then(accessToken(request.getEmail(), request.getPassword()));
     }
 
@@ -62,23 +65,24 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @PreAuthorize("hasAuthority('person_service_wr') || principal.claims['individual_id'] ==  #id.toString()")
     public Mono<IndividualResponse> updateUser(UUID id, UserRequest request) {
         var individualRequest = personMapper.individualRequest(request);
         return Mono.just(personService.update(id, individualRequest));
-
     }
 
     @Override
-    public Mono<Void> deleteUser(UUID individualId) {
-        return Mono.justOrEmpty(personService.deleteById(individualId))
+    @PreAuthorize("hasAuthority('person_service_wr') || principal.claims['individual_id'] ==  #id.toString()")
+    public Mono<Void> deleteUser(UUID id) {
+        return Mono.justOrEmpty(personService.deleteById(id))
                 .then(tokenService.adminToken()
-                        .flatMap(token -> keycloakClient.findByIndividualId(individualId, token)
+                        .flatMap(token -> keycloakClient.findByIndividualId(id, token)
                                 .next()
                                 .map(KeycloakUserInfoResponse::id)
-                                .flatMap(id -> keycloakClient.deleteUser(id, token))
+                                .flatMap(individualId -> keycloakClient.deleteUser(individualId, token))
                                 .onErrorMap(ex -> {
                                     log.error("Exception {} has been thrown while deletion user in keycloak", ex.getMessage());
-                                    personService.compensateDeletion(individualId);
+                                    personService.compensateDeletion(id);
                                     return ex;
                                 })
                         )
@@ -86,11 +90,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @PreAuthorize("hasAuthority('person_service_wr')")
     public Mono<IndividualResponse> findByEmail(String email) {
         return Mono.just(personService.findByEmail(email));
     }
 
     @Override
+    @PreAuthorize("hasAuthority('person_service_wr') || principal.claims['individual_id'] ==  #id.toString()")
     public Mono<IndividualResponse> findById(UUID id) {
         return Mono.just(personService.findById(id));
     }
@@ -106,12 +112,6 @@ public class UserServiceImpl implements UserService {
     public Mono<TokenResponse> refreshToken(String refreshToken) {
         return tokenService.refreshToken(refreshToken)
                 .map(keycloakMapper::tokenResponse);
-    }
-
-    private Mono<Void> registrationClient(UserRequest request, UUID individualId) {
-        var keycloakRequest = withPasswordType(request.getEmail(), request.getPassword(), individualId);
-        return tokenService.adminToken()
-                .flatMap(token -> keycloakClient.registration(keycloakRequest, token));
     }
 
     private Mono<UserRequest> validateRequest(UserRequest request) {

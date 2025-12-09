@@ -3,7 +3,6 @@ package com.example.personservice.IT;
 import com.example.person.dto.ErrorResponse;
 import com.example.personservice.config.AppContainers;
 import com.example.personservice.entity.Status;
-import com.example.personservice.stub.request.KeycloakRequestStub;
 import com.example.personservice.util.JdbcUtils;
 import com.example.personservice.util.KeycloakUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -42,21 +41,17 @@ public class PrivateIndividualControllerIT {
     void shouldDeleteById() {
         // given
         var id = jdbc.getIndividualIdByPassport("1331 4429");
-        var keycloakUser = KeycloakRequestStub.admin();
-        var userId = KeycloakUtils.createKeycloakUser(keycloakUser);
-        KeycloakUtils.addAdminRoleToUser(userId);
 
-        var tokenResponse = KeycloakUtils.accessToken(keycloakUser);
+        var adminToken = KeycloakUtils.adminToken().getToken();
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(tokenResponse.getToken());
+        headers.setBearerAuth(adminToken);
         // when
-        ResponseEntity<Void> exchange = restTemplate.exchange("/private/api/v1/individuals/{id}", HttpMethod.DELETE, new HttpEntity<>(null, headers), Void.class, id);
+        ResponseEntity<Void> exchange = restTemplate.exchange("/private/api/v1/individuals/{id}", HttpMethod.DELETE,
+                new HttpEntity<>(null, headers), Void.class, id);
         var exists = jdbc.existsIndividualById(id);
         // then
         assertEquals(HttpStatus.NO_CONTENT, exchange.getStatusCode());
         assertFalse(exists);
-
-        KeycloakUtils.deleteKeycloakUser(userId);
     }
 
 
@@ -65,13 +60,10 @@ public class PrivateIndividualControllerIT {
     void shouldActivateIndividualById() {
         // given
         var id = jdbc.getIndividualIdByPassport("1331 4429");
-        var keycloakUser = KeycloakRequestStub.admin();
-        var userId = KeycloakUtils.createKeycloakUser(keycloakUser);
-        KeycloakUtils.addAdminRoleToUser(userId);
+        var adminToken = KeycloakUtils.adminToken().getToken();
 
-        var tokenResponse = KeycloakUtils.accessToken(keycloakUser);
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(tokenResponse.getToken());
+        headers.setBearerAuth(adminToken);
         // when
         ResponseEntity<Void> exchange = restTemplate.exchange("/private/api/v1/individuals/{id}",
                 HttpMethod.POST, new HttpEntity<>(null, headers), Void.class, id);
@@ -79,21 +71,16 @@ public class PrivateIndividualControllerIT {
         // then
         assertEquals(HttpStatus.OK, exchange.getStatusCode());
         assertEquals(Status.ACTIVE.getStatusCode(), params.get("status"));
-
-        KeycloakUtils.deleteKeycloakUser(userId);
     }
 
     @Test
     void activateIndividualById_WhenIndividualIsAbsent_shouldReturn404() {
         // given
         var individualId = UUID.fromString("00000000-0000-0000-0000-000000000003");
-        var keycloakUser = KeycloakRequestStub.admin();
-        var userId = KeycloakUtils.createKeycloakUser(keycloakUser);
-        KeycloakUtils.addAdminRoleToUser(userId);
+        var adminToken = KeycloakUtils.adminToken().getToken();
 
-        var tokenResponse = KeycloakUtils.accessToken(keycloakUser);
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(tokenResponse.getToken());
+        headers.setBearerAuth(adminToken);
         // when
         ResponseEntity<ErrorResponse> exchange = restTemplate.exchange("/private/api/v1/individuals/{id}",
                 HttpMethod.POST, new HttpEntity<>(null, headers), ErrorResponse.class, individualId);
@@ -103,8 +90,6 @@ public class PrivateIndividualControllerIT {
         assertThat(exchange.getBody())
                 .hasFieldOrPropertyWithValue("status",404)
                 .hasFieldOrPropertyWithValue("error","Individual with id [%s] not found".formatted(individualId));
-
-        KeycloakUtils.deleteKeycloakUser(userId);
     }
 }
 

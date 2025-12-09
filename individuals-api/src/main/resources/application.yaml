@@ -21,8 +21,6 @@ management:
 individuals-api:
   keycloak:
     baseUrl: http://localhost:8080
-    username: payment_admin
-    password: payment_admin
     realm: payment
     clientId: individuals-api
     clientSecret: "**********"
@@ -31,3 +29,4 @@ individuals-api:
 logging:
   level:
     com.example: debug
+#    org.springframework: debug

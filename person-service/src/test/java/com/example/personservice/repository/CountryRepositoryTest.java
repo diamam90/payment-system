@@ -2,7 +2,6 @@ package com.example.personservice.repository;
 
 import com.example.personservice.config.AppContainers;
 import com.example.personservice.entity.Country;
-import com.example.personservice.repository.CountryRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;

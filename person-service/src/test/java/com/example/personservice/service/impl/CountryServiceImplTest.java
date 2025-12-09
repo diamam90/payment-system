@@ -3,7 +3,6 @@ package com.example.personservice.service.impl;
 import com.example.personservice.entity.Country;
 import com.example.personservice.exception.ObjectNotFoundException;
 import com.example.personservice.repository.CountryRepository;
-import com.example.personservice.service.impl.CountryServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

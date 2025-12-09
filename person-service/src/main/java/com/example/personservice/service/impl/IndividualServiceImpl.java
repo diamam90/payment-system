@@ -1,16 +1,15 @@
 package com.example.personservice.service.impl;
 
+import com.example.person.dto.AddressRequest;
+import com.example.person.dto.IndividualRequest;
 import com.example.personservice.entity.*;
 import com.example.personservice.exception.ObjectNotFoundException;
 import com.example.personservice.mapper.IndividualMapper;
-import com.example.person.dto.AddressRequest;
-import com.example.person.dto.IndividualRequest;
 import com.example.personservice.repository.IndividualRepository;
 import com.example.personservice.service.CountryService;
 import com.example.personservice.service.IndividualService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,7 +43,6 @@ public class IndividualServiceImpl implements IndividualService {
         return savedUser;
     }
 
-    @PreAuthorize("hasAuthority('payment_system_admin') || principal.claims['individual_id'] ==  #id.toString()")
     @Override
     public Individual update(UUID id, IndividualRequest request) {
         var individual = individualRepository.findById(id)
@@ -56,7 +54,6 @@ public class IndividualServiceImpl implements IndividualService {
         return individual;
     }
 
-    @PreAuthorize("hasAuthority('payment_system_admin') || principal.claims['individual_id'] ==  #id.toString()")
     @Override
     @Transactional(readOnly = true)
     public Individual findById(UUID id) {
@@ -64,7 +61,6 @@ public class IndividualServiceImpl implements IndividualService {
                 .orElseThrow(() -> new ObjectNotFoundException(Individual.class, "id", id));
     }
 
-    @PreAuthorize("principal.claims['email'] == #email")
     @Override
     @Transactional(readOnly = true)
     public Individual findByEmail(String email) {
@@ -93,6 +89,9 @@ public class IndividualServiceImpl implements IndividualService {
     }
 
     private void update(Individual individual, IndividualRequest request) {
+        if (request == null) {
+            return;
+        }
         Country newCountry = Optional.ofNullable(request)
                 .map(IndividualRequest::getAddress)
                 .map(AddressRequest::getCountry)
@@ -108,15 +107,17 @@ public class IndividualServiceImpl implements IndividualService {
         }
         updateUser(user, request);
 
-        Address address;
-        if (Objects.nonNull(individual.getUser().getAddress())) {
-            address = individual.getUser().getAddress();
+        if (request.getAddress() != null) {
+            Address address = individual.getUser().getAddress();
+            if (address == null) {
+                address = new Address();
+                user.setAddress(address);
+            }
+            updateAddress(address, request.getAddress(), newCountry);
         } else {
-            address = new Address();
-            user.setAddress(address);
+            user.setAddress(null);
         }
 
-        updateAddress(address, request.getAddress(), newCountry);
         updateIndividuals(individual, request);
     }
 

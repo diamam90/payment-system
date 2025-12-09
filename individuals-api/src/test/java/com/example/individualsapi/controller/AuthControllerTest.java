@@ -3,8 +3,10 @@ package com.example.individualsapi.controller;
 import com.example.individuals.dto.TokenResponse;
 import com.example.individuals.dto.UserInfoResponse;
 import com.example.individualsapi.config.AppTestConfig;
+import com.example.individualsapi.configuration.AdminTokenHolder;
 import com.example.individualsapi.configuration.SecurityConfig;
 import com.example.individualsapi.mapper.KeycloakMapper;
+import com.example.individualsapi.service.TokenService;
 import com.example.individualsapi.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +22,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.UUID;
 
 import static org.mockito.Mockito.when;
 
@@ -33,6 +36,11 @@ class AuthControllerTest {
     UserService userService;
     @MockitoBean
     ReactiveJwtDecoder decoder;
+    @MockitoBean
+    TokenService tokenService;
+    @MockitoBean
+    AdminTokenHolder tokenHolder;
+
     @Autowired
     WebTestClient client;
 
@@ -117,7 +125,8 @@ class AuthControllerTest {
                     "email": "user1@user.user",
                     "id":"user-id-228",
                     "created_at": "2025-05-05T00:00:00Z",
-                    "roles": []
+                    "roles": [],
+                    "individualId": "00000000-0000-0000-0000-000000000003"
                 }
                 """;
     }
@@ -139,6 +148,7 @@ class AuthControllerTest {
         response.setEmail("user1@user.user");
         response.setId("user-id-228");
         response.setCreatedAt(ZonedDateTime.of(2025, 5, 5, 0, 0, 0, 0, ZoneOffset.UTC));
+        response.setIndividualId(UUID.fromString("00000000-0000-0000-0000-000000000003"));
         return response;
     }
 

@@ -13,17 +13,19 @@ import org.springframework.security.config.annotation.web.configurers.AuthorizeH
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
+
+    private static final String RESOURCE_ACCESS = "resource_access";
+    private static final String PERSON_SERVICE_ROLES = "person-service";
+    private static final String ROLES = "roles";
 
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -43,19 +45,25 @@ public class SecurityConfig {
 
     @Bean
     Converter<Jwt, ? extends AbstractAuthenticationToken> converter() {
-        return (Converter<Jwt, JwtAuthenticationToken>) jwt -> {
-            List<GrantedAuthority> authorities = new ArrayList<>();
+        var jwtConverter = new JwtAuthenticationConverter();
+        jwtConverter.setJwtGrantedAuthoritiesConverter(authorityConverter());
+        return jwtConverter;
+    }
 
-            Object realmAccess = jwt.getClaims().get("realm_access");
-            if (realmAccess instanceof Map<?, ?> realmMap) {
-                if (realmMap.get("roles") instanceof List<?> roles) {
-                    roles.stream().filter(role -> role instanceof String)
-                            .forEach(role -> authorities.add(new SimpleGrantedAuthority((String) role)));
-                }
-            }
-            authorities.add(new SimpleGrantedAuthority(jwt.getClaimAsString("scope")));
-            String principal = jwt.getClaimAsString("sub");
-            return new JwtAuthenticationToken(jwt, authorities, principal);
+    private Converter<Jwt, Collection<GrantedAuthority>> authorityConverter() {
+        return jwt -> {
+            List<GrantedAuthority> authorities = new ArrayList<>();
+            Optional.ofNullable(jwt.getClaimAsMap(RESOURCE_ACCESS))
+                    .map(access -> access.get(PERSON_SERVICE_ROLES))
+                    .map(access -> (Map<?, ?>) access)
+                    .map(access -> access.get(ROLES))
+                    .map(roles -> (List<?>) roles)
+                    .ifPresent(roles -> roles.stream()
+                            .map(role -> (String) role)
+                            .forEach(role -> authorities.add(new SimpleGrantedAuthority(role)))
+                    );
+
+            return authorities;
         };
     }
 
@@ -66,6 +74,6 @@ public class SecurityConfig {
 
     private void applySecuredPath
             (AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry registry) {
-        registry.requestMatchers("/private/**").hasAuthority("payment_system_admin");
+        registry.requestMatchers("/private/**").hasAuthority("individuals_wr");
     }
 }

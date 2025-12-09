@@ -10,10 +10,7 @@ import reactor.core.publisher.Mono;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class AuthDtoStub {
 
@@ -83,7 +80,8 @@ public class AuthDtoStub {
     public static Mono<KeycloakUserInfoResponse> keycloakUserInfoResponse() {
         return Mono.just(new KeycloakUserInfoResponse("123-228",
                 "user@user.user",
-                OffsetDateTime.parse("2025-05-05T00:00:00Z").toInstant().toEpochMilli()));
+                OffsetDateTime.parse("2025-05-05T00:00:00Z").toInstant().toEpochMilli(),
+                new HashMap<>()));
     }
 
     public static Mono<KeycloakUserInfoResponse> userInfoError() {

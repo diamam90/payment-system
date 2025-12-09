@@ -1,6 +1,5 @@
 package com.example.individualsapi.configuration;
 
-import com.example.individualsapi.service.TokenService;
 import com.example.person.api.IndividualsApiClient;
 import com.example.person.api.PrivateApiClient;
 import feign.Contract;
@@ -20,14 +19,15 @@ import org.springframework.context.annotation.Import;
 public class FeignConfiguration {
 
     private final AppProperties properties;
+    private final AdminTokenHolder tokenHolder;
 
     @Bean
-    public PrivateApiClient privateApiClient(Contract contract, Encoder encoder, Decoder decoder, TokenService tokenService) {
+    public PrivateApiClient privateApiClient(Contract contract, Encoder encoder, Decoder decoder) {
         return Feign.builder()
                 .contract(contract)
                 .decoder(decoder)
                 .encoder(encoder)
-                .requestInterceptor(new AdminTokenInterceptor(tokenService))
+                .requestInterceptor(new AdminTokenInterceptor(tokenHolder))
                 .target(PrivateApiClient.class, properties.getPerson().getBaseUrl());
     }
 
@@ -37,7 +37,7 @@ public class FeignConfiguration {
                 .contract(contract)
                 .decoder(decoder)
                 .encoder(encoder)
-                .requestInterceptor(new BearerTokenInterceptor())
+                .requestInterceptor(new AdminTokenInterceptor(tokenHolder))
                 .target(IndividualsApiClient.class, properties.getPerson().getBaseUrl());
     }
 

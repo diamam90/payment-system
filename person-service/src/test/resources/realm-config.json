@@ -48,15 +48,6 @@
   "roles": {
     "realm": [
       {
-        "id": "ed391f33-0a57-4aeb-b0cd-d8ff7c99714d",
-        "name": "payment_system_admin",
-        "description": "payment_system_admin",
-        "composite": false,
-        "clientRole": false,
-        "containerId": "03468a75-f3eb-45fc-b107-0f4204049a57",
-        "attributes": {}
-      },
-      {
         "id": "e93091a4-06af-4a2d-b09d-a745e35d1a54",
         "name": "offline_access",
         "description": "${role_offline-access}",
@@ -91,7 +82,17 @@
       }
     ],
     "client": {
-      "individuals-api": [],
+      "individuals-api": [
+        {
+          "id": "2b7e9ca3-6695-4785-9318-9d7681d45aad",
+          "name": "person_service_wr",
+          "description": "Person-Service Write\\Read Role",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "989dbff8-ee80-4193-9431-206425375828",
+          "attributes": {}
+        }
+      ],
       "realm-management": [
         {
           "id": "6108725e-917b-4ad9-95c1-b0289ca4124d",
@@ -273,19 +274,19 @@
                 "manage-clients",
                 "manage-realm",
                 "manage-identity-providers",
-                "view-events",
                 "create-client",
                 "query-realms",
+                "view-events",
                 "view-clients",
                 "view-identity-providers",
+                "impersonation",
                 "view-realm",
                 "view-users",
-                "impersonation",
                 "query-users",
                 "query-clients",
                 "manage-users",
-                "manage-events",
                 "manage-authorization",
+                "manage-events",
                 "view-authorization"
               ]
             }
@@ -305,7 +306,17 @@
         }
       ],
       "security-admin-console": [],
-      "person-service": [],
+      "person-service": [
+        {
+          "id": "b449b271-2bc7-49d5-9236-9ad62b2a9c58",
+          "name": "individuals_wr",
+          "description": "Write\\Read Individuals",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "c66029e9-c210-4679-a355-5009f9e2375d",
+          "attributes": {}
+        }
+      ],
       "admin-cli": [],
       "account-console": [],
       "broker": [],
@@ -391,6 +402,37 @@
   "webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister": false,
   "webAuthnPolicyPasswordlessAcceptableAaguids": [],
   "webAuthnPolicyPasswordlessExtraOrigins": [],
+  "users": [
+    {
+      "id": "223a1715-a4c4-42a5-95d6-a0ddaa2d9fc3",
+      "username": "service-account-individuals-api",
+      "emailVerified": false,
+      "createdTimestamp": 1765467779923,
+      "enabled": true,
+      "totp": false,
+      "serviceAccountClientId": "individuals-api",
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-payment"
+      ],
+      "clientRoles": {
+        "individuals-api": [
+          "person_service_wr"
+        ],
+        "realm-management": [
+          "view-users",
+          "query-users",
+          "manage-users"
+        ],
+        "person-service": [
+          "individuals_wr"
+        ]
+      },
+      "notBefore": 0,
+      "groups": []
+    }
+  ],
   "scopeMappings": [
     {
       "clientScope": "offline_access",
@@ -573,10 +615,10 @@
       "notBefore": 0,
       "bearerOnly": false,
       "consentRequired": false,
-      "standardFlowEnabled": true,
+      "standardFlowEnabled": false,
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": true,
-      "serviceAccountsEnabled": false,
+      "serviceAccountsEnabled": true,
       "publicClient": false,
       "frontchannelLogout": true,
       "protocol": "openid-connect",
@@ -585,7 +627,7 @@
         "oidc.ciba.grant.enabled": "false",
         "client.secret.creation.time": "1761382286",
         "backchannel.logout.session.required": "true",
-        "standard.token.exchange.enabled": "true",
+        "standard.token.exchange.enabled": "false",
         "frontchannel.logout.session.required": "true",
         "post.logout.redirect.uris": "+",
         "display.on.consent.screen": "false",
@@ -617,6 +659,7 @@
         }
       ],
       "defaultClientScopes": [
+        "service_account",
         "web-origins",
         "acr",
         "profile",
@@ -654,9 +697,9 @@
       "notBefore": 0,
       "bearerOnly": false,
       "consentRequired": false,
-      "standardFlowEnabled": true,
+      "standardFlowEnabled": false,
       "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": true,
+      "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
       "publicClient": false,
       "frontchannelLogout": true,
@@ -668,6 +711,7 @@
         "backchannel.logout.session.required": "true",
         "standard.token.exchange.enabled": "false",
         "frontchannel.logout.session.required": "true",
+        "post.logout.redirect.uris": "+",
         "display.on.consent.screen": "false",
         "oauth2.device.authorization.grant.enabled": "false",
         "backchannel.logout.revoke.offline.tokens": "false"
@@ -675,27 +719,6 @@
       "authenticationFlowBindingOverrides": {},
       "fullScopeAllowed": true,
       "nodeReRegistrationTimeout": -1,
-      "protocolMappers": [
-        {
-          "id": "325e03ed-eb28-475e-8e39-87f95290971f",
-          "name": "IndividualId",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-attribute-mapper",
-          "consentRequired": false,
-          "config": {
-            "aggregate.attrs": "false",
-            "introspection.token.claim": "true",
-            "multivalued": "false",
-            "userinfo.token.claim": "true",
-            "user.attribute": "individualId",
-            "id.token.claim": "true",
-            "lightweight.claim": "false",
-            "access.token.claim": "true",
-            "claim.name": "individual_id",
-            "jsonType.label": "String"
-          }
-        }
-      ],
       "defaultClientScopes": [
         "web-origins",
         "acr",
@@ -1559,14 +1582,14 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
-            "saml-role-list-mapper",
-            "oidc-usermodel-attribute-mapper",
-            "saml-user-property-mapper",
-            "oidc-address-mapper",
             "oidc-full-name-mapper",
+            "oidc-usermodel-attribute-mapper",
             "oidc-usermodel-property-mapper",
-            "saml-user-attribute-mapper",
-            "oidc-sha256-pairwise-sub-mapper"
+            "saml-user-property-mapper",
+            "saml-role-list-mapper",
+            "oidc-sha256-pairwise-sub-mapper",
+            "oidc-address-mapper",
+            "saml-user-attribute-mapper"
           ]
         }
       },
@@ -1578,13 +1601,13 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
-            "saml-user-attribute-mapper",
-            "oidc-address-mapper",
-            "oidc-usermodel-attribute-mapper",
-            "oidc-sha256-pairwise-sub-mapper",
-            "saml-user-property-mapper",
             "oidc-usermodel-property-mapper",
             "saml-role-list-mapper",
+            "oidc-usermodel-attribute-mapper",
+            "oidc-address-mapper",
+            "oidc-sha256-pairwise-sub-mapper",
+            "saml-user-property-mapper",
+            "saml-user-attribute-mapper",
             "oidc-full-name-mapper"
           ]
         }

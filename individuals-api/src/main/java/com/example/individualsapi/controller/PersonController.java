@@ -25,6 +25,7 @@ public class PersonController implements PersonServiceApi {
     private final PersonMapper personMapper;
 
     @Override
+
     public Mono<ResponseEntity<UserResponse>> updateIndividual(UUID individualId, Mono<UserRequest> userRequest, ServerWebExchange exchange) {
         return userRequest.flatMap(request -> userService.updateUser(individualId, request))
                 .map(personMapper::toUserResponse)

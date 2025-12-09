@@ -1,6 +1,7 @@
 package com.example.individualsapi.service.impl;
 
 import com.example.individualsapi.client.KeycloakClient;
+import com.example.individualsapi.configuration.AdminTokenHolder;
 import com.example.individualsapi.configuration.AppProperties;
 import com.example.individualsapi.dto.keycloak.KeycloakTokenResponse;
 import com.example.individualsapi.dto.keycloak.KeycloakUserRefreshTokenRequest;
@@ -11,10 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Objects;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -22,8 +19,7 @@ public class TokenServiceImpl implements TokenService {
 
     private final KeycloakClient keycloakClient;
     private final AppProperties properties;
-
-    private final JwtHolder jwtHolder = new JwtHolder();
+    private final AdminTokenHolder tokenHolder;
 
     @Override
     public Mono<KeycloakTokenResponse> accessToken(String email, String password) {
@@ -51,52 +47,27 @@ public class TokenServiceImpl implements TokenService {
     }
 
     @Override
-    public  Mono<String> adminToken() {
-        if (jwtHolder.isNotExpired()) {
-            log.debug("use existing admin token...");
-            return Mono.just(jwtHolder.accessToken());
-        } else {
-            var adminTokenRequest = adminRequestToken();
-            log.debug("updating admin token...");
-            return keycloakClient.adminToken(adminTokenRequest)
-                    .doOnNext(tokenResponse -> {
-                        log.debug("updated admin token: {}", tokenResponse.accessToken());
-                        jwtHolder.update(
-                                tokenResponse.accessToken(),
-                                Instant.now(),
-                                Duration.ofSeconds(tokenResponse.expiresIn())
-                        );
-                    })
-                    .map(KeycloakTokenResponse::accessToken);
+    public Mono<String> adminToken() {
+        if (!tokenHolder.isExpired()) {
+            return Mono.just(tokenHolder.getAccessToken());
         }
-    }
-
-    private static class JwtHolder {
-        private String token;
-        private Instant expiresAt;
-
-        boolean isNotExpired() {
-            return Objects.nonNull(expiresAt) &&
-                    Instant.now().isBefore(expiresAt);
-        }
-
-        String accessToken() {
-            return token;
-        }
-
-        void update(String tokenValue, Instant start, Duration duration) {
-            this.token = tokenValue;
-            this.expiresAt = start.plus(duration);
-
-        }
+        var adminTokenRequest = adminRequestToken();
+        log.debug("updating admin token...");
+        return keycloakClient.adminToken(adminTokenRequest)
+                .doOnNext(tokenResponse -> {
+                    log.debug("updated admin token: {}", tokenResponse.accessToken());
+                    tokenHolder.update(
+                            tokenResponse.accessToken(),
+                            tokenResponse.expiresIn()
+                    );
+                })
+                .map(KeycloakTokenResponse::accessToken);
     }
 
     private KeycloakUserTokenRequest adminRequestToken() {
-        return KeycloakUserTokenRequest.password(
+        return KeycloakUserTokenRequest.clientCredentials(
                 properties.getKeycloak().getClientId(),
-                properties.getKeycloak().getClientSecret(),
-                properties.getKeycloak().getUsername(),
-                properties.getKeycloak().getPassword()
+                properties.getKeycloak().getClientSecret()
         );
     }
 }

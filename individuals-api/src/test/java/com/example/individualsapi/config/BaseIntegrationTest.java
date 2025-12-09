@@ -73,9 +73,7 @@ public abstract class BaseIntegrationTest {
         String url = URL_TEMPLATE.formatted(keycloak.getHost(), keycloak.getHttpPort(), ADMIN_TOKEN_PATH);
 
         var body = BodyInserters.fromFormData("client_id", CLIENT_ID)
-                .with("grant_type", "password")
-                .with("username", ADMIN)
-                .with("password", PASSWORD)
+                .with("grant_type", "client_credentials")
                 .with("client_secret", CLIENT_SECRET);
 
         return WebClient.create(url)

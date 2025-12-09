@@ -28,6 +28,7 @@ public class PersonMapper {
         if (Objects.nonNull(addressRequest)) {
             var address = new AddressRequest();
             address.setCity(addressRequest.getCity());
+            address.setAddress(addressRequest.getAddress());
             address.setCountry(addressRequest.getCountry());
             address.setState(addressRequest.getState());
             address.setZipCode(addressRequest.getZipCode());
@@ -53,6 +54,7 @@ public class PersonMapper {
         var individualAddress = individual.getAddress();
         if (individualAddress != null) {
             var address = new UserResponseAddress();
+            address.setId(individualAddress.getId());
             address.setAddress(individualAddress.getAddress());
             address.setCity(individualAddress.getCity());
             address.setCountry(individualAddress.getCountry());

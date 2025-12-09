@@ -3,6 +3,7 @@ package com.example.individualsapi.controller;
 import com.example.individuals.dto.TokenResponse;
 import com.example.individuals.dto.UserRequest;
 import com.example.individualsapi.config.AppTestConfig;
+import com.example.individualsapi.configuration.AdminTokenHolder;
 import com.example.individualsapi.configuration.SecurityConfig;
 import com.example.individualsapi.exception.AccessDeniedException;
 import com.example.individualsapi.exception.BadRequestException;
@@ -10,6 +11,7 @@ import com.example.individualsapi.exception.ExternalService;
 import com.example.individualsapi.exception.ExternalServiceUnavailableException;
 import com.example.individualsapi.mapper.KeycloakMapper;
 import com.example.individualsapi.mapper.PersonMapper;
+import com.example.individualsapi.service.TokenService;
 import com.example.individualsapi.service.UserService;
 import com.example.person.dto.IndividualResponse;
 import org.hamcrest.core.IsEqual;
@@ -49,6 +51,10 @@ class PersonControllerTest {
     ReactiveJwtDecoder decoder;
     @Autowired
     WebTestClient client;
+    @MockitoBean
+    TokenService tokenService;
+    @MockitoBean
+    AdminTokenHolder tokenHolder;
 
     private static final UUID individualId = UUID.fromString("00000000-0000-0000-0000-000000000000");
 

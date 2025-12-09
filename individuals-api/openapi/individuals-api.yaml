@@ -403,6 +403,9 @@ components:
         created_at:
           type: string
           format: date-time
+        individualId:
+          type: string
+          format: uuid
 
     AddressRequest:
       type: object
