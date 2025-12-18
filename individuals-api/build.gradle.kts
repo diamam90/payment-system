@@ -95,6 +95,9 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
+tasks.bootJar {
+    archiveBaseName = "individuals-api"
+}
 
 /*
    =================OPEN API GENERATION=================

@@ -23,6 +23,7 @@ plugins {
 group = "com.example"
 version = "1.0.0-SNAPSHOT"
 
+
 repositories {
     mavenCentral()
     mavenLocal()
@@ -77,6 +78,7 @@ java {
         languageVersion.set(JavaLanguageVersion.of(24))
     }
 }
+
 
 tasks.test {
     useJUnitPlatform()
@@ -154,9 +156,14 @@ sourceSets {
     }
 }
 
-//tasks.named("build") {
-//    dependsOn(jars)
-//}
+tasks.bootJar {
+    archiveBaseName = "person-service"
+}
+
+
+tasks.named("build") {
+    dependsOn(jars)
+}
 
 val jars = specifications.map { spec ->
     val specName = spec.nameWithoutExtension

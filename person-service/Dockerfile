@@ -1,15 +1,14 @@
-FROM gradle:jdk24-corretto AS build
-
+FROM gradle:jdk24-corretto-al2023 AS build
+ARG VERSION
+RUN echo "Building person-service version $VERSION"
 WORKDIR /source
-
 COPY . .
-RUN gradle clean build -x test
+RUN gradle clean build --no-daemon -x test
 
 FROM eclipse-temurin:24-alpine
-WORKDIR /app
-
-COPY --from=build /source/build/libs/person-service-1.0.0-SNAPSHOT.jar /app/app.jar
+ARG VERSION
 EXPOSE 8082
-
+WORKDIR /app
+COPY --from=build /source/build/libs/person-service-${VERSION}.jar /app/app.jar
 CMD ["java", "-jar", "/app/app.jar"]
 

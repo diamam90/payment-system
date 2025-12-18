@@ -25,7 +25,7 @@ public class AppProperties {
 
     @Getter
     @Setter
-    public static class PersonServiceProperties{
+    public static class PersonServiceProperties {
         private String baseUrl;
     }
 }

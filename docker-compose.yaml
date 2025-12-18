@@ -1,6 +1,9 @@
 services:
   individuals-api:
-    build: ./individuals-api
+    build:
+      context: ./individuals-api
+      args:
+        VERSION: 1.0.0-SNAPSHOT
     container_name: individuals-api
     ports:
       - "8081:8081"
@@ -174,14 +177,17 @@ services:
       - payment_system_network
 
   person-service:
-    build: ./person-service
+    build:
+      context: ./person-service
+      args:
+        VERSION: 1.0.0-SNAPSHOT
     container_name: person-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
     ports:
       - "8082:8082"
     healthcheck:
-      test: [ "CMD","curl","-I","http://localhost:8082/actuator/health" ]
+      test: [ "CMD","wget","--spider","localhost:8082/actuator/health" ]
       interval: 10s
       timeout: 5s
       retries: 5

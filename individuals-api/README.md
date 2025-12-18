@@ -25,9 +25,9 @@
 ![Логин пользователя](../diagram/flowpictures/user-info.png)
 
 Для запуска проекта необходимо:
-1. Установить [Docker Desktop](https://docs.docker.com/get-started/introduction/get-docker-desktop/)
-2. Установить плагин 
-```docker plugin install grafana/loki-docker-driver --alias loki --grant-all-permissions``` 
-для возможности отправки логов в Loki 
-3. Выполнить команду 
-```docker compose up -d```
+1. docker compose up -d nexus grafana keycloak
+2. Зайти в nexus http://localhost:8800 под учеткой администратора (admin,admin) 
+и принять соглашение EULA 
+3. gradle :person-service:clean :person-service:build
+4. gradle :person-service:publish
+5. docker compose up -d individuals-api
