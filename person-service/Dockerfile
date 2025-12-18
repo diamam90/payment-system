@@ -1,18 +1,15 @@
-FROM gradle:jdk24-corretto-al2023 AS build
+FROM gradle:jdk24-corretto AS build
 
-WORKDIR /app
+WORKDIR /source
 
-COPY . /app
-
-RUN gradle build --no-daemon
+COPY . .
+RUN gradle clean build -x test
 
 FROM eclipse-temurin:24-alpine
-
-EXPOSE 8081
-
 WORKDIR /app
 
-COPY --from=build /app/build/libs/person-service-1.0.0-SNAPSHOT.jar /app/app.jar
+COPY --from=build /source/build/libs/person-service-1.0.0-SNAPSHOT.jar /app/app.jar
+EXPOSE 8082
 
 CMD ["java", "-jar", "/app/app.jar"]
 

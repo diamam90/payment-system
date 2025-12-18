@@ -70,6 +70,8 @@ public class SecurityConfig {
     private void applyUnsecuredPath
             (AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry registry) {
         registry.requestMatchers(HttpMethod.POST, "/api/v1/individuals").permitAll();
+        registry.requestMatchers("/actuator/health").permitAll();
+        registry.requestMatchers("/actuator/prometheus").permitAll();
     }
 
     private void applySecuredPath

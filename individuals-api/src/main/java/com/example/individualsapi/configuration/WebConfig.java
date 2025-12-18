@@ -1,5 +1,6 @@
 package com.example.individualsapi.configuration;
 
+import io.micrometer.observation.ObservationRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -14,11 +15,12 @@ public class WebConfig {
     private final AppProperties properties;
 
     @Bean
-    WebClient keyCloakClient() {
+    WebClient keyCloakClient(ObservationRegistry registry) {
         var baseUrl = properties.getKeycloak().getBaseUrl();
         log.debug("keycloak base url: {}", baseUrl);
         return WebClient.builder()
                 .baseUrl(baseUrl)
+                .observationRegistry(registry)
                 .build();
     }
 }

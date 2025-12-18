@@ -13,6 +13,7 @@ import com.example.individualsapi.mapper.PersonMapper;
 import com.example.individualsapi.service.TokenService;
 import com.example.individualsapi.service.UserService;
 import com.example.person.dto.IndividualResponse;
+import io.micrometer.tracing.annotation.NewSpan;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,6 +36,7 @@ public class UserServiceImpl implements UserService {
 
     private final PersonService personService;
 
+    @NewSpan("user_service.register")
     @RequestCounter(metric = MetricNames.HTTP_REGISTRATION)
     @Override
     public Mono<TokenResponse> register(UserRequest request) {
@@ -56,6 +58,7 @@ public class UserServiceImpl implements UserService {
                 .then(accessToken(request.getEmail(), request.getPassword()));
     }
 
+    @NewSpan("user_service.current_user")
     @Override
     public Mono<UserInfoResponse> currentUser(String keycloakUserId) {
         return tokenService.adminToken()
@@ -65,6 +68,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @NewSpan("user_service.update_user")
     @PreAuthorize("hasAuthority('person_service_wr') || principal.claims['individual_id'] ==  #id.toString()")
     public Mono<IndividualResponse> updateUser(UUID id, UserRequest request) {
         var individualRequest = personMapper.individualRequest(request);
@@ -72,6 +76,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @NewSpan("user_service.delete_user")
     @PreAuthorize("hasAuthority('person_service_wr') || principal.claims['individual_id'] ==  #id.toString()")
     public Mono<Void> deleteUser(UUID id) {
         return Mono.justOrEmpty(personService.deleteById(id))
@@ -90,25 +95,29 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @NewSpan("user_service.find_by_email")
     @PreAuthorize("hasAuthority('person_service_wr')")
     public Mono<IndividualResponse> findByEmail(String email) {
         return Mono.just(personService.findByEmail(email));
     }
 
     @Override
+    @NewSpan("user_service.find_by_id")
     @PreAuthorize("hasAuthority('person_service_wr') || principal.claims['individual_id'] ==  #id.toString()")
     public Mono<IndividualResponse> findById(UUID id) {
         return Mono.just(personService.findById(id));
     }
 
-    @RequestCounter(metric = MetricNames.HTTP_LOGIN)
     @Override
+    @RequestCounter(metric = MetricNames.HTTP_LOGIN)
+    @NewSpan("user_service.access_token")
     public Mono<TokenResponse> accessToken(String email, String password) {
         return tokenService.accessToken(email, password)
                 .map(keycloakMapper::tokenResponse);
     }
 
     @Override
+    @NewSpan("user_service.refresh_token")
     public Mono<TokenResponse> refreshToken(String refreshToken) {
         return tokenService.refreshToken(refreshToken)
                 .map(keycloakMapper::tokenResponse);

@@ -2,12 +2,14 @@ import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 var properties = mapOf(
     "springCloudFeignVersion" to "4.3.0",
+    "feignMicrometerVersion" to "13.6",
     "springDocVersion" to "2.5.0",
     "logbackEncoderVersion" to "8.0",
     "testContainersKeycloakVersion" to "3.4.0",
     "testContainersJunitVersion" to "1.21.3",
     "personServiceApiVersion" to "1.0.0-SNAPSHOT",
-    "wireMockVersion" to "1.0-alpha-13"
+    "wireMockVersion" to "1.0-alpha-13",
+    "nettyDnsResolver" to "4.1.72.Final:osx-aarch_64"
 )
 
 plugins {
@@ -34,6 +36,14 @@ repositories {
         url = uri("http://localhost:8800/repository/maven-snapshots")
         isAllowInsecureProtocol = true
     }
+    maven {
+        url = uri("http://host.docker.internal:8800/repository/maven-releases")
+        isAllowInsecureProtocol = true
+    }
+    maven {
+        url = uri("http://host.docker.internal:8800/repository/maven-snapshots")
+        isAllowInsecureProtocol = true
+    }
 }
 
 java {
@@ -56,6 +66,10 @@ dependencies {
 
     // OBSERVABILITY
     implementation("io.micrometer:micrometer-registry-prometheus")
+    implementation("io.micrometer:micrometer-tracing-bridge-otel")
+    implementation("io.opentelemetry:opentelemetry-exporter-otlp")
+    implementation("io.github.openfeign:feign-micrometer:${properties["feignMicrometerVersion"]}")
+
 
     //  UTIL
 //    implementation(platform("org.axonframework:axon-bom:4.12.1"))
@@ -65,7 +79,7 @@ dependencies {
     implementation("org.projectlombok:lombok")
     implementation("net.logstash.logback:logstash-logback-encoder:${properties["logbackEncoderVersion"]}")
     annotationProcessor("org.projectlombok:lombok")
-    implementation("io.netty:netty-resolver-dns-native-macos:4.1.72.Final:osx-aarch_64")
+    implementation("io.netty:netty-resolver-dns-native-macos:${properties["nettyDnsResolver"]}")
 
     // TEST
     testImplementation("io.projectreactor:reactor-test")

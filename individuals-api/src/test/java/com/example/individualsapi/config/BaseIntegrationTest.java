@@ -45,7 +45,8 @@ public abstract class BaseIntegrationTest {
             .withMappingFromResource("findByEmailIndividual404", BaseIntegrationTest.class, "/mapping/find-by-email-individual-404.json")
             .withMappingFromResource("hardDeleteIndividual", BaseIntegrationTest.class, "/mapping/hard-delete-individual.json")
             .withMappingFromResource("activateIndividual", BaseIntegrationTest.class, "/mapping/activate-individual.json")
-            .withMappingFromResource("softDeleteIndividual", BaseIntegrationTest.class, "/mapping/soft-delete-individual.json");
+            .withMappingFromResource("softDeleteIndividual", BaseIntegrationTest.class, "/mapping/soft-delete-individual.json")
+            .withMappingFromResource("createIndividual503", BaseIntegrationTest.class, "/mapping/create-individual-unavailable.json");
 
     static {
         wiremock.start();

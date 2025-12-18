@@ -107,7 +107,7 @@ class PersonControllerTest {
                 .expectStatus().value(new IsEqual<>(HttpStatus.BAD_GATEWAY.value()))
                 .expectBody().json("""
                             {
-                                "error": "Service Person-service unavailable",
+                                "error": "Service Person-service is unavailable",
                                 "status": 502
                             }
                         """, JsonCompareMode.STRICT);

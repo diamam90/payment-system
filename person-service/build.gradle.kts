@@ -44,6 +44,9 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${properties["springDocVersion"]}")
     implementation("org.projectlombok:lombok")
     implementation("net.logstash.logback:logstash-logback-encoder:${properties["logbackEncoderVersion"]}")
+    implementation("io.micrometer:micrometer-tracing-bridge-otel")
+    implementation("io.micrometer:micrometer-tracing")
+    implementation("io.opentelemetry:opentelemetry-exporter-otlp")
     annotationProcessor("org.projectlombok:lombok")
 
     // UTIL
@@ -151,9 +154,9 @@ sourceSets {
     }
 }
 
-tasks.named("build") {
-    dependsOn(jars)
-}
+//tasks.named("build") {
+//    dependsOn(jars)
+//}
 
 val jars = specifications.map { spec ->
     val specName = spec.nameWithoutExtension

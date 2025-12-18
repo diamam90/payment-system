@@ -5,6 +5,7 @@ import com.example.individualsapi.dto.keycloak.*;
 import com.example.individualsapi.exception.AccessDeniedException;
 import com.example.individualsapi.exception.ExternalService;
 import com.example.individualsapi.exception.ExternalServiceUnavailableException;
+import io.micrometer.tracing.annotation.NewSpan;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -33,6 +34,7 @@ public class KeycloakClient {
     private static final String TOKEN_URI = "/realms/{realm}/protocol/openid-connect/token";
     private static final String ADMIN_TOKEN_URI = "/realms/{realm}/protocol/openid-connect/token";
 
+    @NewSpan("keycloak_client.register")
     public Mono<Void> registration(KeycloakUserRegistrationRequest request, String adminToken) {
         return keycloakClient.post()
                 .uri(USERS_URI, properties.getKeycloak().getRealm())
@@ -42,6 +44,7 @@ public class KeycloakClient {
                 .exchangeToMono(handleMonoResponse(Void.class));
     }
 
+    @NewSpan("keycloak_client.delete_user")
     public Mono<Void> deleteUser(String keycloakUserId, String adminToken) {
         return keycloakClient.delete()
                 .uri(USER_URI, properties.getKeycloak().getRealm(), keycloakUserId)
@@ -49,6 +52,7 @@ public class KeycloakClient {
                 .exchangeToMono(handleMonoResponse(Void.class));
     }
 
+    @NewSpan("keycloak_client.auth")
     public Mono<KeycloakTokenResponse> auth(KeycloakUserTokenRequest request) {
         return keycloakClient.post()
                 .uri(TOKEN_URI, properties.getKeycloak().getRealm())
@@ -57,6 +61,7 @@ public class KeycloakClient {
                 .exchangeToMono(handleMonoResponse(KeycloakTokenResponse.class));
     }
 
+    @NewSpan("keycloak_client.refresh")
     public Mono<KeycloakTokenResponse> refresh(KeycloakUserRefreshTokenRequest request) {
         return keycloakClient.post()
                 .uri(TOKEN_URI, properties.getKeycloak().getRealm())
@@ -65,6 +70,7 @@ public class KeycloakClient {
                 .exchangeToMono(handleMonoResponse(KeycloakTokenResponse.class));
     }
 
+    @NewSpan("keycloak_client.user_info")
     public Mono<KeycloakUserInfoResponse> userInfo(String userId, String token) {
         return keycloakClient.get()
                 .uri(USER_URI, properties.getKeycloak().getRealm(), userId)
@@ -72,6 +78,7 @@ public class KeycloakClient {
                 .exchangeToMono(handleMonoResponse(KeycloakUserInfoResponse.class));
     }
 
+    @NewSpan("keycloak_client.admin_token")
     public Mono<KeycloakTokenResponse> adminToken(KeycloakUserTokenRequest adminTokenRequest) {
         return keycloakClient.post()
                 .uri(ADMIN_TOKEN_URI, properties.getKeycloak().getRealm())
@@ -80,6 +87,7 @@ public class KeycloakClient {
                 .exchangeToMono(handleMonoResponse(KeycloakTokenResponse.class));
     }
 
+    @NewSpan("keycloak_client.find_by_individual_id")
     public Flux<KeycloakUserInfoResponse> findByIndividualId(UUID individualId, String adminToken) {
         return keycloakClient.get()
                 .uri(USERS_URI + "?q=individualId:{individualId}", properties.getKeycloak().getRealm(), individualId)

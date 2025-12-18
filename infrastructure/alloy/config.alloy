@@ -9,6 +9,11 @@ prometheus.scrape "scraper" {
             "__metrics_path__" = "/actuator/prometheus",
             "instance" = "individuals-api",
         },
+        {
+            "__address__" = "person-service:8082",
+            "__metrics_path__" = "/actuator/prometheus",
+            "instance" = "person-service",
+        },
     ]
     scrape_interval = "10s"
     scrape_timeout = "5s"
@@ -21,6 +26,22 @@ prometheus.remote_write "writer" {
         url = "http://prometheus:9090/api/v1/write"
     }
 }
+
+prometheus.scrape "psdbs" {
+    targets = prometheus.exporter.postgres.psdbs.targets
+    scrape_interval = "10s"
+    scrape_timeout = "5s"
+
+    forward_to = [prometheus.remote_write.writer.receiver]
+}
+
+prometheus.exporter.postgres "psdbs" {
+  data_source_names = [
+    "postgresql://keycloak:keycloak@keycloak-postgres:5432/keycloak?sslmode=disable",
+    "postgresql://personadmin:personadmin@person-db:5432/person?sslmode=disable",
+  ]
+}
+
 
 // ###############################
 // #### Logging Configuration ####

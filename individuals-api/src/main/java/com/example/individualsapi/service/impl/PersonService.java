@@ -8,6 +8,7 @@ import com.example.person.dto.IndividualRequest;
 import com.example.person.dto.IndividualResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.FeignException;
+import io.micrometer.tracing.annotation.NewSpan;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -29,25 +30,28 @@ public class PersonService {
 
     private static final ExternalService SERVICE = ExternalService.PERSON_SERVICE;
 
-
+    @NewSpan("person_service.create")
     public IndividualResponse create(IndividualRequest request) {
         var individual = executeRequest(() -> individualClient.create(request));
         log.debug("Individual {} created in person service", individual);
         return individual;
     }
 
+    @NewSpan("person_service.update")
     public IndividualResponse update(UUID id, IndividualRequest request) {
         var individual = executeRequest(() -> individualClient.update(id, request));
         log.debug("Individual {} updated in person service", individual);
         return individual;
     }
 
+    @NewSpan("person_service.find_by_id")
     public IndividualResponse findById(UUID id) {
         var individual = executeRequest(() -> individualClient.findById(id));
         log.debug("Individual {} founded by ID in person service", individual);
         return individual;
     }
 
+    @NewSpan("person_service.find_by_email")
     public IndividualResponse findByEmail(String email) {
         var individual = executeRequest(() -> individualClient.findBy(email));
         log.debug("Individual {} founded by email in person service", individual);
@@ -55,24 +59,26 @@ public class PersonService {
     }
 
 
+    @NewSpan("person_service.delete_by_id")
     public Void deleteById(UUID id) {
         var result = executeRequest(() -> individualClient.deleteById(id));
         log.debug("Individual with Id {} deleted in person service", id);
         return result;
     }
 
+    @NewSpan("person_service.compensate_creation")
     public Void compensateCreation(UUID id) {
         var result = executeRequest(() -> privateClient.hardDelete(id));
         log.debug("Individual creation with Id {} compensated in person service", id);
         return result;
     }
 
+    @NewSpan("person_service.compensate_deletion")
     public Void compensateDeletion(UUID id) {
         var result = executeRequest(() -> privateClient.activateUser(id));
         log.debug("Individual deletion with Id {} compensated in person service", id);
         return result;
     }
-
 
     private <T> T executeRequest(Supplier<ResponseEntity<T>> execution) {
         try {
@@ -94,7 +100,9 @@ public class PersonService {
                     throw new ObjectNotFoundException(SERVICE, errorResponse.getError());
                 }
             }
-
+            throw new ExternalServiceUnavailableException(ExternalService.PERSON_SERVICE);
+        } catch (FeignException ex) {
+            log.error("{} returns error: {}", ExternalService.PERSON_SERVICE.getServiceName(), ex.getMessage());
             throw new ExternalServiceUnavailableException(ExternalService.PERSON_SERVICE);
         }
     }

@@ -15,3 +15,12 @@ datasources:
     jsonData:
       httpMethod: POST
       timeInterval: 10s
+
+  - name: tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    basicAuth: false
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: 'loki'

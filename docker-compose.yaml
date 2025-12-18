@@ -17,8 +17,10 @@ services:
         condition: service_healthy
       person-service:
         condition: service_healthy
+      tempo:
+        condition: service_started
     healthcheck:
-      test: ["CMD","wget","--spider","localhost:8081/actuator/health"]
+      test: [ "CMD","wget","--spider","localhost:8081/actuator/health" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -44,7 +46,7 @@ services:
       keycloak-postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", 'exec 3<>/dev/tcp/localhost/8080; echo -e "GET /health/ready HTTP/1.1\nhost: localhost:8080\n" >&3; timeout --preserve-status 1 cat <&3 | grep -m 1 status | grep -m 1 UP; ERROR=$?; exec 3<&-; exec 3>&-; exit $ERROR']
+      test: [ "CMD-SHELL", 'exec 3<>/dev/tcp/localhost/8080; echo -e "GET /health/ready HTTP/1.1\nhost: localhost:8080\n" >&3; timeout --preserve-status 1 cat <&3 | grep -m 1 status | grep -m 1 UP; ERROR=$?; exec 3<&-; exec 3>&-; exit $ERROR' ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -61,7 +63,7 @@ services:
     ports:
       - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      test: [ "CMD-SHELL", "pg_isready -U keycloak" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -108,7 +110,7 @@ services:
     volumes:
       - ./infrastructure/loki/local-config.yaml:/etc/loki/local-config.yaml
     healthcheck:
-      test: ["CMD", "wget","--spider", "http://localhost:3100/ready"]
+      test: [ "CMD", "wget","--spider", "http://localhost:3100/ready" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -125,6 +127,10 @@ services:
         condition: service_healthy
       loki:
         condition: service_healthy
+      tempo:
+        condition: service_started
+      alloy:
+        condition: service_started
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
@@ -132,10 +138,22 @@ services:
       - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning
       - ./infrastructure/grafana/dashboards:/var/lib/dashboards
     healthcheck:
-      test: ["CMD","wget","--spider","http://localhost:3000/api/heatlh"]
+      test: [ "CMD","wget","--spider","http://localhost:3000/api/heatlh" ]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - payment_system_network
+
+  tempo:
+    image: grafana/tempo:main-d1ec3c6
+    container_name: tempo
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    ports:
+      - "3200:3200"
+      - "4318:4318"
+    volumes:
+      - ./infrastructure/tempo/tempo.yaml:/etc/tempo.yaml
     networks:
       - payment_system_network
 
@@ -148,7 +166,7 @@ services:
       NEXUS_SECURITY_INITIAL_PASSWORD: admin
       NEXUS_SECURITY_RANDOMPASSWORD: false
     healthcheck:
-      test: ["CMD","curl","-I","http://localhost:8081/service/rest/v1/status"]
+      test: [ "CMD","curl","-I","http://localhost:8081/service/rest/v1/status" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -163,7 +181,7 @@ services:
     ports:
       - "8082:8082"
     healthcheck:
-      test: ["CMD","curl","-I","http://localhost:8082/actuator/health"]
+      test: [ "CMD","curl","-I","http://localhost:8082/actuator/health" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -183,7 +201,7 @@ services:
     ports:
       - "5434:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -d person -U personadmin"]
+      test: [ "CMD-SHELL", "pg_isready -d person -U personadmin" ]
       interval: 10s
       timeout: 5s
       retries: 5

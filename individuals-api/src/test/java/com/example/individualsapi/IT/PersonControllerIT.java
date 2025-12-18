@@ -121,6 +121,27 @@ public class PersonControllerIT extends BaseIntegrationTest {
     }
 
     @Test
+    void registration_WhenPersonServiceIsUnavailable_ShouldReturn502() {
+        var requestBody = userRequestUnavailable();
+        // when
+        ErrorResponse errorResponse = client.post()
+                .uri("/api/v1/individuals")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestBody)
+                .exchange()
+                .expectStatus().is5xxServerError()
+                .returnResult(ErrorResponse.class)
+                .getResponseBody().blockFirst();
+        // then
+        assertThat(errorResponse)
+                .hasFieldOrPropertyWithValue("status", 502)
+                .hasFieldOrPropertyWithValue("error", "Service Person-service is unavailable");
+
+        verify(personService, never()).compensateCreation(any());
+        verify(keycloakClient, never()).registration(any(), any());
+    }
+
+    @Test
     void shouldUpdate() {
         // given
         var requestBody = userRequest();
@@ -334,6 +355,23 @@ public class PersonControllerIT extends BaseIntegrationTest {
         return """
                     {
                         "email": "user@aaa.ru",
+                        "password": "34222",
+                        "confirmPassword": "34222",
+                        "secretKey": "super secret",
+                        "firstName" : "alex",
+                        "lastName": "Ivanov",
+                        "passportNumber": "12211",
+                        "phoneNumber": "880009000",
+                        "verifiedAt": "2020-05-05T10:00:00Z",
+                        "archivedAt": "2020-05-05T10:00:00Z"
+                    }
+                """;
+    }
+
+    private String userRequestUnavailable() {
+        return """
+                    {
+                        "email": "person@service.unavailable",
                         "password": "34222",
                         "confirmPassword": "34222",
                         "secretKey": "super secret",

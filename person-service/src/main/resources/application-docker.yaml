@@ -16,3 +16,8 @@ spring:
     url: jdbc:postgresql://person-db:5432/person
     user: personadmin
     password: personadmin
+
+management:
+  otlp:
+    tracing:
+      endpoint: http://tempo:4318/v1/traces

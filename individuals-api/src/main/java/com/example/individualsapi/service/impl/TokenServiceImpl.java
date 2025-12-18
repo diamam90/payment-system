@@ -7,10 +7,13 @@ import com.example.individualsapi.dto.keycloak.KeycloakTokenResponse;
 import com.example.individualsapi.dto.keycloak.KeycloakUserRefreshTokenRequest;
 import com.example.individualsapi.dto.keycloak.KeycloakUserTokenRequest;
 import com.example.individualsapi.service.TokenService;
+import io.micrometer.context.ContextRegistry;
+import io.micrometer.tracing.annotation.NewSpan;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import reactor.util.context.Context;
 
 @Slf4j
 @Service
@@ -22,6 +25,7 @@ public class TokenServiceImpl implements TokenService {
     private final AdminTokenHolder tokenHolder;
 
     @Override
+    @NewSpan("token_service.access_token")
     public Mono<KeycloakTokenResponse> accessToken(String email, String password) {
         var request = KeycloakUserTokenRequest.password(
                 properties.getKeycloak().getClientId(),
@@ -35,6 +39,7 @@ public class TokenServiceImpl implements TokenService {
     }
 
     @Override
+    @NewSpan("token_service.refresh_token")
     public Mono<KeycloakTokenResponse> refreshToken(String refreshToken) {
         var request = KeycloakUserRefreshTokenRequest.refreshToken(
                 properties.getKeycloak().getClientId(),
@@ -47,6 +52,7 @@ public class TokenServiceImpl implements TokenService {
     }
 
     @Override
+    @NewSpan("token_service.admin_token")
     public Mono<String> adminToken() {
         if (!tokenHolder.isExpired()) {
             return Mono.just(tokenHolder.getAccessToken());
