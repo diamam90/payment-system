@@ -16,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.testcontainers.junit.jupiter.EnabledIfDockerAvailable;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -27,6 +28,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+@EnabledIfDockerAvailable
 @AutoConfigureWebTestClient
 public class PersonControllerIT extends BaseIntegrationTest {
 

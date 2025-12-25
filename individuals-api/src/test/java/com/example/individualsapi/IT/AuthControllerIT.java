@@ -14,6 +14,7 @@ import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWeb
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.testcontainers.junit.jupiter.EnabledIfDockerAvailable;
 
 import java.util.UUID;
 import java.util.function.Function;
@@ -22,7 +23,7 @@ import java.util.function.Supplier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-
+@EnabledIfDockerAvailable
 @AutoConfigureWebTestClient
 public class AuthControllerIT extends BaseIntegrationTest {
 
