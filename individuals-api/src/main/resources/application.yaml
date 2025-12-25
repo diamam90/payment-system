@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: individuals_api
+    name: individuals-api
   security:
     oauth2:
       resourceserver:

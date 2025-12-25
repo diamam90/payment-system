@@ -1,0 +1,9 @@
+apiVersion: 1
+
+providers:
+  - name : 'payment system'
+    orgId: 1
+    disableDashboardDeletion: true
+    options:
+      foldersFromFileStructure: true
+      path:  /var/lib/dashboards
