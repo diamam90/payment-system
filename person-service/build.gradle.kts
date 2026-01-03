@@ -79,7 +79,6 @@ java {
     }
 }
 
-
 tasks.test {
     useJUnitPlatform()
 }
@@ -87,7 +86,7 @@ tasks.test {
 
 /*
    =================OPEN API GENERATION=================
- */
+*/
 
 val inputSpecDir = file("$projectDir/openapi")
 val specifications = inputSpecDir.listFiles { file -> file.extension in listOf("yaml", "yml") } ?: emptyArray()
@@ -156,11 +155,6 @@ sourceSets {
     }
 }
 
-tasks.bootJar {
-    archiveBaseName = "person-service"
-}
-
-
 tasks.named("build") {
     dependsOn(jars)
 }
@@ -189,7 +183,7 @@ val jars = specifications.map { spec ->
     tasks.register<Jar>(jarTaskName) {
         archiveBaseName.set(specName)
         archiveClassifier.set("")
-        destinationDirectory.set(layout.buildDirectory.dir("libs"))
+        destinationDirectory.set(layout.buildDirectory.dir("libs/pub"))
         val sourceDir = layout.buildDirectory.dir("classes/${specName}")
         from(sourceDir)
         dependsOn(tasks[compileTaskName])
@@ -210,13 +204,30 @@ tasks.compileJava {
 
 /*
    =================NEXUS PUBLISH=================
- */
+*/
+
+file(".env").takeIf { it.exists() }?.readLines()?.forEach {
+    var (k, v) = it.split("=", limit = 2)
+    System.setProperty(k.trim(), v.trim())
+    logger.lifecycle("${k.trim()}=${v.trim()}")
+}
+
+val nexusUrl = System.getenv("NEXUS_URL") ?: System.getProperty("NEXUS_URL")
+val nexusUser = System.getenv("NEXUS_USERNAME") ?: System.getProperty("NEXUS_USERNAME")
+val nexusPassword = System.getenv("NEXUS_PASSWORD") ?: System.getProperty("NEXUS_PASSWORD")
+
+if (nexusUrl.isNullOrBlank() || nexusUser.isNullOrBlank() || nexusPassword.isNullOrBlank()) {
+    throw GradleException(
+        "NEXUS details are not set. Create a .env file with correct properties: " +
+                "NEXUS_URL, NEXUS_USERNAME, NEXUS_PASSWORD"
+    )
+}
 
 publishing {
     publications {
         specifications.forEach { spec ->
             val specName = spec.nameWithoutExtension
-            val jarFile = file("build/libs").listFiles()
+            val jarFile = file("build/libs/pub").listFiles()
                 ?.firstOrNull { it.name.contains(specName) && (it.extension == "jar" || it.extension == "zip") }
             if (jarFile != null) {
                 val publishTaskName = buildPublishTaskName(specName)
@@ -238,13 +249,11 @@ publishing {
     repositories {
         maven {
             name = "nexus"
-            val snapshotUri = uri("http://localhost:8800/repository/maven-snapshots/")
-            val releasesUri = uri("http://localhost:8800/repository/maven-releases/")
-            url = if (version.toString().endsWith("SNAPSHOT")) snapshotUri else releasesUri
+            url = uri(nexusUrl)
             isAllowInsecureProtocol = true
             credentials {
-                username = "admin"
-                password = "admin"
+                username = nexusUser
+                password = nexusPassword
             }
         }
     }

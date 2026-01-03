@@ -1,10 +1,10 @@
 @startuml
 actor Client
-participant API
+participant IndividualsApi
 participant Keycloak
 
-Client -> API: GET /api/v1/me (JWT)
-API -> Keycloak: getUserInfo
-Keycloak -> API: UserRepresentation
-API -> Client: UserInfo
+Client -> IndividualsApi: GET /IndividualsApi/v1/me (JWT)
+IndividualsApi -> Keycloak: getUserInfo
+Keycloak -> IndividualsApi: UserRepresentation
+IndividualsApi -> Client: UserInfo
 @enduml

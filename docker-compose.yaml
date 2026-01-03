@@ -2,8 +2,6 @@ services:
   individuals-api:
     build:
       context: ./individuals-api
-      args:
-        VERSION: 1.0.0-SNAPSHOT
     container_name: individuals-api
     ports:
       - "8081:8081"
@@ -161,7 +159,8 @@ services:
       - payment_system_network
 
   nexus:
-    image: sonatype/nexus3:3.85.0-alpine
+    # image: sonatype/nexus3:3.85.0 
+    image: sonatype/nexus3:3.76.0
     container_name: nexus
     ports:
       - "8800:8081"
@@ -179,8 +178,6 @@ services:
   person-service:
     build:
       context: ./person-service
-      args:
-        VERSION: 1.0.0-SNAPSHOT
     container_name: person-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -217,7 +214,6 @@ services:
 networks:
   payment_system_network:
     driver: bridge
-
 #  axon-server:
 #    image: axoniq/axonserver:2025.2.0-nonroot
 #    container_name: axon

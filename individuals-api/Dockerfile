@@ -1,14 +1,30 @@
 FROM gradle:jdk24-corretto-al2023 AS build
-ARG VERSION
-RUN echo "Building individuals-api version $VERSION"
-WORKDIR /source
-COPY . .
+
+ARG NEXUS_URL=http://host.docker.internal:8800/repository/maven-snapshots
+ARG NEXUS_USERNAME=admin
+ARG NEXUS_PASSWORD=admin
+
+ENV NEXUS_URL=${NEXUS_URL}
+ENV NEXUS_USERNAME=${NEXUS_USERNAME}
+ENV NEXUS_PASSWORD=${NEXUS_PASSWORD}
+
+WORKDIR /home/gradle/project
+
+COPY build.gradle.kts .
+COPY settings.gradle.kts .
+COPY src ./src
+COPY openapi ./openapi
+
 RUN gradle clean build --no-daemon -x test
 
-FROM eclipse-temurin:24-alpine
-ARG VERSION
-EXPOSE 8081
+FROM eclipse-temurin:24-jre
+
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
-COPY --from=build /source/build/libs/individuals-api-${VERSION}.jar /app/app.jar
+
+COPY --from=build /home/gradle/project/build/libs/*.jar /app/app.jar
+
+EXPOSE 8081
 CMD ["java", "-jar", "/app/app.jar"]
 

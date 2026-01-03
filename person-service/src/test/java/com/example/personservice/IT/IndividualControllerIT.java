@@ -169,7 +169,6 @@ public class IndividualControllerIT {
     }
 
 
-
     @Test
     void update_whenIdNotFound_shouldReturn404() {
         // given

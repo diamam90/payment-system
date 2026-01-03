@@ -3,10 +3,10 @@ actor Client
 participant IndividualsApi
 participant PersonService
 
-Client -> IndividualsApi: GET /api/v1/users?filter (JWT)
+Client -> IndividualsApi: GET /api/v1/users/individualId (JWT)
 IndividualsApi-> IndividualsApi: autorization
 alt access granted
-    IndividualsApi -> PersonService: GET /api/v1/users?filter
+    IndividualsApi -> PersonService: GET /api/v1/individuals/individualId
 
     alt PersonService success
         PersonService -> IndividualsApi: Individual
