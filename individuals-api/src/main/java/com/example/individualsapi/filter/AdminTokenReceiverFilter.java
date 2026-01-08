@@ -20,6 +20,11 @@ public class AdminTokenReceiverFilter implements WebFilter {
     @NewSpan("individuals_api_admin_filter")
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+        // skip actuator requests
+        if (exchange.getRequest().getURI().toString().contains("/actuator")) {
+            return chain.filter(exchange);
+        }
+
         if (!tokenHolder.isExpired()) {
             return chain.filter(exchange);
         } else {
