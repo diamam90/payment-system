@@ -9,7 +9,8 @@ var properties = mapOf(
     "testContainersJunitVersion" to "1.21.3",
     "personServiceApiVersion" to "1.0.0-SNAPSHOT",
     "wireMockVersion" to "1.0-alpha-13",
-    "nettyDnsResolver" to "4.1.72.Final:osx-aarch_64"
+    "nettyDnsResolver" to "4.1.72.Final:osx-aarch_64",
+    "archunitVersion" to "1.4.1"
 )
 
 plugins {
@@ -88,6 +89,7 @@ dependencies {
     testImplementation("com.github.dasniko:testcontainers-keycloak:${properties["testContainersKeycloakVersion"]}")
     testImplementation("org.testcontainers:junit-jupiter:${properties["testContainersJunitVersion"]}")
     testImplementation("org.wiremock.integrations.testcontainers:wiremock-testcontainers-module:${properties["wireMockVersion"]}")
+    testImplementation("com.tngtech.archunit:archunit:${properties["archunitVersion"]}")
 //    testImplementation("org.axonframework:axon-test")
 }
 

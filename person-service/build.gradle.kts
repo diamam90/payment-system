@@ -8,7 +8,8 @@ var properties = mapOf(
     "flywayVersion" to "11.14.0",
     "postgresVersion" to "42.7.7",
     "testContainersKeycloakVersion" to "3.4.0",
-    "keycloakAdminVersion" to "12.0.2"
+    "keycloakAdminVersion" to "12.0.2",
+    "archunitVersion" to "1.4.1"
 )
 
 plugins {
@@ -71,6 +72,7 @@ dependencies {
     testImplementation("org.keycloak:keycloak-admin-client:${properties["keycloakAdminVersion"]}")
     testImplementation("org.testcontainers:junit-jupiter:${properties["testContainerVersion"]}")
     testImplementation("org.testcontainers:postgresql:${properties["testContainerVersion"]}")
+    testImplementation("com.tngtech.archunit:archunit:${properties["archunitVersion"]}")
 }
 
 java {
