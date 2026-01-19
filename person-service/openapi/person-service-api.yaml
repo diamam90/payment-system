@@ -1,0 +1,278 @@
+openapi: 3.0.0
+info:
+  title: Person API
+  description: REST API для операций с физ. лицами
+  version: 1.0.0
+
+tags:
+  - name: individuals
+  - name: private
+
+
+servers:
+  - url: http://localhost:8082
+
+paths:
+  /api/v1/individuals:
+    post:
+      tags: [ "individuals" ]
+      summary: Создание физ. лица
+      operationId: create
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IndividualRequest'
+      responses:
+        '201':
+          description: Успешное создание физ. лица
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndividualResponse'
+        '400':
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Физ. лица уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags: [ "individuals" ]
+      summary: Поиск физ. лица email
+      operationId: findBy
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: email
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Успешный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndividualResponse'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/individuals/{id}:
+    post:
+      operationId: update
+      tags: [ "individuals" ]
+      summary: Обновление физ. лица
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IndividualRequest'
+      responses:
+        '200':
+          description: Физ. лицо обновлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndividualResponse'
+        '404':
+          description: Физ. лицо не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags: [ "individuals" ]
+      summary: Получение физ. лица по идентификатору
+      operationId: findById
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Физ. лицо
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndividualResponse'
+    delete:
+      tags: [ "individuals" ]
+      summary: Удаление физ. лица (софт)
+      operationId: deleteById
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Физ. лицо успешно удалено
+  /private/api/v1/individuals/{id}:
+    delete:
+      tags: [ "private" ]
+      summary: "Полное удаление пользователя"
+      operationId: hardDelete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Физ. лицо успешно удалено
+    post:
+      tags: ["private"]
+      operationId: activateUser
+      summary: Перевод физ. лица в статус active
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Физ. лицо переведено в статус active
+        '404':
+          description: Физ. лицо не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: Bearer
+      bearerFormat: JWT
+
+  schemas:
+    IndividualRequest:
+      type: object
+      required: [ archivedAt,verifiedAt ]
+      properties:
+        email:
+          type: string
+          format: email
+        secretKey:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        passportNumber:
+          type: string
+        phoneNumber:
+          type: string
+        verifiedAt:
+          type: string
+          format: date-time
+        archivedAt:
+          type: string
+          format: date-time
+        address:
+          $ref: "#/components/schemas/AddressRequest"
+
+    AddressRequest:
+      type: object
+      required: [ archived ]
+      properties:
+        country:
+          type: string
+        address:
+          type: string
+        zipCode:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        archived:
+          type: string
+          format: date-time
+
+    IndividualResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        secretKey:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        passportNumber:
+          type: string
+        phoneNumber:
+          type: string
+        verifiedAt:
+          type: string
+          format: date-time
+        archivedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+        address:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            country:
+              type: string
+            address:
+              type: string
+            zipCode:
+              type: string
+            city:
+              type: string
+            state:
+              type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        status:
+          type: integer

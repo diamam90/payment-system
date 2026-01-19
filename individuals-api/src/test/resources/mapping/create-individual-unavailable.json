@@ -1,0 +1,17 @@
+{
+  "request": {
+    "urlPath": "/api/v1/individuals",
+    "method": "POST",
+    "bodyPatterns": [
+      {
+        "matchesJsonPath": {
+          "expression": "$.email",
+          "equalTo": "person@service.unavailable"
+        }
+      }
+    ]
+  },
+  "response": {
+    "status": 503
+  }
+}

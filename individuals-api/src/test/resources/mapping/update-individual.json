@@ -1,0 +1,28 @@
+{
+  "request": {
+    "urlPathTemplate": "/api/v1/individuals/{individualId}",
+    "pathParameters": {
+      "individualId": {
+        "equalTo": "00000000-0000-0000-0000-000011110000"
+      }
+    },
+    "method": "POST"
+  },
+  "response": {
+    "status": 201,
+    "jsonBody": {
+      "id": "{{request.path.[3]}}",
+      "email": "{{jsonPath request.body '$.email'}}",
+      "firstName": "{{jsonPath request.body '$.firstName'}}",
+      "lastName": "{{jsonPath request.body '$.lastName'}}",
+      "passportNumber": "{{jsonPath  request.body '$.passportNumber'}}",
+      "phoneNumber": "{{jsonPath request.body '$.phoneNumber'}}",
+      "verifiedAt": "{{jsonPath request.body '$.verifiedAt'}}",
+      "archivedAt": "{{jsonPath request.body '$.archivedAt'}}"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "transformers": ["response-template"]
+  }
+}

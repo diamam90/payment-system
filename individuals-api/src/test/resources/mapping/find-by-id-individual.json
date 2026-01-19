@@ -1,0 +1,29 @@
+{
+  "request": {
+    "urlPathTemplate": "/api/v1/individuals/{individualId}",
+    "method": "GET",
+    "pathParameters": {
+      "individualId": {
+         "equalTo": "00000000-0000-0000-0000-000000000003"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": {
+      "id": "00000000-0000-0000-0000-000000000003",
+      "email": "user@aaa.ru",
+      "secretKey": "tsssss",
+      "firstName": "Fedor",
+      "lastName": "Petrov",
+      "passportNumber": "20200202",
+      "phoneNumber": "+79009201",
+      "verifiedAt": "2025-12-31T22:00:45.35+04:00",
+      "archivedAt": "2025-12-31T22:00:45.35+04:00"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "transformers": ["response-template"]
+  }
+}

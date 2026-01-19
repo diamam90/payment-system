@@ -5,41 +5,20 @@ info:
   version: 1.0.0
 
 servers:
-  - url: http://localhost:8081/v1
+  - url: http://localhost:8081
+
+tags:
+  - name: person-service
+    description: Взаимодействие с сервисом пользователей
+  - name: auth
+    description: Регистрация пользователя
 
 paths:
-  /auth/registration:
+  /api/v1/auth/login:
     post:
-      summary: Регистрация пользователя
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserRegistrationRequest'
-      responses:
-        '201':
-          description: Успешная регистрация
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TokenResponse'
-        '400':
-          description: Ошибка валидации
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
-          description: Пользователь уже существует
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /auth/login:
-    post:
+      tags: [auth]
       summary: Аутентификация пользователя
+      operationId: login
       requestBody:
         required: true
         content:
@@ -60,9 +39,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /auth/refresh-token:
+  /api/v1/auth/refresh-token:
     post:
+      tags: [auth]
+      security:
+        - bearerAuth: [ ]
       summary: Обновление токена доступа
+      operationId: refreshToken
       requestBody:
         required: true
         content:
@@ -83,11 +66,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /auth/me:
+  /api/v1/auth/me:
     get:
+      tags: [auth]
       summary: Получение данных текущего пользователя
+      operationId: me
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       responses:
         '200':
           description: Данные пользователя
@@ -108,6 +93,182 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/individuals:
+    get:
+      tags: [person-service]
+      summary: Поиск пользователя по электронной почте
+      operationId: findIndividualByEmail
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+            format: email
+      responses:
+        '200':
+          description: Успешный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+
+    post:
+      tags: [person-service]
+      summary: Создание пользователя
+      operationId: createIndividual
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+      responses:
+        '201':
+          description: Успешное создание
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+
+  /api/v1/individuals/{individualId}:
+    get:
+      tags: [person-service]
+      security:
+        - bearerAuth: [ ]
+      summary: Получение пользователя по идентификатору
+      operationId: getIndividualById
+      parameters:
+        - name: individualId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Успешный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Требуется аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      security:
+        - bearerAuth: [ ]
+      tags: [person-service]
+      summary: Обновление данных пользователя
+      operationId: updateIndividual
+      parameters:
+        - name: individualId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+      responses:
+        '200':
+          description: Успешное обновление
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Требуется аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      security:
+        - bearerAuth: [ ]
+      tags: [person-service]
+      operationId: deleteIndividual
+      summary: Удаление пользователя
+      parameters:
+        - name: individualId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Успешное удаление
+        '400':
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Требуется аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+
 components:
   securitySchemes:
     bearerAuth:
@@ -115,11 +276,10 @@ components:
       scheme: bearer
       bearerFormat: JWT
 
-
   schemas:
-    UserRegistrationRequest:
+    UserRequest:
       type: object
-      required: [email,password,confirm_password]
+      required: [ email,password,confirmPassword, verifiedAt, archivedAt ]
       properties:
         email:
           type: string
@@ -128,13 +288,31 @@ components:
         password:
           type: string
           nullable: false
-        confirm_password:
+        confirmPassword:
           type: string
           nullable: false
+        secretKey:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        passportNumber:
+          type: string
+        phoneNumber:
+          type: string
+        verifiedAt:
+          type: string
+          format: date-time
+        archivedAt:
+          type: string
+          format: date-time
+        address:
+          $ref: "#/components/schemas/AddressRequest"
 
     UserLoginRequest:
       type: object
-      required: [email,password]
+      required: [ email,password ]
       properties:
         email:
           type: string
@@ -146,7 +324,7 @@ components:
 
     TokenRefreshRequest:
       type: object
-      required: [refresh_token]
+      required: [ refresh_token ]
       properties:
         refresh_token:
           type: string
@@ -165,6 +343,52 @@ components:
           type: string
           example: Bearer
 
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        secretKey:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        passportNumber:
+          type: string
+        phoneNumber:
+          type: string
+        verifiedAt:
+          type: string
+          format: date-time
+        archivedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+        address:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            country:
+              type: string
+            address:
+              type: string
+            zipCode:
+              type: string
+            city:
+              type: string
+            state:
+              type: string
+
+
+
     UserInfoResponse:
       type: object
       properties:
@@ -179,6 +403,28 @@ components:
         created_at:
           type: string
           format: date-time
+        individualId:
+          type: string
+          format: uuid
+
+    AddressRequest:
+      type: object
+      required: [ archived ]
+      properties:
+        country:
+          type: string
+        address:
+          type: string
+        zipCode:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        archived:
+          type: string
+          format: date-time
+          nullable: false
 
     ErrorResponse:
       type: object

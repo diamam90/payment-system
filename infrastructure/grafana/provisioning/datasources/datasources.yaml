@@ -5,6 +5,7 @@ prune: true
 datasources:
   - name: loki
     type: loki
+    uid: loki
     access: proxy
     url: http://loki:3100
 
@@ -15,3 +16,14 @@ datasources:
     jsonData:
       httpMethod: POST
       timeInterval: 10s
+
+  - name: tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    basicAuth: false
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: 'loki'
+        spanStartTimeShift: '-10m'
+        spanEndTimeShift: '10m'

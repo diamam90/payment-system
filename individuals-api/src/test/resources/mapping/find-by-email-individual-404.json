@@ -1,0 +1,22 @@
+{
+  "request": {
+    "urlPathTemplate": "/api/v1/individuals",
+    "queryParameters": {
+      "email": {
+        "doesNotContain":"test@email.test"
+      }
+    },
+    "method": "GET"
+  },
+  "response": {
+    "status": 404,
+    "jsonBody": {
+      "error": "Individual with email {{request.query.email}} not found",
+      "status": 404
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "transformers": ["response-template"]
+  }
+}

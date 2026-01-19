@@ -1,0 +1,41 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(client, "External Client","Пользователь взаимодействующий с Individuals API")
+
+System_Boundary(paymentSystem, "Payment system") {
+
+    Container(indApi, "Individuals API", "Spring Web Flux","Оркестратор платежной системы")
+    Container(personService, "Person Service", "Spring Boot", "Сервис пользователей")
+    Container(kc, "Keycloak", "Keycloak")
+    Container(kcDb, "Keycloak DB", "Keycloak Database")
+    Container(personDb, "Person DB", "Person Database")
+    Container(prometheus, "Prometheus", "Хранилище метрик")
+    Container(loki, "Grafana Loki", "Хранилище логов")
+    Container(tempo, "Grafana Tempo","Хранилище трассировок")
+    Container(alloy, "Grafana Alloy", "MELT agent")
+    Container(grafana,  "Grafana", "Визуализация логов/метрик/трейсов")
+    Container(nexus,"Nexus","Репозиторий")
+}
+
+Rel(client, indApi, "Http запросы")
+Rel(indApi,personService, "Http", "Управление пользователями")
+Rel(indApi, kc, "Http", "Регистрация/аутентификация пользователей")
+Rel(kc, kcDb,"JDBC","Хранение пользователей")
+Rel(personService, personDb,"JDBC", "Регистрация пользователей")
+Rel(personService, nexus, "JAR", "Выгрузка sdk")
+
+Rel(alloy, indApi, "Metrics", "Сбор метрик")
+Rel(alloy, personService, "Metrics", "Сбор метрик")
+Rel(alloy, personDb, "Metrics","Сбор метрик БД")
+Rel(alloy, kcDb, "Metrics", "Сбор метрик БД")
+
+Rel(alloy, loki,"Логи","Выгрузка логов")
+Rel(alloy, tempo,"Трассировка","Выгрузка трассировок")
+Rel(alloy, prometheus,"Метрики","Выгрузка метрик")
+
+Rel(grafana, loki, "Логи", "Визуализация логов")
+Rel(grafana, tempo, "Трассировка", "Визуализация трейсов")
+Rel(grafana, prometheus, "Метрики", "Визуализация метрик")
+
+@enduml

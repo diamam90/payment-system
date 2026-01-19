@@ -2,6 +2,8 @@ server:
   port: 8081
 
 spring:
+  application:
+    name: individuals-api
   security:
     oauth2:
       resourceserver:
@@ -13,19 +15,29 @@ management:
     web:
       exposure:
         include: health, prometheus
+  observations:
+    annotations:
+      enabled: true
   prometheus:
     metrics:
       export:
         enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: http://localhost:4318/v1/traces
 
 individuals-api:
   keycloak:
     baseUrl: http://localhost:8080
-    username: admin
-    password: admin
     realm: payment
     clientId: individuals-api
-
+    clientSecret: "**********"
+  person:
+    base-url: http://localhost:8082
 logging:
   level:
     com.example: debug
+#    org.springframework: debug

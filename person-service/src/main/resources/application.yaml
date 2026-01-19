@@ -1,0 +1,42 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: person-service
+  datasource:
+    url: jdbc:postgresql://localhost:5434/person
+    username: personadmin
+    password: personadmin
+    jpa:
+      show-sql: true
+      generate-ddl: false
+  flyway:
+    url: jdbc:postgresql://localhost:5434/person
+    user: personadmin
+    password: personadmin
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8080/realms/payment/protocol/openid-connect/certs
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  observations:
+    annotations:
+      enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: http://localhost:4318/v1/traces

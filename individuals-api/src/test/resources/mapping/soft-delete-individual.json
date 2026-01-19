@@ -1,0 +1,17 @@
+{
+  "request": {
+    "urlPathTemplate": "/api/v1/individuals/{individualId}",
+    "pathParameters": {
+      "individualId": {
+        "equalTo": "00000000-0000-0000-0000-000011110000"
+      }
+    },
+    "method": "DELETE"
+  },
+  "response": {
+    "status": 204,
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

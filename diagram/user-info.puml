@@ -1,0 +1,10 @@
+@startuml
+actor Client
+participant IndividualsApi
+participant Keycloak
+
+Client -> IndividualsApi: GET /IndividualsApi/v1/me (JWT)
+IndividualsApi -> Keycloak: getUserInfo
+Keycloak -> IndividualsApi: UserRepresentation
+IndividualsApi -> Client: UserInfo
+@enduml
