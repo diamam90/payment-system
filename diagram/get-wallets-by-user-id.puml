@@ -1,0 +1,16 @@
+@startuml
+actor Client
+participant IndividualsAPI
+participant TransactionService
+
+Client -> IndividualsAPI: GET /api/v1/wallets?userId=
+IndividualsAPI -> TransactionService: GET /api/v1/wallets?userId=
+TransactionService -> TransactionService: get wallets by userId
+alt ok
+    TransactionService -> IndividualsAPI: List<WalletResponse>
+    IndividualsAPI-> Client: WalletResponse List<WalletResponse>
+else exception
+    TransactionService -> IndividualsAPI: ErrorResponse
+    IndividualsAPI -> Client: ErrorResponse
+end
+@enduml
