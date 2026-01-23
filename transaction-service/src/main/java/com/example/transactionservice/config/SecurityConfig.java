@@ -1,12 +1,9 @@
-package com.example.personservice.config;
+package com.example.transactionservice.config;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
@@ -18,13 +15,11 @@ import org.springframework.security.web.SecurityFilterChain;
 
 import java.util.*;
 
-@Slf4j
 @Configuration
-@EnableMethodSecurity
 public class SecurityConfig {
 
     private static final String RESOURCE_ACCESS = "resource_access";
-    private static final String PERSON_SERVICE_ROLES = "person-service";
+    private static final String TRANSACTION_SERVICE_ROLE = "transaction-service";
     private static final String ROLES = "roles";
 
     @Bean
@@ -54,7 +49,7 @@ public class SecurityConfig {
         return jwt -> {
             List<GrantedAuthority> authorities = new ArrayList<>();
             Optional.ofNullable(jwt.getClaimAsMap(RESOURCE_ACCESS))
-                    .map(access -> access.get(PERSON_SERVICE_ROLES))
+                    .map(access -> access.get(TRANSACTION_SERVICE_ROLE))
                     .map(access -> (Map<?, ?>) access)
                     .map(access -> access.get(ROLES))
                     .map(roles -> (List<?>) roles)
@@ -69,13 +64,13 @@ public class SecurityConfig {
 
     private void applyUnsecuredPath
             (AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry registry) {
-        registry.requestMatchers(HttpMethod.POST, "/api/v1/individuals").permitAll();
         registry.requestMatchers("/actuator/health").permitAll();
         registry.requestMatchers("/actuator/prometheus").permitAll();
     }
 
     private void applySecuredPath
             (AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry registry) {
-        registry.requestMatchers("/private/**").hasAuthority("person_service_wr");
+        registry.requestMatchers("/api/v1/transactions/**").hasAuthority("transaction_service_wr");
+        registry.requestMatchers("/api/v1/wallets/**").hasAuthority("transaction_service_wr");
     }
 }
