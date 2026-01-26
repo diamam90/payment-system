@@ -10,17 +10,21 @@ Component(kafka,"Kafka Client","Spring Kafka")
 
 Component(tsRepo, "Transaction Repository","Jpa Repository", "Хранение транзакций")
 Component(wRepo, "Wallet Repository", "Jpa Repository","Хранение кошельков")
+Component(shard,"ShardingSphereDataSource","Шардирование")
 
 Component(tsDto, "Transaction Dto", "Сгенерированные ДТО")
 Component(kafkaDto, "Kafka Dto", "Kafka ДТО")
 
 Lay_R(ts, tsController)
+Lay_D(wRepo, shard)
 
 Rel(tsController, tsService, "вызов")
 Rel(tsService, wService, "вызов")
 
 Rel(wService, wRepo, "вызов")
 Rel(tsService, tsRepo, "вызов")
+Rel(wRepo,shard, "вызов")
+Rel(tsRepo,shard, "вызов")
 
 Rel_R(kafka, kafkaDto, "использует")
 Rel_R(tsController, tsDto, "использует")
