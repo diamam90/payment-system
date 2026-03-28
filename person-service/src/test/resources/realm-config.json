@@ -91,6 +91,15 @@
           "clientRole": true,
           "containerId": "989dbff8-ee80-4193-9431-206425375828",
           "attributes": {}
+        },
+        {
+          "id": "d66d8ea1-af1f-41e4-abdf-6458188c93b9",
+          "name": "transaction_service_wr",
+          "description": "Transaction-Service Write\\Read Role",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "989dbff8-ee80-4193-9431-206425375828",
+          "attributes": {}
         }
       ],
       "realm-management": [
@@ -308,9 +317,9 @@
       "security-admin-console": [],
       "person-service": [
         {
-          "id": "b449b271-2bc7-49d5-9236-9ad62b2a9c58",
-          "name": "individuals_wr",
-          "description": "Write\\Read Individuals",
+          "id": "2947a340-5e9d-4dc0-8cb7-9cb5eef7d554",
+          "name": "person_service_wr",
+          "description": "Person-Service Write\\Read Role",
           "composite": false,
           "clientRole": true,
           "containerId": "c66029e9-c210-4679-a355-5009f9e2375d",
@@ -318,6 +327,17 @@
         }
       ],
       "admin-cli": [],
+      "transaction-service": [
+        {
+          "id": "37798a4a-4ba5-4862-836d-ee0b43eb205a",
+          "name": "transaction_service_wr",
+          "description": "Transaction-Service Write\\Read Role",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "3f466725-8533-4df4-96e7-4a394d2bd074",
+          "attributes": {}
+        }
+      ],
       "account-console": [],
       "broker": [],
       "account": [
@@ -418,7 +438,8 @@
       ],
       "clientRoles": {
         "individuals-api": [
-          "person_service_wr"
+          "person_service_wr",
+          "transaction_service_wr"
         ],
         "realm-management": [
           "view-users",
@@ -426,7 +447,10 @@
           "manage-users"
         ],
         "person-service": [
-          "individuals_wr"
+          "person_service_wr"
+        ],
+        "transaction-service": [
+          "transaction_service_wr"
         ]
       },
       "notBefore": 0,
@@ -820,6 +844,65 @@
       ],
       "defaultClientScopes": [],
       "optionalClientScopes": []
+    },
+    {
+      "id": "3f466725-8533-4df4-96e7-4a394d2bd074",
+      "clientId": "transaction-service",
+      "name": "client_transaction_service",
+      "description": "",
+      "rootUrl": "",
+      "adminUrl": "",
+      "baseUrl": "",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "**********",
+      "redirectUris": [
+        "/*"
+      ],
+      "webOrigins": [
+        "/*"
+      ],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "publicClient": false,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "attributes": {
+        "realm_client": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "client.secret.creation.time": "1774383222",
+        "backchannel.logout.session.required": "true",
+        "standard.token.exchange.enabled": "false",
+        "frontchannel.logout.session.required": "true",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "display.on.consent.screen": "false",
+        "backchannel.logout.revoke.offline.tokens": "false"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "organization",
+        "microprofile-jwt"
+      ]
     }
   ],
   "clientScopes": [
@@ -1583,13 +1666,13 @@
         "config": {
           "allowed-protocol-mapper-types": [
             "oidc-full-name-mapper",
-            "oidc-usermodel-attribute-mapper",
             "oidc-usermodel-property-mapper",
-            "saml-user-property-mapper",
             "saml-role-list-mapper",
+            "saml-user-attribute-mapper",
+            "saml-user-property-mapper",
             "oidc-sha256-pairwise-sub-mapper",
             "oidc-address-mapper",
-            "saml-user-attribute-mapper"
+            "oidc-usermodel-attribute-mapper"
           ]
         }
       },
@@ -1601,14 +1684,14 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
-            "oidc-usermodel-property-mapper",
-            "saml-role-list-mapper",
-            "oidc-usermodel-attribute-mapper",
-            "oidc-address-mapper",
             "oidc-sha256-pairwise-sub-mapper",
-            "saml-user-property-mapper",
             "saml-user-attribute-mapper",
-            "oidc-full-name-mapper"
+            "oidc-full-name-mapper",
+            "saml-role-list-mapper",
+            "oidc-address-mapper",
+            "oidc-usermodel-attribute-mapper",
+            "saml-user-property-mapper",
+            "oidc-usermodel-property-mapper"
           ]
         }
       },

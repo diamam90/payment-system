@@ -214,14 +214,3 @@ services:
 networks:
   payment_system_network:
     driver: bridge
-#  axon-server:
-#    image: axoniq/axonserver:2025.2.0-nonroot
-#    container_name: axon
-#    ports:
-#      - "8024:8024"
-#      - "8124:8124"
-#    healthcheck:
-#      test: ["CMD", "curl","-f", "http://localhost:8024/actuator/health"]
-#      interval: 10s
-#      timeout: 5s
-#      retries: 5

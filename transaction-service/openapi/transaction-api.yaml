@@ -1,0 +1,501 @@
+openapi: 3.0.0
+info:
+  title: Transaction Service API
+  version: 1.1.1
+servers:
+  - url: http://localhost:8083
+
+tags:
+  - name: Transaction
+  - name: Wallet
+
+paths:
+  # Wallets
+  /api/v1/wallets:
+    post:
+      tags: [ Wallet ]
+      summary: Создание кошелька пользователя
+      operationId: createWallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWalletRequest'
+      responses:
+        '201':
+          description: Кошелёк успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletResponse'
+        '400':
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/wallets/{walletUid}:
+    get:
+      tags: [ Wallet ]
+      summary: Получение информации о кошельке
+      operationId: getWalletById
+      parameters:
+        - name: walletUid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Данные кошелька
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletResponse'
+        '404':
+          description: Кошелёк не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/wallets/user/{userUid}:
+    get:
+      tags: [ Wallet ]
+      summary: Получение всех кошельков пользователя
+      operationId: getWalletByUserId
+      parameters:
+        - name: userUid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Список кошельков пользователя
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WalletResponse'
+
+  # Transactions
+  /api/v1/transactions/{type}/init:
+    post:
+      tags: [ Transaction ]
+      summary: Инициализация транзакции (без создания)
+      operationId: transactionInit
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [ deposit, withdrawal, transfer ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionInitRequest'
+
+      responses:
+        '200':
+          description: Условия транзакции
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionInitResponse'
+        '400':
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/transactions/{type}/confirm:
+    post:
+      tags: [ Transaction ]
+      summary: Подтверждение и запуск транзакции
+      operationId: transactionConfirm
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [ deposit, withdrawal, transfer ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionConfirmRequest'
+              oneOf:
+                - $ref: '#/components/schemas/DepositConfirmRequest'
+                - $ref: '#/components/schemas/WithdrawalConfirmRequest'
+                - $ref: '#/components/schemas/TransferConfirmRequest'
+      responses:
+        '200':
+          description: Транзакция подтверждена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionConfirmResponse'
+        '400':
+          description: Ошибка подтверждения
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/transactions/{transactionId}/status:
+    get:
+      tags: [ Transaction ]
+      summary: Получение статуса транзакции
+      operationId: getTransactionsStatusById
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Статус и детали транзакции
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionStatusResponse'
+        '404':
+          description: Транзакция не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/transactions:
+    get:
+      tags: [ Transaction ]
+      summary: Поиск транзакций по фильтрам с пагинацией
+      operationId: getTransactionsByFilter
+      parameters:
+        - in: query
+          name: userUid
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: walletUid
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [ deposit, withdrawal, transfer ]
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: dateFrom
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: dateTo
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: size
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Список транзакций
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TransactionStatusResponse'
+
+components:
+  schemas:
+    CreateWalletRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        walletTypeUid:
+          type: string
+          format: uuid
+        userUid:
+          type: string
+          format: uuid
+      required: [ name, walletTypeUid, userUid ]
+
+    TransactionInitRequest:
+      oneOf:
+        - $ref: '#/components/schemas/TransferInitRequest'
+        - $ref: '#/components/schemas/DepositInitRequest'
+        - $ref: '#/components/schemas/WithdrawalInitRequest'
+      discriminator:
+        propertyName: type
+        mapping:
+          DEPOSIT: '#DepositInitRequest'
+          TRANSFER: '#TransferInitRequest'
+          WITHDRAWAL: '#WithdrawalInitRequest'
+
+    DepositInitRequest:
+      type: object
+      properties:
+        type:
+          type: string
+        userUid:
+          type: string
+          format: uuid
+        walletUid:
+          type: string
+          format: uuid
+        amount:
+          type: number
+      required: [ type, userUid, walletUid, amount ]
+
+    TransferInitRequest:
+      type: object
+      properties:
+        type:
+          type: string
+        userUid:
+          type: string
+          format: uuid
+        walletUid:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        targetWalletUid:
+          type: string
+          format: uuid
+        targetUserUid:
+          type: string
+          format: uuid
+      required: [ type, userUid, walletUid, amount, targetWalletUid, targetUserUid ]
+
+    WithdrawalInitRequest:
+      type: object
+      properties:
+        type:
+          type: string
+        userUid:
+          type: string
+          format: uuid
+        walletUid:
+          type: string
+          format: uuid
+        amount:
+          type: number
+      required: [ type, userUid, walletUid, amount ]
+
+    TransactionConfirmRequest:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/TransferConfirmRequest'
+        - $ref: '#/components/schemas/DepositConfirmRequest'
+        - $ref: '#/components/schemas/WithdrawalConfirmRequest'
+      discriminator:
+        propertyName: type
+        mapping:
+          DEPOSIT: '#DepositConfirmRequest'
+          TRANSFER: '#TransferConfirmRequest'
+          WITHDRAWAL: '#WithdrawalConfirmRequest'
+
+
+    DepositConfirmRequest:
+      type: object
+      properties:
+        type:
+          type: string
+        userUid:
+          type: string
+          format: uuid
+        walletUid:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        comment:
+          type: string
+      required: [ type, userUid, walletUid, amount ]
+
+    WithdrawalConfirmRequest:
+      type: object
+      properties:
+        type:
+          type: string
+        userUid:
+          type: string
+          format: uuid
+        walletUid:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        comment:
+          type: string
+      required: [ type, userUid, walletUid, amount ]
+
+    TransferConfirmRequest:
+      type: object
+      properties:
+        type:
+          type: string
+        userUid:
+          type: string
+          format: uuid
+        walletUid:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        targetWalletUid:
+          type: string
+          format: uuid
+        targetUserUid:
+          type: string
+          format: uuid
+        comment:
+          type: string
+      required: [ type, userUid, walletUid, amount, targetWalletUid, targetUserUid ]
+
+    WalletResponse:
+      type: object
+      properties:
+        uid:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          $ref: "#/components/schemas/WalletTypeResponse"
+        userUid:
+          type: string
+          format: uuid
+        status:
+          type: string
+        balance:
+          type: number
+        archivedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        status:
+          type: integer
+
+    TransactionInitResponse:
+      type: object
+      properties:
+        walletUid:
+          type: string
+          format: uuid
+        targetWalletUid:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        fee:
+          type: number
+
+
+    TransactionConfirmResponse:
+      type: object
+      properties:
+        uid:
+          type: string
+          format: uuid
+        userUid:
+          type: string
+          format: uuid
+        walletUid:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        type:
+          type: string
+        status:
+          type: string
+        comment:
+          type: string
+        fee:
+          type: number
+        targetWalletUid:
+          type: string
+          format: uuid
+        failureReason:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TransactionStatusResponse:
+      type: object
+      properties:
+        uid:
+          type: string
+          format: uuid
+        type:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    WalletTypeResponse:
+      type: object
+      properties:
+        uid:
+          type: string
+          format: uuid
+        name:
+          type: string
+        currencyCode:
+          type: string
+        status:
+          type: string
+        userType:
+          type: string
