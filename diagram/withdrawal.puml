@@ -1,0 +1,42 @@
+@startuml
+actor Client
+participant IndividualsAPI
+participant TransactionService
+database DB
+queue Kafka
+
+== Init ==
+Client -> IndividualsAPI: POST /transactions/withdrawal/init
+IndividualsAPI -> TransactionService: calc withdrawal conditions (init)
+TransactionService -> TransactionService: Проверка баланса
+alt Вывод средств доступен
+    TransactionService --> IndividualsAPI: Условия вывода
+    IndividualsAPI --> Client: условия вывода
+else Вывод средств недоступен
+    TransactionService --> IndividualsAPI: ErrorResponse
+    IndividualsAPI --> Client: ErrorResponse
+end
+== Confirm ==
+Client -> IndividualsAPI: POST /transactions/withdrawal/confirm
+IndividualsAPI -> TransactionService: confirm withdrawal
+TransactionService -> TransactionService: Списать средства
+group transaction
+    TransactionService -> DB: Баланс--
+    TransactionService -> DB: Статус транзакции PENDING
+    TransactionService -> Kafka: WithdrawalRequested
+end
+TransactionService --> IndividualsAPI: PENDING, transactionId
+IndividualsAPI --> Client: PENDING, transactionId
+
+Kafka -> TransactionService: WithdrawalResponse
+alt completed
+    TransactionService -> DB: Статус транзакции COMPLETED
+else failed
+    TransactionService -> TransactionService: Вернуть средства
+
+    group transaction
+        TransactionService -> DB: Баланс++
+        TransactionService -> DB: Статус транзакции FAILED
+    end
+end
+@enduml

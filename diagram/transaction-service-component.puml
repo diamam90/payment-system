@@ -1,0 +1,40 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Container(ts,"Transaction-service","Spring boot")
+
+Component(tsController, "Transaction Controller", "Rest Controller", "Обрабатывает запросы individuals-api")
+Component(tsService,"Transaction Service","Service","Пополнение, перевод и  вывод денежных средств")
+Component(wService, "Wallet Service", "Service", "Операции над кошельками пользователей")
+Component(kafka,"Kafka Client","Spring Kafka")
+ComponentDb(db1,"Transaction DB_1","Шард №1")
+ComponentDb(db2,"Transaction DB_2","Шард №2")
+
+Component(tsRepo, "Transaction Repository","Jpa Repository", "Хранение транзакций")
+Component(wRepo, "Wallet Repository", "Jpa Repository","Хранение кошельков")
+Component(shard,"ShardingSphereDataSource","Шардирование")
+
+Component(tsDto, "Transaction Dto", "Сгенерированные ДТО")
+Component(kafkaDto, "Kafka Dto", "Kafka ДТО")
+
+Lay_R(ts, tsController)
+Lay_D(wRepo, shard)
+Lay_D(shard, db1)
+Lay_R(db1,db2)
+
+Rel(tsController, tsService, "вызов")
+Rel(tsService, wService, "вызов")
+
+Rel(wService, wRepo, "вызов")
+Rel(tsService, tsRepo, "вызов")
+Rel(wRepo,shard, "вызов")
+Rel(tsRepo,shard, "вызов")
+Rel(shard,db1,"вызов")
+Rel(shard,db2,"вызов")
+
+Rel_R(kafka, kafkaDto, "использует")
+Rel_R(tsController, tsDto, "использует")
+
+BiRel_R(tsService, kafka,"produce/consume")
+
+@enduml

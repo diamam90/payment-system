@@ -1,0 +1,38 @@
+@startuml
+actor Client
+participant IndividualsAPI
+participant TransactionService
+database DB
+queue Kafka
+
+== Init ==
+
+Client -> IndividualsAPI: POST /transactions/deposit/init
+IndividualsAPI -> TransactionService: calc deposit conditions (init)
+TransactionService -> TransactionService: Проверка кошелька
+
+alt Пополнение возможно
+    TransactionService --> IndividualsAPI: Условия (комиссия, доступность)
+    IndividualsAPI --> Client: Условия пополнения
+else Пополнение невозможно
+    TransactionService --> IndividualsAPI: ErrorResponse
+    IndividualsAPI --> Client: ErrorResponse
+end
+
+== Confirm ==
+
+Client -> IndividualsAPI: POST /transactions/deposit/confirm
+IndividualsAPI -> TransactionService: confirm deposit
+group transaction
+    TransactionService -> Kafka: DepositRequested
+    TransactionService -> DB: Создать транзакцию PENDING
+end
+  TransactionService --> IndividualsAPI: Принято, status=PENDING, transactionId
+IndividualsAPI --> Client: status=PENDING, transactionId
+Kafka -> TransactionService: DepositCompleted (async)
+TransactionService -> TransactionService: Зачислить средства
+group transaction
+    TransactionService -> DB: Баланс++
+    TransactionService -> DB: Статус транзакции COMPLETED
+end
+@enduml

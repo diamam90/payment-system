@@ -3,39 +3,62 @@
 
 Person(client, "External Client","Пользователь взаимодействующий с Individuals API")
 
-System_Boundary(paymentSystem, "Payment system") {
+System_Boundary(payment, "Payment system") {
 
     Container(indApi, "Individuals API", "Spring Web Flux","Оркестратор платежной системы")
-    Container(personService, "Person Service", "Spring Boot", "Сервис пользователей")
-    Container(kc, "Keycloak", "Keycloak")
-    Container(kcDb, "Keycloak DB", "Keycloak Database")
-    Container(personDb, "Person DB", "Person Database")
-    Container(prometheus, "Prometheus", "Хранилище метрик")
-    Container(loki, "Grafana Loki", "Хранилище логов")
-    Container(tempo, "Grafana Tempo","Хранилище трассировок")
-    Container(alloy, "Grafana Alloy", "MELT agent")
-    Container(grafana,  "Grafana", "Визуализация логов/метрик/трейсов")
-    Container(nexus,"Nexus","Репозиторий")
+
+    Container(ps, "Person Service", "Spring Boot", "Сервис пользователей")
+    ContainerDb(psDb, "Person DB", "Person Database")
+
+    Container(ts, "Transaction Service", "Spring Boot", "Сервис транзакций")
+    ContainerDb(tsDb, "Transaction DB", "Transaction Database")
 }
 
-Rel(client, indApi, "Http запросы")
-Rel(indApi,personService, "Http", "Управление пользователями")
-Rel(indApi, kc, "Http", "Регистрация/аутентификация пользователей")
-Rel(kc, kcDb,"JDBC","Хранение пользователей")
-Rel(personService, personDb,"JDBC", "Регистрация пользователей")
-Rel(personService, nexus, "JAR", "Выгрузка sdk")
+System_Ext(auth, "Authentication"){
+    Container(kc, "Keycloak", "Keycloak")
+    ContainerDb(kcDb, "Keycloak DB", "Keycloak Database")
+}
 
-Rel(alloy, indApi, "Metrics", "Сбор метрик")
-Rel(alloy, personService, "Metrics", "Сбор метрик")
-Rel(alloy, personDb, "Metrics","Сбор метрик БД")
-Rel(alloy, kcDb, "Metrics", "Сбор метрик БД")
+System_Ext(obs, "Observability") {
+    Container(alloy, "Grafana Alloy", "MELT agent")
+    Container(grafana,  "Grafana", "Визуализация логов/метрик/трейсов")
+    ContainerDb(prometheus, "Prometheus", "Хранилище метрик")
+    ContainerDb(loki, "Grafana Loki", "Хранилище логов")
+    ContainerDb(tempo, "Grafana Tempo","Хранилище трассировок")
+}
 
-Rel(alloy, loki,"Логи","Выгрузка логов")
-Rel(alloy, tempo,"Трассировка","Выгрузка трассировок")
-Rel(alloy, prometheus,"Метрики","Выгрузка метрик")
+System_Ext(paymentProvider, "Payment Provider", "Внешняя платежная система")
 
-Rel(grafana, loki, "Логи", "Визуализация логов")
-Rel(grafana, tempo, "Трассировка", "Визуализация трейсов")
-Rel(grafana, prometheus, "Метрики", "Визуализация метрик")
+Container_Ext(nexus,"Nexus","Репозиторий")
+
+SystemQueue_Ext(kafka, "Kafka", "Брокер сообщений")
+
+Rel_R(client, indApi,"Http","Запрос пользователя")
+
+Rel_D(indApi, ps,"Http", "Управление пользователями")
+Rel_D(ps,psDb, "Read/Write")
+
+Rel_D(indApi,ts,"Http","Управление платежами")
+Rel_D(ts,tsDb, "Read/Write")
+
+Rel(indApi, kc, "Http","Создание пользователей")
+Rel_R(kc,kcDb,"Read/Write")
+
+BiRel_L(ts,kafka,"tcp","чтение и запись сообщений")
+BiRel_L(kafka,paymentProvider,"tcp", "чтение и запись сообщений")
+
+Rel_D(grafana, prometheus,"Чтение метрик")
+Rel_D(grafana, loki,"Чтение логов")
+Rel_D(grafana, tempo,"Чтение трассировок")
+
+Rel_U(alloy, prometheus, "Запись метрик")
+Rel_U(alloy, loki, "Запись логов")
+Rel_U(alloy, tempo, "Запись трассировок")
+
+Rel_L(alloy, payment,"Сбор трейсов/логов/метрик системы")
+Rel(alloy, kcDb, "Сбор метрик с БД")
+
+Rel(ps, nexus, "Публикация SDK","JAR")
+Rel(ts, nexus, "Публикация SDK","JAR")
 
 @enduml
