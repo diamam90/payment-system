@@ -229,7 +229,8 @@ public class TransactionServiceImpl implements TransactionService {
         log.info("Transaction with id {} failed", transaction.getId());
         if (TransactionType.WITHDRAWAL.equals(transaction.getType())) {
             BigDecimal amount = transaction.getAmount().setScale(2, HALF_UP);
-            wallet.increaseBalance(amount);
+            BigDecimal fee = transaction.getFee();
+            wallet.increaseBalance(amount.add(fee));
             log.debug("Wallet [id={}] balance successfully increased, amount: {}, transaction: {}", wallet.getId(), amount, transaction);
         }
     }

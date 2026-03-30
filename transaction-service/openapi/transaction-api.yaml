@@ -478,6 +478,8 @@ components:
           type: string
         status:
           type: string
+        failureReason:
+          type: string
         createdAt:
           type: string
           format: date-time

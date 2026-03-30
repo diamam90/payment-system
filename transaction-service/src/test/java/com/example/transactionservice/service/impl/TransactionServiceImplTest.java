@@ -115,9 +115,7 @@ class TransactionServiceImplTest {
     @Test
     void transferInit() {
         // given
-
         TransferInitRequest request = TransactionRequestStub.transferInit();
-
         var expectedAmount = request.getAmount().setScale(2, HALF_UP);
         var expectedFee = USD_TRANSFER_FEE.multiply(expectedAmount).setScale(2, HALF_UP);
 
@@ -140,7 +138,6 @@ class TransactionServiceImplTest {
     void withdrawalInit() {
         // given
         WithdrawalInitRequest request = TransactionRequestStub.withdrawalInit();
-
         var expectedFee = USD_WITHDRAWAL_FEE.multiply(request.getAmount()).setScale(2, HALF_UP);
         var expectedAmount = request.getAmount().add(expectedFee).setScale(2, HALF_UP);
 
@@ -434,7 +431,7 @@ class TransactionServiceImplTest {
                 .hasFieldOrPropertyWithValue("user_uid", userId)
                 .hasFieldOrPropertyWithValue("name", "custom_wallet")
                 .hasFieldOrPropertyWithValue("status", "active")
-                .hasFieldOrPropertyWithValue("balance", BigDecimal.valueOf(50.05 + 30.00).setScale(2, HALF_UP))
+                .hasFieldOrPropertyWithValue("balance", BigDecimal.valueOf(50.05 + 30.00 + 0.16).setScale(2, HALF_UP))
                 .hasFieldOrPropertyWithValue("archived_at", Timestamp.valueOf("2030-01-01 00:00:00"));
     }
 
