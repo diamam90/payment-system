@@ -18,6 +18,8 @@ services:
         condition: service_healthy
       person-service:
         condition: service_healthy
+      transaction-service:
+        condition: service_healthy
       tempo:
         condition: service_started
     healthcheck:
@@ -205,6 +207,125 @@ services:
       - "5434:5432"
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -d person -U personadmin" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payment_system_network
+
+  transaction-db1:
+    image: postgres:17
+    container_name: transaction-shard0
+    environment:
+      POSTGRES_DB: transaction
+      POSTGRES_USER: transactionadmin
+      POSTGRES_PASSWORD: transactionadmin
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d transaction -U transactionadmin" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payment_system_network
+
+  transaction-db2:
+    image: postgres:17
+    container_name: transaction-shard1
+    environment:
+      POSTGRES_DB: transaction
+      POSTGRES_USER: transactionadmin
+      POSTGRES_PASSWORD: transactionadmin
+    ports:
+      - "5436:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d transaction -U transactionadmin" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payment_system_network
+
+  transaction-db3:
+    image: postgres:17
+    container_name: transaction-shard2
+    environment:
+      POSTGRES_DB: transaction
+      POSTGRES_USER: transactionadmin
+      POSTGRES_PASSWORD: transactionadmin
+    ports:
+      - "5437:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d transaction -U transactionadmin" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payment_system_network
+
+  kafka:
+    image: confluentinc/cp-kafka:8.0.4
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_ADVERTISED_LISTENERS: "INNER://kafka:29092, OUTER://localhost:9092"
+      KAFKA_LISTENERS: "INNER://kafka:29092, OUTER://0.0.0.0:9092, CONTROLLER://kafka:29093"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "INNER:PLAINTEXT, OUTER:PLAINTEXT, CONTROLLER:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "INNER"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      CLUSTER_ID: "MkU4OEVBNTcwNTJENDM2Qk"
+    healthcheck:
+      test: [ "CMD-SHELL", "kafka-topics --list --bootstrap-server=localhost:9092" ]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+    networks:
+      - payment_system_network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2
+    container_name: kafka-ui
+    ports:
+      - "9099:8080"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - payment_system_network
+    environment:
+      DYNAMIC_CONFIG_ENABLED: 'true'
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+
+  transaction-service:
+    build:
+      context: ./transaction-service
+    ports:
+      - "8083:8083"
+    environment:
+      KEYCLOAK_URL: http://individuals-keycloak:8080
+      TEMPO_URL: http://tempo:4318
+      TRANSACTION_SERVICE_SHARD_1_HOST: transaction-db1
+      TRANSACTION_SERVICE_SHARD_1_PORT: 5432
+      TRANSACTION_SERVICE_SHARD_1_USERNAME: transactionadmin
+      TRANSACTION_SERVICE_SHARD_1_PASSWORD: transactionadmin
+      TRANSACTION_SERVICE_SHARD_2_HOST: transaction-db2
+      TRANSACTION_SERVICE_SHARD_2_PORT: 5432
+      TRANSACTION_SERVICE_SHARD_2_USERNAME: transactionadmin
+      TRANSACTION_SERVICE_SHARD_2_PASSWORD: transactionadmin
+      TRANSACTION_SERVICE_SHARD_3_HOST: transaction-db3
+      TRANSACTION_SERVICE_SHARD_3_PORT: 5432
+      TRANSACTION_SERVICE_SHARD_3_USERNAME: transactionadmin
+      TRANSACTION_SERVICE_SHARD_3_PASSWORD: transactionadmin
+      TRANSACTION_SERVICE_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    healthcheck:
+      test: [ "CMD","wget","--spider","localhost:8083/actuator/health" ]
       interval: 10s
       timeout: 5s
       retries: 5

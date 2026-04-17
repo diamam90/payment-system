@@ -11,7 +11,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest
 @Testcontainers(disabledWithoutDocker = true)
 @Import({
-        DatabaseTestConfig.class,
         SecurityTestConfig.class,
         KafkaTestConfig.class
 })

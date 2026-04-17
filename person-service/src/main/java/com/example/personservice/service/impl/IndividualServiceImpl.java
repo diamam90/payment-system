@@ -9,7 +9,6 @@ import com.example.personservice.repository.IndividualRepository;
 import com.example.personservice.service.CountryService;
 import com.example.personservice.service.IndividualService;
 import io.micrometer.core.annotation.Counted;
-import io.micrometer.tracing.annotation.NewSpan;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,7 +28,6 @@ public class IndividualServiceImpl implements IndividualService {
     private final IndividualRepository individualRepository;
     private final IndividualMapper individualMapper;
 
-    @NewSpan("individual_service.create")
     @Override
     public Individual create(IndividualRequest request) {
         var country = Optional.ofNullable(request)
@@ -45,7 +43,6 @@ public class IndividualServiceImpl implements IndividualService {
         return savedUser;
     }
 
-    @NewSpan("individual_service.update")
     @Override
     public Individual update(UUID id, IndividualRequest request) {
         var individual = individualRepository.findById(id)
@@ -57,7 +54,6 @@ public class IndividualServiceImpl implements IndividualService {
         return individual;
     }
 
-    @NewSpan("individual_service.find_by_id")
     @Override
     @Transactional(readOnly = true)
     public Individual findById(UUID id) {
@@ -65,7 +61,6 @@ public class IndividualServiceImpl implements IndividualService {
                 .orElseThrow(() -> new ObjectNotFoundException(Individual.class, "id", id));
     }
 
-    @NewSpan("individual_service.find_by_email")
     @Override
     @Transactional(readOnly = true)
     public Individual findByEmail(String email) {
@@ -73,7 +68,6 @@ public class IndividualServiceImpl implements IndividualService {
                 .orElseThrow(() -> new ObjectNotFoundException(Individual.class, "email", email));
     }
 
-    @NewSpan("individual_service.soft_delete")
     @Override
     public void softDelete(UUID id) {
         var individual = findById(id);
@@ -81,7 +75,6 @@ public class IndividualServiceImpl implements IndividualService {
         log.debug("User with id {} successfully soft deleted", id);
     }
 
-    @NewSpan("individual_service.hard_delete")
     @Counted("hard_delete_individual")
     @Override
     public void hardDelete(UUID id) {
@@ -89,7 +82,6 @@ public class IndividualServiceImpl implements IndividualService {
         log.warn("User with id {} successfully hard deleted", id);
     }
 
-    @NewSpan("individual_service.activate")
     @Counted("activate_individual")
     @Override
     public void activateUser(UUID id) {

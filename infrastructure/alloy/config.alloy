@@ -14,6 +14,11 @@ prometheus.scrape "scraper" {
             "__metrics_path__" = "/actuator/prometheus",
             "instance" = "person-service",
         },
+        {
+            "__address__" = "transaction-service:8083",
+            "__metrics_path__" = "/actuator/prometheus",
+            "instance" = "transaction-service",
+        },
     ]
     scrape_interval = "10s"
     scrape_timeout = "5s"

@@ -7,7 +7,9 @@ import com.example.transactionservice.exception.ObjectNotFoundException;
 import com.example.transactionservice.repository.WalletRepository;
 import com.example.transactionservice.repository.WalletTypeRepository;
 import com.example.transactionservice.service.WalletService;
+import io.micrometer.core.annotation.Counted;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -20,6 +22,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @Transactional(isolation = Isolation.SERIALIZABLE)
 @RequiredArgsConstructor
@@ -32,6 +35,7 @@ public class WalletServiceImpl implements WalletService {
     @Value("${activeWalletYears:2}")
     private Integer activeWalletYears;
 
+    @Counted("create_wallet")
     @Override
     public Wallet create(CreateWalletRequest request) {
         WalletType walletType = walletTypeRepository.findById(request.getWalletTypeUid())
@@ -47,7 +51,10 @@ public class WalletServiceImpl implements WalletService {
                 .status("active")
                 .balance(BigDecimal.valueOf(0.00))
                 .build();
-        return walletRepository.save(wallet);
+
+        var result = walletRepository.save(wallet);
+        log.debug("Wallet for user with UID {} successfully created", result.getUserId());
+        return result;
     }
 
     @Override

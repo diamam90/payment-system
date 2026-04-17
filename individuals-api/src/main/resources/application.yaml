@@ -37,6 +37,8 @@ individuals-api:
     clientSecret: "**********"
   person:
     base-url: http://localhost:8082
+  transaction:
+    base-url: http://localhost:8083
 logging:
   level:
     com.example: debug

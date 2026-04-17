@@ -15,6 +15,7 @@ import com.example.transactionservice.repository.TransactionRepository;
 import com.example.transactionservice.repository.TransactionSpecification;
 import com.example.transactionservice.service.TransactionService;
 import com.example.transactionservice.service.WalletService;
+import io.micrometer.core.annotation.Counted;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -50,7 +51,7 @@ public class TransactionServiceImpl implements TransactionService {
     @Value("${transaction-service.kafka.topic.out}")
     private String topic;
 
-
+    @Counted("deposit_init")
     @Override
     @Transactional(readOnly = true)
     public TransactionInitResponse depositInit(DepositInitRequest request) {
@@ -68,6 +69,7 @@ public class TransactionServiceImpl implements TransactionService {
         return response;
     }
 
+    @Counted("transfer_init")
     @Override
     @Transactional(readOnly = true)
     public TransactionInitResponse transferInit(TransferInitRequest request) {
@@ -92,6 +94,7 @@ public class TransactionServiceImpl implements TransactionService {
         return response;
     }
 
+    @Counted("withdrawal_init")
     @Override
     @Transactional(readOnly = true)
     public TransactionInitResponse withdrawalInit(WithdrawalInitRequest request) {
@@ -113,6 +116,7 @@ public class TransactionServiceImpl implements TransactionService {
         return response;
     }
 
+    @Counted("deposit_confirm")
     @Override
     public TransactionConfirmResponse depositConfirm(DepositConfirmRequest request) {
         Wallet wallet = walletService.getByIdAndUserId(request.getWalletUid(), request.getUserUid());
@@ -135,6 +139,7 @@ public class TransactionServiceImpl implements TransactionService {
         return transactionMapper.toResponse(transaction);
     }
 
+    @Counted("transfer_confirm")
     @Override
     public TransactionConfirmResponse transferConfirm(TransferConfirmRequest request) {
         Wallet wallet = walletService.getByIdAndUserId(request.getWalletUid(), request.getUserUid());
@@ -161,6 +166,7 @@ public class TransactionServiceImpl implements TransactionService {
         return transactionMapper.toResponse(transaction);
     }
 
+    @Counted("withdrawal_confirm")
     @Override
     public TransactionConfirmResponse withdrawalConfirm(WithdrawalConfirmRequest request) {
         Wallet wallet = walletService.getByIdAndUserId(request.getWalletUid(), request.getUserUid());
@@ -185,6 +191,7 @@ public class TransactionServiceImpl implements TransactionService {
         return transactionMapper.toResponse(transaction);
     }
 
+    @Counted("complete")
     @Override
     public void complete(TransactionCompletedEvent event) {
         Optional<Transaction> optionalTransaction = transactionRepository.findById(event.transactionId());
@@ -209,7 +216,7 @@ public class TransactionServiceImpl implements TransactionService {
         }
     }
 
-
+    @Counted("fail")
     @Override
     public void fail(TransactionCompletedEvent event) {
         Optional<Transaction> optionalTransaction = transactionRepository.findById(event.transactionId());

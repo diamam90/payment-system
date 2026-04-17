@@ -21,6 +21,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -53,6 +54,7 @@ class WalletServiceImplTest {
         when(walletTypeRepository.findById(WALLET_TYPE_ID)).thenReturn(Optional.of(walletTypeStub()));
         when(mockClock.instant()).thenReturn(fixedClock.instant());
         when(mockClock.getZone()).thenReturn(fixedClock.getZone());
+        when(repository.save(any())).thenReturn(new Wallet());
 
         walletService.create(request);
         verify(repository).save(walletCaptor.capture());
@@ -130,7 +132,7 @@ class WalletServiceImplTest {
     }
 
     @Test
-    void shouldFindByUserId(){
+    void shouldFindByUserId() {
         // given
         Wallet expected = walletStub();
         //when

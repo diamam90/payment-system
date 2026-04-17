@@ -15,3 +15,5 @@ individuals-api:
     baseUrl: http://individuals-keycloak:8080
   person:
     base-url: http://person-service:8082
+  transaction:
+    base-url: http://transaction-service:8083

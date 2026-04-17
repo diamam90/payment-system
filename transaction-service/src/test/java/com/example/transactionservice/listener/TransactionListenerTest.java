@@ -3,6 +3,7 @@ package com.example.transactionservice.listener;
 import com.example.transactionservice.config.KafkaTestConfig;
 import com.example.transactionservice.model.kafka.TransactionCompletedEvent;
 import com.example.transactionservice.service.TransactionService;
+import com.example.transactionservice.stub.TransactionCompletedEventStub;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,10 +14,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.math.BigDecimal;
 import java.time.Clock;
-import java.time.ZonedDateTime;
-import java.util.UUID;
 
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -38,35 +36,15 @@ class TransactionListenerTest {
 
     @Test
     void shouldExecuteCompleteMethod() {
-        TransactionCompletedEvent event = completedEvent();
+        TransactionCompletedEvent event = TransactionCompletedEventStub.completedEvent(clock);
         kafka.send("transaction.complete", event.transactionId().toString(), event);
         verify(transactionService, timeout(300)).complete(event);
     }
 
     @Test
     void shouldExecuteFailMethod() {
-        TransactionCompletedEvent event = failedEvent();
+        TransactionCompletedEvent event = TransactionCompletedEventStub.failedEvent(clock);
         kafka.send("transaction.complete", event.transactionId().toString(), event);
         verify(transactionService, timeout(300)).fail(event);
-    }
-
-    private TransactionCompletedEvent completedEvent() {
-        return new TransactionCompletedEvent(
-                UUID.randomUUID(),
-                "COMPLETED",
-                null,
-                BigDecimal.ONE,
-                ZonedDateTime.now(clock)
-        );
-    }
-
-    private TransactionCompletedEvent failedEvent() {
-        return new TransactionCompletedEvent(
-                UUID.randomUUID(),
-                "FAILED",
-                null,
-                BigDecimal.ONE,
-                ZonedDateTime.now(clock)
-        );
     }
 }

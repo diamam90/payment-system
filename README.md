@@ -17,6 +17,8 @@
 - Пополнение кошелька
 - Перевод денежных средств
 - Вывод денежных средств
+- Статус транзакции
+- Поиск транзакции по параметрам
 
 ---
 
@@ -52,8 +54,31 @@
 
 ![delete-user.png](diagram/delete-user.png)
 
-## 
+## Создание кошелька
 
+![create-wallet](diagram/create-wallet.png)
+
+##  Просмотр кошелька
+
+![getWalletById](diagram/get-wallet-by-id.png)
+
+##  Поиск кошельков клиента
+![getWalletsByUserId](diagram/get-wallets-by-user-id.png)
+
+##  Пополнение кошелька
+![deposit](diagram/deposit.png)
+
+##  Перевод денежных средств
+![transfer](diagram/transfer.png)
+
+## Вывод денежных средств
+![withdrawal](diagram/withdrawal.png)
+
+## Статус транзакции
+![getTransactionById](diagram/get-transaction-by-id.png)
+
+## Поиск транзакции по параметрам
+![getTransactionsByFilter](diagram/get-transaction-by-filter.png)
 ---
 
 ## Для запуска проекта необходимо:
@@ -92,4 +117,6 @@
 | Person-db           | 5434  | БД для Person-service                           |
 | Individuals-api     | 8081  | Сервис взаимодействия с системой Payment System |
 | Transaction-service | 8083  | Сервис платежных операций                       |
-| Transaction-db      | 5435  | БД для Transaction-service                      |
+| Transaction-db1     | 5435  | БД для Transaction-service(шард0)               |
+| Transaction-db2     | 5436  | БД для Transaction-service(шард1)               |
+| Transaction-db3     | 5437  | БД для Transaction-service(шард2)               |

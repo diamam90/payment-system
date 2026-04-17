@@ -13,6 +13,7 @@ import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.jdbc.Sql;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
@@ -29,6 +30,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+@Transactional
 @SpringBootTest
 @Testcontainers(disabledWithoutDocker = true)
 @Import(DatabaseTestConfig.class)
@@ -64,7 +66,7 @@ class WalletRepositoryTest {
         wallet.setBalance(BigDecimal.ONE);
         wallet.setType(walletType);
         wallet.setCreatedAt(Instant.now());
-        Wallet savedWallet = walletRepository.save(wallet);
+        Wallet savedWallet = walletRepository.saveAndFlush(wallet);
 
         Map<String, Object> params = jdbc.queryForMap(FIND_WALLET_BY_UID, savedWallet.getId());
         assertThat(params)

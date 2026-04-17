@@ -1,6 +1,6 @@
 DOCKER_COMPOSE = docker-compose
 NEXUS_URL = http://localhost:8800
-INFRA_SERVICES ?= nexus keycloak person-db prometheus loki tempo grafana
+INFRA_SERVICES ?= nexus keycloak keycloak-postgres person-db prometheus loki tempo grafana kafka kafka-ui transaction-db1 transaction-db2 transaction-db3
 
 .PHONY: all up start stop logs rebuild infra infra-logs infra-stop
 
@@ -31,6 +31,7 @@ up:
 
 build-artifact: up
 	$(DOCKER_COMPOSE) build person-service --no-cache
+	$(DOCKER_COMPOSE) build transaction-service --no-cache
 
 start: 
 	$(DOCKER_COMPOSE) up -d
@@ -40,6 +41,7 @@ down:
 
 clean: down
 	rm -rf ./person-service/build
+	rm -rf ./transaction-service/build
 
 logs: 
 	$(DOCKER_COMPOSE) logs -f --tail=200

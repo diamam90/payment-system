@@ -9,6 +9,8 @@ import com.example.transactionservice.entity.TransactionType;
 import com.example.transactionservice.model.kafka.TransactionCompletedEvent;
 import com.example.transactionservice.repository.TransactionRepository;
 import com.example.transactionservice.repository.WalletRepository;
+import com.example.transactionservice.stub.ConfirmStringRequestStub;
+import com.example.transactionservice.stub.InitStringRequestStub;
 import com.example.transactionservice.util.KeycloakUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -84,19 +86,19 @@ public class TransactionIT {
 
         UUID walletId = wallet.getUid();
         // deposit init
-        HttpEntity<String> depositInitRequest = new HttpEntity<>(depositInitRequest(walletId), headers);
+        HttpEntity<String> depositInitRequest = new HttpEntity<>(InitStringRequestStub.depositInitRequest(walletId), headers);
 
         TransactionInitResponse initResponse = restTemplate
-                .exchange("/api/v1/transactions/DEPOSIT/init", POST, depositInitRequest, TransactionInitResponse.class)
+                .exchange("/api/v1/transactions/init", POST, depositInitRequest, TransactionInitResponse.class)
                 .getBody();
 
         assertThat(initResponse)
                 .hasFieldOrPropertyWithValue("amount", amount)
                 .hasFieldOrPropertyWithValue("fee", expectedFee);
         // deposit confirm
-        HttpEntity<String> depositConfirmRequest = new HttpEntity<>(depositConfirmRequest(walletId), headers);
+        HttpEntity<String> depositConfirmRequest = new HttpEntity<>(ConfirmStringRequestStub.depositConfirmRequest(walletId), headers);
         TransactionConfirmResponse confirmResponse = restTemplate
-                .exchange("/api/v1/transactions/DEPOSIT/confirm", POST, depositConfirmRequest, TransactionConfirmResponse.class)
+                .exchange("/api/v1/transactions/confirm", POST, depositConfirmRequest, TransactionConfirmResponse.class)
                 .getBody();
 
         UUID transactionId = confirmResponse.getUid();
@@ -148,10 +150,10 @@ public class TransactionIT {
 
         UUID walletId = UUID.fromString("fa65903f-2441-4ada-81fa-d8cd6a2e00a1");
         // deposit init
-        HttpEntity<String> depositInitRequest = new HttpEntity<>(depositInitRequest(walletId), headers);
+        HttpEntity<String> depositInitRequest = new HttpEntity<>(InitStringRequestStub.depositInitRequest(walletId), headers);
 
         ResponseEntity<ErrorResponse> initResponse = restTemplate
-                .exchange("/api/v1/transactions/DEPOSIT/init", POST, depositInitRequest, ErrorResponse.class);
+                .exchange("/api/v1/transactions/init", POST, depositInitRequest, ErrorResponse.class);
 
         assertThat(initResponse)
                 .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST)
@@ -159,9 +161,9 @@ public class TransactionIT {
                 .hasFieldOrPropertyWithValue("error", "Wallet with Uid  [%s] is not available for DEPOSIT operation".formatted(walletId))
                 .hasFieldOrPropertyWithValue("status", 400);
         // deposit confirm
-        HttpEntity<String> depositConfirmRequest = new HttpEntity<>(depositConfirmRequest(walletId), headers);
+        HttpEntity<String> depositConfirmRequest = new HttpEntity<>(ConfirmStringRequestStub.depositConfirmRequest(walletId), headers);
         ResponseEntity<ErrorResponse> confirmResponse = restTemplate
-                .exchange("/api/v1/transactions/DEPOSIT/confirm", POST, depositConfirmRequest, ErrorResponse.class);
+                .exchange("/api/v1/transactions/confirm", POST, depositConfirmRequest, ErrorResponse.class);
         assertThat(confirmResponse)
                 .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST)
                 .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST)
@@ -188,19 +190,19 @@ public class TransactionIT {
 
         UUID walletId = wallet.getUid();
         // deposit init
-        HttpEntity<String> depositInitRequest = new HttpEntity<>(depositInitRequest(walletId), headers);
+        HttpEntity<String> depositInitRequest = new HttpEntity<>(InitStringRequestStub.depositInitRequest(walletId), headers);
 
         TransactionInitResponse initResponse = restTemplate
-                .exchange("/api/v1/transactions/DEPOSIT/init", POST, depositInitRequest, TransactionInitResponse.class)
+                .exchange("/api/v1/transactions/init", POST, depositInitRequest, TransactionInitResponse.class)
                 .getBody();
 
         assertThat(initResponse)
                 .hasFieldOrPropertyWithValue("amount", amount)
                 .hasFieldOrPropertyWithValue("fee", expectedFee);
         // deposit confirm
-        HttpEntity<String> depositConfirmRequest = new HttpEntity<>(depositConfirmRequest(walletId), headers);
+        HttpEntity<String> depositConfirmRequest = new HttpEntity<>(ConfirmStringRequestStub.depositConfirmRequest(walletId), headers);
         TransactionConfirmResponse confirmResponse = restTemplate
-                .exchange("/api/v1/transactions/DEPOSIT/confirm", POST, depositConfirmRequest, TransactionConfirmResponse.class)
+                .exchange("/api/v1/transactions/confirm", POST, depositConfirmRequest, TransactionConfirmResponse.class)
                 .getBody();
 
         UUID transactionId = confirmResponse.getUid();
@@ -259,19 +261,19 @@ public class TransactionIT {
         BigDecimal expectedBalance = balance.subtract(totalSum);
 
         // withdrawal init
-        HttpEntity<String> withdrawalInitRequest = new HttpEntity<>(withdrawalInitRequest(amount), headers);
+        HttpEntity<String> withdrawalInitRequest = new HttpEntity<>(InitStringRequestStub.withdrawalInitRequest(amount), headers);
 
         TransactionInitResponse initResponse = restTemplate
-                .exchange("/api/v1/transactions/WITHDRAWAL/init", POST, withdrawalInitRequest, TransactionInitResponse.class)
+                .exchange("/api/v1/transactions/init", POST, withdrawalInitRequest, TransactionInitResponse.class)
                 .getBody();
 
         assertThat(initResponse)
                 .hasFieldOrPropertyWithValue("amount", totalSum)
                 .hasFieldOrPropertyWithValue("fee", expectedFee);
         // withdrawal confirm
-        HttpEntity<String> withdrawalConfirmRequest = new HttpEntity<>(withdrawalConfirmRequest(amount), headers);
+        HttpEntity<String> withdrawalConfirmRequest = new HttpEntity<>(ConfirmStringRequestStub.withdrawalConfirmRequest(amount), headers);
         TransactionConfirmResponse confirmResponse = restTemplate
-                .exchange("/api/v1/transactions/WITHDRAWAL/confirm", POST, withdrawalConfirmRequest, TransactionConfirmResponse.class)
+                .exchange("/api/v1/transactions/confirm", POST, withdrawalConfirmRequest, TransactionConfirmResponse.class)
                 .getBody();
 
         UUID transactionId = confirmResponse.getUid();
@@ -327,10 +329,10 @@ public class TransactionIT {
         BigDecimal totalSum = amount.add(expectedFee).setScale(2, RoundingMode.HALF_UP);
 
         // withdrawal init
-        HttpEntity<String> withdrawalInitRequest = new HttpEntity<>(withdrawalInitRequest(amount), headers);
+        HttpEntity<String> withdrawalInitRequest = new HttpEntity<>(InitStringRequestStub.withdrawalInitRequest(amount), headers);
 
         ResponseEntity<TransactionInitResponse> initResponse = restTemplate
-                .exchange("/api/v1/transactions/WITHDRAWAL/init", POST, withdrawalInitRequest, TransactionInitResponse.class);
+                .exchange("/api/v1/transactions/init", POST, withdrawalInitRequest, TransactionInitResponse.class);
 
         assertThat(initResponse)
                 .hasFieldOrPropertyWithValue("status", HttpStatus.OK)
@@ -338,9 +340,9 @@ public class TransactionIT {
                 .hasFieldOrPropertyWithValue("amount", totalSum)
                 .hasFieldOrPropertyWithValue("fee", expectedFee);
         // withdrawal confirm
-        HttpEntity<String> withdrawalConfirmRequest = new HttpEntity<>(withdrawalConfirmRequest(amount), headers);
+        HttpEntity<String> withdrawalConfirmRequest = new HttpEntity<>(ConfirmStringRequestStub.withdrawalConfirmRequest(amount), headers);
         ResponseEntity<TransactionConfirmResponse> confirmResponse = restTemplate
-                .exchange("/api/v1/transactions/WITHDRAWAL/confirm", POST, withdrawalConfirmRequest, TransactionConfirmResponse.class);
+                .exchange("/api/v1/transactions/confirm", POST, withdrawalConfirmRequest, TransactionConfirmResponse.class);
 
         UUID transactionId = confirmResponse.getBody().getUid();
         // check transaction status before kafka confirmed
@@ -394,10 +396,10 @@ public class TransactionIT {
         UUID walletId = UUID.fromString("fa65903f-2441-4ada-81fa-d8cd6a2e00a1");
         BigDecimal amount = BigDecimal.valueOf(40.00);
         // withdrawal init
-        HttpEntity<String> withdrawalInitRequest = new HttpEntity<>(withdrawalInitRequest(amount), headers);
+        HttpEntity<String> withdrawalInitRequest = new HttpEntity<>(InitStringRequestStub.withdrawalInitRequest(amount), headers);
 
         ResponseEntity<ErrorResponse> initResponse = restTemplate
-                .exchange("/api/v1/transactions/WITHDRAWAL/init", POST, withdrawalInitRequest, ErrorResponse.class);
+                .exchange("/api/v1/transactions/init", POST, withdrawalInitRequest, ErrorResponse.class);
 
         assertThat(initResponse)
                 .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST)
@@ -405,9 +407,9 @@ public class TransactionIT {
                 .hasFieldOrPropertyWithValue("error", "Wallet with Uid  [%s] is not available for WITHDRAWAL operation".formatted(walletId))
                 .hasFieldOrPropertyWithValue("status", 400);
         // withdrawal confirm
-        HttpEntity<String> withdrawalConfirmRequest = new HttpEntity<>(withdrawalConfirmRequest(amount), headers);
+        HttpEntity<String> withdrawalConfirmRequest = new HttpEntity<>(ConfirmStringRequestStub.withdrawalConfirmRequest(amount), headers);
         ResponseEntity<ErrorResponse> confirmResponse = restTemplate
-                .exchange("/api/v1/transactions/WITHDRAWAL/confirm", POST, withdrawalConfirmRequest, ErrorResponse.class);
+                .exchange("/api/v1/transactions/confirm", POST, withdrawalConfirmRequest, ErrorResponse.class);
 
         assertThat(confirmResponse)
                 .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST)
@@ -429,10 +431,10 @@ public class TransactionIT {
         BigDecimal amount = BigDecimal.valueOf(100.00);
 
         // withdrawal init
-        HttpEntity<String> withdrawalInitRequest = new HttpEntity<>(withdrawalInitRequest(amount), headers);
+        HttpEntity<String> withdrawalInitRequest = new HttpEntity<>(InitStringRequestStub.withdrawalInitRequest(amount), headers);
 
         ResponseEntity<ErrorResponse> initResponse = restTemplate
-                .exchange("/api/v1/transactions/WITHDRAWAL/init", POST, withdrawalInitRequest, ErrorResponse.class);
+                .exchange("/api/v1/transactions/init", POST, withdrawalInitRequest, ErrorResponse.class);
 
         assertThat(initResponse)
                 .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST)
@@ -440,9 +442,9 @@ public class TransactionIT {
                 .hasFieldOrPropertyWithValue("error", "There is not enough money in the wallet with id [fa65903f-2441-4ada-81fa-d8cd6a2e00a1].")
                 .hasFieldOrPropertyWithValue("status", 400);
         // withdrawal confirm
-        HttpEntity<String> withdrawalConfirmRequest = new HttpEntity<>(withdrawalConfirmRequest(amount), headers);
+        HttpEntity<String> withdrawalConfirmRequest = new HttpEntity<>(ConfirmStringRequestStub.withdrawalConfirmRequest(amount), headers);
         ResponseEntity<ErrorResponse> confirmResponse = restTemplate
-                .exchange("/api/v1/transactions/WITHDRAWAL/confirm", POST, withdrawalConfirmRequest, ErrorResponse.class);
+                .exchange("/api/v1/transactions/confirm", POST, withdrawalConfirmRequest, ErrorResponse.class);
         assertThat(confirmResponse)
                 .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST)
                 .extracting("body")
@@ -463,9 +465,9 @@ public class TransactionIT {
         BigDecimal amount = BigDecimal.valueOf(46.06);
         BigDecimal expectedFee = BigDecimal.valueOf(0.0228 * 0.001).setScale(2, RoundingMode.HALF_UP);
         // transfer init
-        HttpEntity<String> transferInitRequest = new HttpEntity<>(transferInitRequest(amount), headers);
+        HttpEntity<String> transferInitRequest = new HttpEntity<>(InitStringRequestStub.transferInitRequest(amount), headers);
         ResponseEntity<TransactionInitResponse> initResponse = restTemplate
-                .exchange("/api/v1/transactions/TRANSFER/init", POST, transferInitRequest, TransactionInitResponse.class);
+                .exchange("/api/v1/transactions/init", POST, transferInitRequest, TransactionInitResponse.class);
 
         assertThat(initResponse)
                 .hasFieldOrPropertyWithValue("status", HttpStatus.OK)
@@ -474,9 +476,9 @@ public class TransactionIT {
                 .hasFieldOrPropertyWithValue("fee", expectedFee);
 
         // transfer confirm
-        HttpEntity<String> transferConfirmRequest = new HttpEntity<>(transferInitRequest(amount), headers);
+        HttpEntity<String> transferConfirmRequest = new HttpEntity<>(InitStringRequestStub.transferInitRequest(amount), headers);
         ResponseEntity<TransactionConfirmResponse> confirmResponse = restTemplate
-                .exchange("/api/v1/transactions/TRANSFER/confirm", POST, transferConfirmRequest, TransactionConfirmResponse.class);
+                .exchange("/api/v1/transactions/confirm", POST, transferConfirmRequest, TransactionConfirmResponse.class);
 
         assertThat(confirmResponse)
                 .hasFieldOrPropertyWithValue("status", HttpStatus.OK)
@@ -495,9 +497,9 @@ public class TransactionIT {
 
         BigDecimal amount = BigDecimal.valueOf(246.06);
         // transfer init
-        HttpEntity<String> transferInitRequest = new HttpEntity<>(transferInitRequest(amount), headers);
+        HttpEntity<String> transferInitRequest = new HttpEntity<>(InitStringRequestStub.transferInitRequest(amount), headers);
         ResponseEntity<ErrorResponse> initResponse = restTemplate
-                .exchange("/api/v1/transactions/TRANSFER/init", POST, transferInitRequest, ErrorResponse.class);
+                .exchange("/api/v1/transactions/init", POST, transferInitRequest, ErrorResponse.class);
 
         assertThat(initResponse)
                 .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST)
@@ -507,9 +509,9 @@ public class TransactionIT {
 
 
         // transfer confirm
-        HttpEntity<String> transferConfirmRequest = new HttpEntity<>(transferConfirmRequest(amount), headers);
+        HttpEntity<String> transferConfirmRequest = new HttpEntity<>(ConfirmStringRequestStub.transferConfirmRequest(amount), headers);
         ResponseEntity<ErrorResponse> confirmResponse = restTemplate
-                .exchange("/api/v1/transactions/TRANSFER/confirm", POST, transferConfirmRequest, ErrorResponse.class);
+                .exchange("/api/v1/transactions/confirm", POST, transferConfirmRequest, ErrorResponse.class);
 
         assertThat(confirmResponse)
                 .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST)
@@ -528,11 +530,10 @@ public class TransactionIT {
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         ResponseEntity<Void> initResponse = restTemplate
-                .exchange("/api/v1/transactions/{type}/init", POST, new HttpEntity<>(headers), Void.class, type.name());
+                .exchange("/api/v1/transactions/init", POST, new HttpEntity<>(headers), Void.class);
         assertThat(initResponse)
                 .hasFieldOrPropertyWithValue("status", HttpStatus.UNAUTHORIZED);
     }
-
 
     private String adminToken() {
         return KeycloakUtils.adminToken(securityTestConfig.getKeycloakServerUrl()).getToken();
@@ -547,83 +548,5 @@ public class TransactionIT {
                           "userUid": "00000000-0000-0000-0000-000000000001"
                         }
                         """;
-    }
-
-    private String depositInitRequest(UUID walletId) {
-        return //language=JSON
-                """
-                        {
-                          "type": "DEPOSIT",
-                          "userUid": "00000000-0000-0000-0000-000000000001",
-                          "walletUid": "%s",
-                          "amount": 250
-                        }
-                        """.formatted(walletId);
-    }
-
-    private String depositConfirmRequest(UUID walletId) {
-        return //language=JSON
-                """
-                        {
-                          "type": "DEPOSIT",
-                          "userUid": "00000000-0000-0000-0000-000000000001",
-                          "walletUid": "%s",
-                          "amount": 250,
-                          "comment": "На еду"
-                        }
-                        """.formatted(walletId);
-    }
-
-    private String withdrawalInitRequest(BigDecimal amount) {
-        return //language=JSON
-                """
-                        {
-                          "type": "WITHDRAWAL",
-                          "userUid": "00000000-0000-0000-0000-000000000001",
-                          "walletUid": "fa65903f-2441-4ada-81fa-d8cd6a2e00a1",
-                          "amount": "%s"
-                        }
-                        """.formatted(amount);
-    }
-
-    private String withdrawalConfirmRequest(BigDecimal amount) {
-        return //language=JSON
-                """
-                        {
-                          "type": "WITHDRAWAL",
-                          "userUid": "00000000-0000-0000-0000-000000000001",
-                          "walletUid": "fa65903f-2441-4ada-81fa-d8cd6a2e00a1",
-                          "amount": "%s"
-                        }
-                        """.formatted(amount);
-    }
-
-    private String transferInitRequest(BigDecimal amount) {
-        return //language=JSON
-                """
-                        {
-                          "type": "TRANSFER",
-                          "userUid": "00000000-0000-0000-0000-000000000001",
-                          "walletUid": "fa65903f-2441-4ada-81fa-d8cd6a2e00a1",
-                          "amount": "%s",
-                          "targetWalletUid": "fa65903f-2441-4ada-81fa-d8cd6a2e00a2",
-                          "targetUserUid": "00000000-0000-0000-0000-000000000003"
-                        }
-                        """.formatted(amount);
-    }
-
-    private String transferConfirmRequest(BigDecimal amount) {
-        return //language=JSON
-                """
-                        {
-                          "type": "TRANSFER",
-                          "userUid": "00000000-0000-0000-0000-000000000001",
-                          "walletUid": "fa65903f-2441-4ada-81fa-d8cd6a2e00a1",
-                          "amount": "%s",
-                          "targetWalletUid": "fa65903f-2441-4ada-81fa-d8cd6a2e00a2",
-                          "targetUserUid": "00000000-0000-0000-0000-000000000003",
-                          "comment": "Не трать все сразу"
-                        }
-                        """.formatted(amount);
     }
 }

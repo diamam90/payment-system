@@ -33,6 +33,7 @@ public interface WalletMapper {
             @Mapping(source = "wallet.type", target = "type"),
             @Mapping(source = "archivedAt", target = "archivedAt", qualifiedByName = "instantToZonedDateTime"),
             @Mapping(source = "createdAt", target = "createdAt", qualifiedByName = "instantToZonedDateTime"),
+            @Mapping(source = "modifiedAt", target = "updatedAt", qualifiedByName = "instantToZonedDateTime"),
             @Mapping(source = "id", target = "uid"),
             @Mapping(source = "userId", target = "userUid"),
             @Mapping(source = "balance", target = "balance", qualifiedByName = "bigDecimalRound")

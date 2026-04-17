@@ -18,7 +18,8 @@ val versions = mapOf(
     "feignMicrometerVersion" to "13.6",
     "shardingSphereVersion" to "5.5.2",
     "hibernateJpamodelgenVersion" to "6.1.7.Final",
-    "testContainersKeycloakVersion" to "3.4.0"
+    "testContainersKeycloakVersion" to "3.4.0",
+    "logbackEncoderVersion" to "8.0"
 )
 
 plugins {
@@ -75,6 +76,7 @@ dependencies {
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
     implementation("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter")
     implementation("ch.qos.logback:logback-classic:${versions["logbackClassicVersion"]}")
+    implementation("net.logstash.logback:logstash-logback-encoder:${versions["logbackEncoderVersion"]}")
 
     // PERSISTENCE
     implementation("org.hibernate.orm:hibernate-envers:${versions["hibernateEnversVersion"]}")
@@ -106,162 +108,141 @@ dependencies {
     testImplementation("org.testcontainers:kafka:${versions["testContainersVersion"]}")
 }
 
-tasks.withType<Test> {
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(24))
+    }
+}
+
+tasks.test {
     useJUnitPlatform()
 }
 
+
 /*
-──────────────────────────────────────────────────────
-============== Api generation ==============
-──────────────────────────────────────────────────────
+   =================OPEN API GENERATION=================
 */
 
-val openApiDir = file("${rootDir}/openapi")
+val inputSpecDir = file("$projectDir/openapi")
+val specifications = inputSpecDir.listFiles { file -> file.extension in listOf("yaml", "yml") } ?: emptyArray()
+logger.lifecycle("found ${specifications.size} specifications: " + specifications.joinToString { it.name })
 
-val foundSpecifications = openApiDir.listFiles { f -> f.extension in listOf("yaml", "yml") } ?: emptyArray()
-logger.lifecycle("Found ${foundSpecifications.size} specifications: " + foundSpecifications.joinToString { it.name })
+var generatedTasks = specifications.map { spec ->
+    val specName = spec.nameWithoutExtension
+    val taskName = buildOpenApiTaskName(specName)
 
-foundSpecifications.forEach { specFile ->
-    val ourDir = getAbsolutePath(specFile.nameWithoutExtension)
-    val packageName = defineJavaPackageName(specFile.nameWithoutExtension)
-
-    val taskName = buildGenerateApiTaskName(specFile.nameWithoutExtension)
-    logger.lifecycle("Register task ${taskName} from ${ourDir.get()}")
-    val basePackage = "com.example.${packageName}"
-
-    tasks.register(taskName, GenerateTask::class) {
+    tasks.register<GenerateTask>(taskName) {
         generatorName.set("spring")
-        inputSpec.set(specFile.absolutePath)
-        outputDir.set(ourDir)
+        inputSpec.set(spec.absolutePath)
+        outputDir.set(layout.buildDirectory.dir("generated-sources/openapi/$specName").get().asFile.absolutePath)
         importMappings.set(mapOf("ZonedDateTime" to "java.time.ZonedDateTime"))
         typeMappings.set(mapOf("DateTime" to "ZonedDateTime"))
+        val base = "com.example.${specName.substringBefore("-").lowercase()}"
         configOptions.set(
             mapOf(
                 "library" to "spring-cloud",
                 "skipDefaultInterface" to "true",
                 "useBeanValidation" to "true",
                 "openApiNullable" to "false",
+                "useJakartaEe" to "true",
                 "useFeignClientUrl" to "true",
                 "useTags" to "true",
-                "apiPackage" to "${basePackage}.api",
-                "modelPackage" to "${basePackage}.dto",
-                "configPackage" to "${basePackage}.config",
-                "useJakartaEe" to "true"
+                "apiPackage" to "$base.api",
+                "modelPackage" to "$base.dto",
+                "configPackage" to "$base.config"
             )
         )
-
         doFirst {
-            logger.lifecycle("$taskName: starting generation from ${specFile.name}")
+            logger.lifecycle("$taskName starting generation from ${spec.name}")
         }
     }
 }
 
-
-fun getAbsolutePath(nameWithoutExtension: String): Provider<String> {
-    return layout.buildDirectory
-        .dir("generated-sources/openapi/${nameWithoutExtension}")
-        .map { it.asFile.absolutePath }
+fun buildJarTaskName(nameWithoutExtension: String): String {
+    return buildTaskName("jar", nameWithoutExtension);
 }
 
-fun defineJavaPackageName(name: String): String {
-    val beforeDash = name.substringBefore('-')
-    val match = Regex("^[a-z]+]").find(beforeDash)
-    return match?.value ?: beforeDash.lowercase()
+fun buildOpenApiTaskName(nameWithoutExtension: String): String {
+    return buildTaskName("generate", nameWithoutExtension);
 }
 
-fun buildGenerateApiTaskName(name: String): String {
-    return buildTaskName("generate", name)
+fun buildCompileTaskName(nameWithoutExtension: String): String {
+    return buildTaskName("compile", nameWithoutExtension)
 }
 
-fun buildJarTaskName(name: String): String {
-    return buildTaskName("jar", name)
+fun buildPublishTaskName(nameWithoutExtension: String): String {
+    return buildTaskName("", nameWithoutExtension)
 }
 
-fun buildTaskName(taskPrefix: String, name: String): String {
-    val prepareName = name
-        .split(Regex("[^A-Za-z0-9]"))
+fun buildTaskName(taskPrefix: String, nameWithoutExtension: String): String {
+    val name = nameWithoutExtension
+        .split(Regex("[^a-zA-Z0-9]"))
         .filter { it.isNotBlank() }
-        .joinToString("") { it.replaceFirstChar(Char::uppercase) }
-
-    return "${taskPrefix}-${prepareName}"
+        .joinToString("") { it.replaceFirstChar(Char::uppercaseChar) }
+    return "$taskPrefix$name"
 }
 
-val withoutExtensionNames = foundSpecifications.map { it.nameWithoutExtension }
+sourceSets {
+    specifications.forEach { spec ->
+        named("main") {
+            java.srcDirs(layout.buildDirectory.dir("generated-sources/openapi/${spec.nameWithoutExtension}/src/main/java"))
+        }
+    }
+}
 
-sourceSets.named("main") {
-    withoutExtensionNames.forEach { name ->
-        java.srcDir(layout.buildDirectory.dir("generated-sources/openapi/$name/src/main/java"))
+tasks.named("build") {
+    dependsOn(jars)
+}
+
+val jars = specifications.map { spec ->
+    val specName = spec.nameWithoutExtension
+
+    val srcSet = sourceSets.create(specName) {
+        java.srcDirs(layout.buildDirectory.dir("generated-sources/openapi/${specName}/src/main/java"))
+        compileClasspath += sourceSets["main"].compileClasspath
+        runtimeClasspath += sourceSets["main"].runtimeClasspath
+    }
+
+    val compileTaskName = buildCompileTaskName(specName)
+    tasks.register<JavaCompile>(compileTaskName) {
+        source(srcSet.java)
+        classpath = srcSet.compileClasspath
+        destinationDirectory.set(layout.buildDirectory.dir("classes/${specName}"))
+        dependsOn(buildOpenApiTaskName(specName))
+        doFirst {
+            logger.lifecycle("Compiling classes from ${srcSet.java}")
+        }
+    }
+
+    val jarTaskName = buildJarTaskName(specName)
+    tasks.register<Jar>(jarTaskName) {
+        archiveBaseName.set(specName)
+        archiveClassifier.set("")
+        destinationDirectory.set(layout.buildDirectory.dir("libs/pub"))
+        val sourceDir = layout.buildDirectory.dir("classes/${specName}")
+        from(sourceDir)
+        dependsOn(tasks[compileTaskName])
+
+        doFirst {
+            logger.lifecycle("Building JAR $specName from compiled classes ${sourceDir.get().asFile}")
+        }
     }
 }
 
 tasks.register("generateAllOpenApi") {
-    foundSpecifications.forEach { specFile ->
-        dependsOn(buildGenerateApiTaskName(specFile.nameWithoutExtension))
-    }
-    doLast {
-        logger.lifecycle("generateAllOpenApi: all specifications has been generated")
-    }
+    dependsOn(generatedTasks)
 }
 
-tasks.named("compileJava") {
-    dependsOn("generateAllOpenApi")
+tasks.compileJava {
+    dependsOn(tasks.named("generateAllOpenApi"))
 }
 
 /*
-──────────────────────────────────────────────────────
-============== Building jars ==============
-──────────────────────────────────────────────────────
-*/
-
-tasks.named("build") {
-    dependsOn(generatedJars)
-}
-
-val generatedJars = foundSpecifications.map { specFile ->
-    val name = specFile.nameWithoutExtension
-    val generateTaskName = buildGenerateApiTaskName(name)
-    val jarTaskName = buildJarTaskName(name)
-    val outDirProvider = getAbsolutePath(name)
-    val generateSrcDir = outDirProvider.map { File(it).resolve("src/main/java") }
-
-    val sourcesSetName = name
-
-    val sourceSet = sourceSets.create(sourcesSetName) {
-        java.srcDir(generateSrcDir)
-        compileClasspath += sourceSets["main"].compileClasspath
-    }
-
-    val compileTaskName = "compile${sourcesSetName.replaceFirstChar(Char::uppercase)}Java"
-    tasks.register<JavaCompile>(compileTaskName) {
-        source = sourceSet.java
-        classpath = sourceSet.compileClasspath
-        destinationDirectory.set(layout.buildDirectory.dir("classes/${sourcesSetName}"))
-        dependsOn(generateTaskName)
-    }
-
-    tasks.register<Jar>(jarTaskName) {
-        group = "build"
-        archiveBaseName.set(name)
-        destinationDirectory.set(layout.buildDirectory.dir("libs"))
-
-        val classOutput = layout.buildDirectory.dir("classes/${sourcesSetName}")
-        from(classOutput)
-        dependsOn(compileTaskName)
-
-        doFirst {
-            println("Building JAR for $name from compiled classes in ${classOutput.get().asFile}")
-        }
-    }
-}
-
-/*
-──────────────────────────────────────────────────────
-============== Resolve NEXUS credentials ==============
-──────────────────────────────────────────────────────
+   =================NEXUS PUBLISH=================
 */
 
 file(".env").takeIf { it.exists() }?.readLines()?.forEach {
-    val (k, v) = it.split("=", limit = 2)
+    var (k, v) = it.split("=", limit = 2)
     System.setProperty(k.trim(), v.trim())
     logger.lifecycle("${k.trim()}=${v.trim()}")
 }
@@ -277,39 +258,29 @@ if (nexusUrl.isNullOrBlank() || nexusUser.isNullOrBlank() || nexusPassword.isNul
     )
 }
 
-/*
-──────────────────────────────────────────────────────
-============== Nexus Publishing ==============
-──────────────────────────────────────────────────────
-*/
-
 publishing {
     publications {
-        foundSpecifications.forEach { specFile ->
-            val name = specFile.nameWithoutExtension
-            val jarBaseName = name
-            var jarFile = file("build/libs")
-                .listFiles()
-                ?.firstOrNull { it.name.contains(name) && (it.extension == "jar" || it.extension == "zip") }
-
+        specifications.forEach { spec ->
+            val specName = spec.nameWithoutExtension
+            val jarFile = file("build/libs/pub").listFiles()
+                ?.firstOrNull { it.name.contains(specName) && (it.extension == "jar" || it.extension == "zip") }
             if (jarFile != null) {
-                logger.lifecycle("publishing: ${jarFile.name}")
-
-                create<MavenPublication>("publish${name.replaceFirstChar(Char::uppercase)}Jar") {
+                val publishTaskName = buildPublishTaskName(specName)
+                logger.lifecycle("Found JAR ${jarFile.name} for publishing to nexus repository")
+                create<MavenPublication>(publishTaskName) {
                     artifact(jarFile)
-                    groupId = "com.example"
-                    artifactId = jarBaseName
-                    version = "1.0.0-SNAPSHOT"
+                    groupId = project.group.toString()
+                    artifactId = specName
+                    version = project.version.toString()
 
                     pom {
-                        this.name.set("Generated API $jarBaseName")
-                        this.description.set("OpenAPI generated code for $jarBaseName")
+                        name.set("Generated API $specName")
+                        description.set("Generated code for $specName")
                     }
                 }
             }
         }
     }
-
     repositories {
         maven {
             name = "nexus"

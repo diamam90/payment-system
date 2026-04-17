@@ -8,9 +8,11 @@ var properties = mapOf(
     "testContainersKeycloakVersion" to "3.4.0",
     "testContainersJunitVersion" to "1.21.3",
     "personServiceApiVersion" to "1.0.0-SNAPSHOT",
+    "transactionServiceApiVersion" to "1.0.0-SNAPSHOT",
     "wireMockVersion" to "1.0-alpha-13",
     "nettyDnsResolver" to "4.1.72.Final:osx-aarch_64",
-    "archunitVersion" to "1.4.1"
+    "archunitVersion" to "1.4.1",
+    "mapstructVersion" to "1.5.5.Final"
 )
 
 plugins {
@@ -64,6 +66,7 @@ dependencies {
 
     // PAYMENT SYSTEM
     implementation("com.example:person-service-api:${properties["personServiceApiVersion"]}")
+    implementation("com.example:transaction-service-api:${properties["transactionServiceApiVersion"]}")
 
     // OBSERVABILITY
     implementation("io.micrometer:micrometer-registry-prometheus")
@@ -71,15 +74,14 @@ dependencies {
     implementation("io.opentelemetry:opentelemetry-exporter-otlp")
     implementation("io.github.openfeign:feign-micrometer:${properties["feignMicrometerVersion"]}")
 
-
     //  UTIL
-//    implementation(platform("org.axonframework:axon-bom:4.12.1"))
-//    implementation("org.axonframework:axon-spring-boot-starter")
     implementation("org.aspectj:aspectjweaver")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${properties["springDocVersion"]}")
     implementation("org.projectlombok:lombok")
+    compileOnly("org.mapstruct:mapstruct:${properties["mapstructVersion"]}")
     implementation("net.logstash.logback:logstash-logback-encoder:${properties["logbackEncoderVersion"]}")
     annotationProcessor("org.projectlombok:lombok")
+    annotationProcessor("org.mapstruct:mapstruct-processor:${properties["mapstructVersion"]}")
     implementation("io.netty:netty-resolver-dns-native-macos:${properties["nettyDnsResolver"]}")
 
     // TEST
@@ -90,7 +92,6 @@ dependencies {
     testImplementation("org.testcontainers:junit-jupiter:${properties["testContainersJunitVersion"]}")
     testImplementation("org.wiremock.integrations.testcontainers:wiremock-testcontainers-module:${properties["wireMockVersion"]}")
     testImplementation("com.tngtech.archunit:archunit:${properties["archunitVersion"]}")
-//    testImplementation("org.axonframework:axon-test")
 }
 
 

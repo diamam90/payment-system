@@ -85,18 +85,11 @@ paths:
                   $ref: '#/components/schemas/WalletResponse'
 
   # Transactions
-  /api/v1/transactions/{type}/init:
+  /api/v1/transactions/init:
     post:
       tags: [ Transaction ]
       summary: Инициализация транзакции (без создания)
       operationId: transactionInit
-      parameters:
-        - name: type
-          in: path
-          required: true
-          schema:
-            type: string
-            enum: [ deposit, withdrawal, transfer ]
       requestBody:
         required: true
         content:
@@ -118,18 +111,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/v1/transactions/{type}/confirm:
+  /api/v1/transactions/confirm:
     post:
       tags: [ Transaction ]
       summary: Подтверждение и запуск транзакции
       operationId: transactionConfirm
-      parameters:
-        - name: type
-          in: path
-          required: true
-          schema:
-            type: string
-            enum: [ deposit, withdrawal, transfer ]
       requestBody:
         required: true
         content:
@@ -187,44 +173,9 @@ paths:
       operationId: getTransactionsByFilter
       parameters:
         - in: query
-          name: userUid
+          name: transactionFilterRequest
           schema:
-            type: string
-            format: uuid
-        - in: query
-          name: walletUid
-          schema:
-            type: string
-            format: uuid
-        - in: query
-          name: type
-          schema:
-            type: string
-            enum: [ deposit, withdrawal, transfer ]
-        - in: query
-          name: status
-          schema:
-            type: string
-        - in: query
-          name: dateFrom
-          schema:
-            type: string
-            format: date-time
-        - in: query
-          name: dateTo
-          schema:
-            type: string
-            format: date-time
-        - in: query
-          name: page
-          schema:
-            type: integer
-            default: 0
-        - in: query
-          name: size
-          schema:
-            type: integer
-            default: 20
+            $ref: '#/components/schemas/TransactionFilterRequest'
       responses:
         '200':
           description: Список транзакций
@@ -236,6 +187,12 @@ paths:
                   $ref: '#/components/schemas/TransactionStatusResponse'
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: Bearer
+      bearerFormat: JWT
+
   schemas:
     CreateWalletRequest:
       type: object
@@ -326,7 +283,6 @@ components:
           TRANSFER: '#TransferConfirmRequest'
           WITHDRAWAL: '#WithdrawalConfirmRequest'
 
-
     DepositConfirmRequest:
       type: object
       properties:
@@ -383,6 +339,47 @@ components:
         comment:
           type: string
       required: [ type, userUid, walletUid, amount, targetWalletUid, targetUserUid ]
+
+    TransactionFilterRequest:
+      type: object
+      properties:
+        filter:
+          $ref: '#/components/schemas/Params'
+        pageable:
+          $ref: '#/components/schemas/Pageable'
+      required: [ pageable, filter ]
+
+    Params:
+      type: object
+      properties:
+        userUid:
+          type: string
+          format: uuid
+        walletUid:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [ DEPOSIT, WITHDRAWAL, TRANSFER ]
+        status:
+          type: string
+          enum: [ PENDING, FAILED, COMPLETED ]
+        dateFrom:
+          type: string
+          format: date-time
+        dateTo:
+          type: string
+          format: date-time
+
+    Pageable:
+      type: object
+      properties:
+        page:
+          type: integer
+          default: 0
+        size:
+          type: integer
+          default: 20
 
     WalletResponse:
       type: object
