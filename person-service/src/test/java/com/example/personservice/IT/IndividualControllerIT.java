@@ -1,9 +1,10 @@
 package com.example.personservice.IT;
 
-import com.example.personservice.config.AppContainers;
 import com.example.person.dto.ErrorResponse;
 import com.example.person.dto.IndividualRequest;
 import com.example.person.dto.IndividualResponse;
+import com.example.personservice.config.DatabaseConfig;
+import com.example.personservice.config.SecurityTestConfig;
 import com.example.personservice.entity.Status;
 import com.example.personservice.stub.request.IndividualRequestStub;
 import com.example.personservice.util.JdbcUtils;
@@ -13,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.*;
 import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -27,8 +28,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+@Import({DatabaseConfig.class, SecurityTestConfig.class})
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ImportTestcontainers(AppContainers.class)
 @Testcontainers(disabledWithoutDocker = true)
 public class IndividualControllerIT {
 
@@ -36,6 +37,8 @@ public class IndividualControllerIT {
     TestRestTemplate restTemplate;
     @Autowired
     JdbcUtils jdbcUtils;
+    @Autowired
+    SecurityTestConfig securityConfig;
 
     @AfterEach
     void truncate() {
@@ -111,7 +114,7 @@ public class IndividualControllerIT {
         // given
         var request = IndividualRequestStub.update();
         var id = jdbcUtils.getIndividualIdByPassport("1331 4429");
-        var adminToken = KeycloakUtils.adminToken().getToken();
+        var adminToken = KeycloakUtils.adminToken(securityConfig.getKeycloakServerUrl()).getToken();
         var entity = createEntityWithBearerToken(request, adminToken);
         // when
         ResponseEntity<IndividualResponse> response = restTemplate.exchange("/api/v1/individuals/{id}", HttpMethod.POST, entity, IndividualResponse.class, id);
@@ -174,7 +177,7 @@ public class IndividualControllerIT {
         // given
         var id = UUID.fromString("33333333-3333-3333-3333-333333333333");
         var request = IndividualRequestStub.update();
-        var adminToken = KeycloakUtils.adminToken().getToken();
+        var adminToken = KeycloakUtils.adminToken(securityConfig.getKeycloakServerUrl()).getToken();
         var entity = createEntityWithBearerToken(request, adminToken);
         // when
         ResponseEntity<ErrorResponse> response = restTemplate.exchange("/api/v1/individuals/{id}", HttpMethod.POST, entity, ErrorResponse.class, id);
@@ -190,7 +193,7 @@ public class IndividualControllerIT {
     void findByEmail() {
         // given
         var email = "email@email.email";
-        var adminToken = KeycloakUtils.adminToken().getToken();
+        var adminToken = KeycloakUtils.adminToken(securityConfig.getKeycloakServerUrl()).getToken();
         var entity = createEntityWithBearerToken(null, adminToken);
         // when
         ResponseEntity<IndividualResponse> response = restTemplate.exchange("/api/v1/individuals?email={email}", HttpMethod.GET, entity, IndividualResponse.class, email);
@@ -216,7 +219,7 @@ public class IndividualControllerIT {
     void findByEmail_WhenNotExists_shouldReturn404() {
         // given
         var email = "email@thatnot.exists";
-        var adminToken = KeycloakUtils.adminToken().getToken();
+        var adminToken = KeycloakUtils.adminToken(securityConfig.getKeycloakServerUrl()).getToken();
         var entity = createEntityWithBearerToken(null, adminToken);
         // when
         ResponseEntity<ErrorResponse> response = restTemplate.exchange("/api/v1/individuals?email={email}", HttpMethod.GET, entity, ErrorResponse.class, email);
@@ -232,8 +235,8 @@ public class IndividualControllerIT {
     @Test
     void findById() {
         var id = jdbcUtils.getIndividualIdByPassport("1331 4429");
-        var adminToken = KeycloakUtils.adminToken().getToken();
-        var entity = createEntityWithBearerToken(null,adminToken);
+        var adminToken = KeycloakUtils.adminToken(securityConfig.getKeycloakServerUrl()).getToken();
+        var entity = createEntityWithBearerToken(null, adminToken);
         ResponseEntity<IndividualResponse> response = restTemplate.exchange("/api/v1/individuals/{id}", HttpMethod.GET,
                 entity, IndividualResponse.class, id);
 
@@ -257,7 +260,7 @@ public class IndividualControllerIT {
     @Test
     void findById_WhenNotExists_shouldReturn404() {
         var id = UUID.fromString("33333333-3333-3333-3333-333333333333");
-        var adminToken = KeycloakUtils.adminToken().getToken();
+        var adminToken = KeycloakUtils.adminToken(securityConfig.getKeycloakServerUrl()).getToken();
 
         var entity = createEntityWithBearerToken(null, adminToken);
         var response = restTemplate.exchange("/api/v1/individuals/{id}", HttpMethod.GET, entity,
@@ -276,7 +279,7 @@ public class IndividualControllerIT {
         var individualParams = jdbcUtils.getIndividualParams(id);
         assertEquals("active", individualParams.get("status"));
 
-        var adminToken = KeycloakUtils.adminToken().getToken();
+        var adminToken = KeycloakUtils.adminToken(securityConfig.getKeycloakServerUrl()).getToken();
 
         var entity = createEntityWithBearerToken(null, adminToken);
 

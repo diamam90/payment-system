@@ -5,22 +5,21 @@ spring:
   application:
     name: person-service
   datasource:
-    url: jdbc:postgresql://localhost:5434/person
-    username: personadmin
-    password: personadmin
+    url: jdbc:postgresql://${PERSON_SERVICE_DB_HOST}:${PERSON_SERVICE_DB_PORT}/person
+    username: ${PERSON_SERVICE_DB_USERNAME}
+    password: ${PERSON_SERVICE_DB_PASSWORD}
     jpa:
       show-sql: true
       generate-ddl: false
   flyway:
-    url: jdbc:postgresql://localhost:5434/person
-    user: personadmin
-    password: personadmin
-
+    url: jdbc:postgresql://${PERSON_SERVICE_DB_HOST}:${PERSON_SERVICE_DB_PORT}/person
+    user: ${PERSON_SERVICE_DB_USERNAME}
+    password: ${PERSON_SERVICE_DB_PASSWORD}
   security:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://localhost:8080/realms/payment/protocol/openid-connect/certs
+          jwk-set-uri: ${KEYCLOAK_URL}/realms/payment/protocol/openid-connect/certs
 
 management:
   endpoints:
@@ -39,4 +38,4 @@ management:
       probability: 1.0
   otlp:
     tracing:
-      endpoint: http://localhost:4318/v1/traces
+      endpoint: ${TEMPO_URL}/v1/traces

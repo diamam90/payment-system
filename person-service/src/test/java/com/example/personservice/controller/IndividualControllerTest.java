@@ -1,6 +1,7 @@
 package com.example.personservice.controller;
 
 import com.example.personservice.config.SecurityConfig;
+import com.example.personservice.config.SecurityTestConfig;
 import com.example.personservice.entity.Individual;
 import com.example.personservice.exception.ObjectNotFoundException;
 import com.example.personservice.mapper.IndividualMapper;
@@ -29,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @AutoConfigureMockMvc
 @WebMvcTest(value = IndividualController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, SecurityTestConfig.class})
 class IndividualControllerTest {
 
     @Autowired

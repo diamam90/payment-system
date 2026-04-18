@@ -1,7 +1,8 @@
 package com.example.personservice.repository;
 
 import com.example.personservice.config.AppConfig;
-import com.example.personservice.config.AppContainers;
+import com.example.personservice.config.DatabaseConfig;
+import com.example.personservice.config.SecurityTestConfig;
 import com.example.personservice.entity.Individual;
 import com.example.personservice.stub.entity.IndividualStub;
 import com.example.personservice.util.JdbcUtils;
@@ -9,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.testcontainers.context.ImportTestcontainers;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -22,8 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
-@ImportTestcontainers(AppContainers.class)
-@Import({AppConfig.class, JdbcUtils.class})
+@Import({AppConfig.class, DatabaseConfig.class, SecurityTestConfig.class, JdbcUtils.class})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers(disabledWithoutDocker = true)
 class IndividualRepositoryTest {

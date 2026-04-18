@@ -1,6 +1,7 @@
 package com.example.personservice.controller;
 
 import com.example.personservice.config.SecurityConfig;
+import com.example.personservice.config.SecurityTestConfig;
 import com.example.personservice.service.IndividualService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(PrivateIndividualController.class)
 @AutoConfigureMockMvc
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, SecurityTestConfig.class})
 class PrivateIndividualControllerTest {
 
     @Autowired

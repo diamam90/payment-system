@@ -6,7 +6,10 @@ services:
     ports:
       - "8081:8081"
     environment:
-      SPRING_PROFILES_ACTIVE: docker
+      KEYCLOAK_URL: http://individuals-keycloak:8080
+      TEMPO_URL: http://tempo:4318
+      PERSON_SERVICE_BASE_URL: http://person-service:8082
+      TRANSACTION_SERVICE_BASE_URL: http://transaction-service:8083
     depends_on:
       keycloak:
         condition: service_healthy
@@ -182,7 +185,12 @@ services:
       context: ./person-service
     container_name: person-service
     environment:
-      SPRING_PROFILES_ACTIVE: docker
+      KEYCLOAK_URL: http://individuals-keycloak:8080
+      TEMPO_URL: http://tempo:4318
+      PERSON_SERVICE_DB_HOST: person-db
+      PERSON_SERVICE_DB_PORT: 5432
+      PERSON_SERVICE_DB_USERNAME: personadmin
+      PERSON_SERVICE_DB_PASSWORD: personadmin
     ports:
       - "8082:8082"
     healthcheck:

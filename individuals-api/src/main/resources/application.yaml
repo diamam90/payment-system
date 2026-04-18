@@ -8,7 +8,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://localhost:8080/realms/payment/protocol/openid-connect/certs
+          jwk-set-uri: ${KEYCLOAK_URL}/realms/payment/protocol/openid-connect/certs
 
 management:
   endpoints:
@@ -27,19 +27,18 @@ management:
       probability: 1.0
   otlp:
     tracing:
-      endpoint: http://localhost:4318/v1/traces
+      endpoint: ${TEMPO_URL}/v1/traces
 
 individuals-api:
   keycloak:
-    baseUrl: http://localhost:8080
+    baseUrl: ${KEYCLOAK_URL}
     realm: payment
     clientId: individuals-api
     clientSecret: "**********"
   person:
-    base-url: http://localhost:8082
+    base-url: ${PERSON_SERVICE_BASE_URL}
   transaction:
-    base-url: http://localhost:8083
+    base-url: ${TRANSACTION_SERVICE_BASE_URL}
 logging:
   level:
     com.example: debug
-#    org.springframework: debug
