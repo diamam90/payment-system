@@ -35,6 +35,10 @@ spring:
         "[spring.deserializer.key.delegate.class]": org.springframework.kafka.support.serializer.JsonDeserializer
         "[spring.deserializer.value.delegate.class]": org.springframework.kafka.support.serializer.JsonDeserializer
     bootstrap-servers: ${TRANSACTION_SERVICE_KAFKA_BOOTSTRAP_SERVERS}
+    template:
+      observation-enabled: true
+    listener:
+      observation-enabled: true
 
 management:
   endpoints:

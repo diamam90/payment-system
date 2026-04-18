@@ -1,6 +1,7 @@
 package com.example.transactionservice.config;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.JwkSetUriJwtDecoderBuilderCustomizer;
@@ -9,8 +10,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-
-import javax.annotation.PostConstruct;
 
 @Import(Containers.class)
 @TestConfiguration

@@ -44,6 +44,9 @@ prometheus.exporter.postgres "psdbs" {
   data_source_names = [
     "postgresql://keycloak:keycloak@keycloak-postgres:5432/keycloak?sslmode=disable",
     "postgresql://personadmin:personadmin@person-db:5432/person?sslmode=disable",
+    "postgresql://transactionadmin:transactionadmin@transaction-shard0:5432/transaction?sslmode=disable",
+    "postgresql://transactionadmin:transactionadmin@transaction-shard1:5432/transaction?sslmode=disable",
+    "postgresql://transactionadmin:transactionadmin@transaction-shard2:5432/transaction?sslmode=disable",
   ]
 }
 

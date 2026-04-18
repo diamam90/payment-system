@@ -4,22 +4,13 @@ import org.gradle.api.publish.maven.MavenPublication
 val versions = mapOf(
     "mapstructVersion" to "1.5.5.Final",
     "springdocOpenapiStarterWebmvcUiVersion" to "2.5.0",
-    "javaxAnnotationApiVersion" to "1.3.2",
-    "javaxValidationApiVersion" to "2.0.0.Final",
-    "comGoogleCodeFindbugs" to "3.0.2",
     "springCloudStarterOpenfeign" to "4.1.1",
-    "javaxServletApiVersion" to "2.5",
-    "logbackClassicVersion" to "1.5.18",
-    "comGoogleCodeFindbugs" to "3.0.2",
-    "springCloudStarterOpenfeign" to "4.1.1",
-    "hibernateEnversVersion" to "6.4.4.Final",
     "testContainersVersion" to "1.19.3",
-    "junitJupiterVersion" to "5.10.0",
-    "feignMicrometerVersion" to "13.6",
     "shardingSphereVersion" to "5.5.2",
     "hibernateJpamodelgenVersion" to "6.1.7.Final",
     "testContainersKeycloakVersion" to "3.4.0",
-    "logbackEncoderVersion" to "8.0"
+    "logbackEncoderVersion" to "8.0",
+    "springDocVersion" to "2.5.0",
 )
 
 plugins {
@@ -67,19 +58,13 @@ dependencies {
     implementation("org.springframework.kafka:spring-kafka")
 
     // OBSERVABILITY
-    implementation("io.micrometer:micrometer-registry-prometheus")
-    implementation("io.github.openfeign:feign-micrometer:${versions["feignMicrometerVersion"]}")
     implementation("io.opentelemetry:opentelemetry-exporter-otlp")
     implementation("io.micrometer:micrometer-observation")
     implementation("io.micrometer:micrometer-tracing")
     implementation("io.micrometer:micrometer-tracing-bridge-otel")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
-    implementation("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter")
-    implementation("ch.qos.logback:logback-classic:${versions["logbackClassicVersion"]}")
-    implementation("net.logstash.logback:logstash-logback-encoder:${versions["logbackEncoderVersion"]}")
 
     // PERSISTENCE
-    implementation("org.hibernate.orm:hibernate-envers:${versions["hibernateEnversVersion"]}")
     implementation("org.postgresql:postgresql")
     implementation("org.flywaydb:flyway-database-postgresql")
     implementation("org.apache.shardingsphere:shardingsphere-jdbc:${versions["shardingSphereVersion"]}")
@@ -88,11 +73,9 @@ dependencies {
     // HELPERS
     compileOnly("org.projectlombok:lombok")
     compileOnly("org.mapstruct:mapstruct:${versions["mapstructVersion"]}")
-    compileOnly("com.google.code.findbugs:jsr305:${versions["comGoogleCodeFindbugs"]}")
     annotationProcessor("org.projectlombok:lombok")
     annotationProcessor("org.mapstruct:mapstruct-processor:${versions["mapstructVersion"]}")
-    implementation("javax.validation:validation-api:${versions["javaxValidationApiVersion"]}")
-    implementation("javax.annotation:javax.annotation-api:${versions["javaxAnnotationApiVersion"]}")
+    implementation("net.logstash.logback:logstash-logback-encoder:${versions["logbackEncoderVersion"]}")
 
     // TEST
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -100,7 +83,7 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testCompileOnly("org.projectlombok:lombok")
     testAnnotationProcessor("org.projectlombok:lombok")
-    testImplementation("org.junit.jupiter:junit-jupiter:${versions["junitJupiterVersion"]}")
+    testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.testcontainers:testcontainers:${versions["testContainersVersion"]}")
     testImplementation("com.github.dasniko:testcontainers-keycloak:${versions["testContainersKeycloakVersion"]}")
     testImplementation("org.testcontainers:postgresql:${versions["testContainersVersion"]}")

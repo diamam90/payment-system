@@ -1,5 +1,6 @@
 package com.example.transactionservice.config;
 
+import jakarta.annotation.PostConstruct;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -16,8 +17,6 @@ import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.testcontainers.containers.KafkaContainer;
 
-import javax.annotation.PostConstruct;
-
 @Import(Containers.class)
 @TestConfiguration(proxyBeanMethods = false)
 public class KafkaTestConfig {
@@ -26,7 +25,7 @@ public class KafkaTestConfig {
     KafkaContainer kafka;
 
     @PostConstruct
-    void startContainer(){
+    void startContainer() {
         kafka.start();
     }
 

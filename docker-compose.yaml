@@ -306,6 +306,7 @@ services:
   transaction-service:
     build:
       context: ./transaction-service
+    container_name: transaction-service
     ports:
       - "8083:8083"
     environment:
@@ -323,7 +324,7 @@ services:
       TRANSACTION_SERVICE_SHARD_3_PORT: 5432
       TRANSACTION_SERVICE_SHARD_3_USERNAME: transactionadmin
       TRANSACTION_SERVICE_SHARD_3_PASSWORD: transactionadmin
-      TRANSACTION_SERVICE_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      TRANSACTION_SERVICE_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     healthcheck:
       test: [ "CMD","wget","--spider","localhost:8083/actuator/health" ]
       interval: 10s
