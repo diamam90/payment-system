@@ -8,6 +8,11 @@ datasources:
     uid: loki
     access: proxy
     url: http://loki:3100
+    jsonData:
+      derivedFields:
+        - matcherRegex: '"traceId":"(\w+)"'
+          name: traceID
+          url: '$${__value.raw}'
 
   - name: prometheus
     type: prometheus
@@ -25,5 +30,9 @@ datasources:
     jsonData:
       tracesToLogsV2:
         datasourceUid: 'loki'
-        spanStartTimeShift: '-10m'
-        spanEndTimeShift: '10m'
+        spanStartTimeShift: '-5s'
+        spanEndTimeShift: '5s'
+        tags: [{ key: 'service.name', value: 'container_name' }]
+        filterByTraceID: true
+        filterBySpanID: false
+        customQuery: false

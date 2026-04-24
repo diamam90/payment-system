@@ -6,6 +6,7 @@ services:
     ports:
       - "8081:8081"
     environment:
+      LOGGING_LEVEL_COM_EXAMPLE: debug
       KEYCLOAK_URL: http://individuals-keycloak:8080
       TEMPO_URL: http://tempo:4318
       PERSON_SERVICE_BASE_URL: http://person-service:8082
@@ -164,8 +165,7 @@ services:
       - payment_system_network
 
   nexus:
-    # image: sonatype/nexus3:3.85.0 
-    image: sonatype/nexus3:3.76.0
+    image: sonatype/nexus3:3.85.0
     container_name: nexus
     ports:
       - "8800:8081"
@@ -185,6 +185,7 @@ services:
       context: ./person-service
     container_name: person-service
     environment:
+      LOGGING_LEVEL_COM_EXAMPLE: debug
       KEYCLOAK_URL: http://individuals-keycloak:8080
       TEMPO_URL: http://tempo:4318
       PERSON_SERVICE_DB_HOST: person-db
@@ -318,6 +319,7 @@ services:
     ports:
       - "8083:8083"
     environment:
+      LOGGING_LEVEL_COM_EXAMPLE: debug
       KEYCLOAK_URL: http://individuals-keycloak:8080
       TEMPO_URL: http://tempo:4318
       TRANSACTION_SERVICE_SHARD_1_HOST: transaction-db1
