@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 public enum ExternalService {
 
     PERSON_SERVICE("Person-service"),
+    TRANSACTION_SERVICE("Transaction-service"),
     KEYCLOAK("Keycloak");
 
     private final String serviceName;

@@ -1,0 +1,16 @@
+@startuml
+actor Client
+participant IndividualsAPI
+participant TransactionService
+
+Client -> IndividualsAPI: GET /api/v1/transactions?filter
+IndividualsAPI -> TransactionService: GET /api/v1/transactions?filter
+TransactionService -> TransactionService: get transaction by filter
+alt ok
+    TransactionService -> IndividualsAPI: List<TransactionStatusResponse>
+    IndividualsAPI-> Client: List<TransactionStatusResponse>
+else exception
+    TransactionService -> IndividualsAPI: ErrorResponse
+    IndividualsAPI -> Client: ErrorResponse
+end
+@enduml

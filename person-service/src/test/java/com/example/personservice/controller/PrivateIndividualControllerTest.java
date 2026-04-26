@@ -1,6 +1,7 @@
 package com.example.personservice.controller;
 
 import com.example.personservice.config.SecurityConfig;
+import com.example.personservice.config.SecurityTestConfig;
 import com.example.personservice.service.IndividualService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(PrivateIndividualController.class)
 @AutoConfigureMockMvc
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, SecurityTestConfig.class})
 class PrivateIndividualControllerTest {
 
     @Autowired
@@ -30,7 +31,7 @@ class PrivateIndividualControllerTest {
 
     private static final UUID id = UUID.fromString("00000000-0000-0000-0000-000000000022");
 
-    @WithMockUser(username = "user", authorities = {"individuals_wr"})
+    @WithMockUser(username = "user", authorities = {"person_service_wr"})
     @Test
     void shouldDeleteById() throws Exception {
         mvc.perform(delete("/private/api/v1/individuals/{id}", id))
@@ -39,7 +40,7 @@ class PrivateIndividualControllerTest {
         verify(individualService).hardDelete(id);
     }
 
-    @WithMockUser(username = "user", authorities = {"individuals_wr"})
+    @WithMockUser(username = "user", authorities = {"person_service_wr"})
     @Test
     void shouldActivateUser() throws Exception {
         mvc.perform(post("/private/api/v1/individuals/{id}", id))

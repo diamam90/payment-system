@@ -76,6 +76,6 @@ public class SecurityConfig {
 
     private void applySecuredPath
             (AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry registry) {
-        registry.requestMatchers("/private/**").hasAuthority("individuals_wr");
+        registry.requestMatchers("/private/**").hasAuthority("person_service_wr");
     }
 }

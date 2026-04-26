@@ -14,6 +14,11 @@ prometheus.scrape "scraper" {
             "__metrics_path__" = "/actuator/prometheus",
             "instance" = "person-service",
         },
+        {
+            "__address__" = "transaction-service:8083",
+            "__metrics_path__" = "/actuator/prometheus",
+            "instance" = "transaction-service",
+        },
     ]
     scrape_interval = "10s"
     scrape_timeout = "5s"
@@ -39,6 +44,9 @@ prometheus.exporter.postgres "psdbs" {
   data_source_names = [
     "postgresql://keycloak:keycloak@keycloak-postgres:5432/keycloak?sslmode=disable",
     "postgresql://personadmin:personadmin@person-db:5432/person?sslmode=disable",
+    "postgresql://transactionadmin:transactionadmin@transaction-shard0:5432/transaction?sslmode=disable",
+    "postgresql://transactionadmin:transactionadmin@transaction-shard1:5432/transaction?sslmode=disable",
+    "postgresql://transactionadmin:transactionadmin@transaction-shard2:5432/transaction?sslmode=disable",
   ]
 }
 

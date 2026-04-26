@@ -1,0 +1,80 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: transaction-service
+  datasource:
+    url: jdbc:shardingsphere:classpath:sharding.yaml?placeholder-type=environment
+    driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
+  flyway:
+    enabled: false
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${KEYCLOAK_URL}/realms/payment/protocol/openid-connect/certs
+  kafka:
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: "all"
+    consumer:
+      group-id: "payment-system"
+      key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      auto-offset-reset: earliest
+      properties:
+        "[spring.json.value.default.type]": com.example.transactionservice.model.kafka.TransactionCompletedEvent
+        "[spring.json.trusted.packages]": com.example.transactionservice.model.kafka
+        "[spring.deserializer.key.delegate.class]": org.springframework.kafka.support.serializer.JsonDeserializer
+        "[spring.deserializer.value.delegate.class]": org.springframework.kafka.support.serializer.JsonDeserializer
+    bootstrap-servers: ${TRANSACTION_SERVICE_KAFKA_BOOTSTRAP_SERVERS}
+    template:
+      observation-enabled: true
+    listener:
+      observation-enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  observations:
+    annotations:
+      enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${TEMPO_URL}/v1/traces
+
+transaction-service:
+  kafka:
+    topic:
+      out: transaction.confirm
+      in: transaction.complete
+  flyway:
+    data-sources:
+      shard1:
+        url: jdbc:postgresql://${TRANSACTION_SERVICE_SHARD_1_HOST}:${TRANSACTION_SERVICE_SHARD_1_PORT}/transaction
+        username: ${TRANSACTION_SERVICE_SHARD_1_USERNAME}
+        password: ${TRANSACTION_SERVICE_SHARD_1_PASSWORD}
+      shard2:
+        url: jdbc:postgresql://${TRANSACTION_SERVICE_SHARD_2_HOST}:${TRANSACTION_SERVICE_SHARD_2_PORT}/transaction
+        username: ${TRANSACTION_SERVICE_SHARD_2_USERNAME}
+        password: ${TRANSACTION_SERVICE_SHARD_2_PASSWORD}
+      shard3:
+        url: jdbc:postgresql://${TRANSACTION_SERVICE_SHARD_3_HOST}:${TRANSACTION_SERVICE_SHARD_3_PORT}/transaction
+        username: ${TRANSACTION_SERVICE_SHARD_3_USERNAME}
+        password: ${TRANSACTION_SERVICE_SHARD_3_PASSWORD}

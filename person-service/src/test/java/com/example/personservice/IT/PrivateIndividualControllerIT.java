@@ -1,7 +1,8 @@
 package com.example.personservice.IT;
 
 import com.example.person.dto.ErrorResponse;
-import com.example.personservice.config.AppContainers;
+import com.example.personservice.config.DatabaseConfig;
+import com.example.personservice.config.SecurityTestConfig;
 import com.example.personservice.entity.Status;
 import com.example.personservice.util.JdbcUtils;
 import com.example.personservice.util.KeycloakUtils;
@@ -10,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.*;
 import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -21,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-@ImportTestcontainers(AppContainers.class)
+@Import({DatabaseConfig.class, SecurityTestConfig.class})
 @Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class PrivateIndividualControllerIT {
@@ -30,6 +31,8 @@ public class PrivateIndividualControllerIT {
     TestRestTemplate restTemplate;
     @Autowired
     JdbcUtils jdbc;
+    @Autowired
+    SecurityTestConfig securityConfig;
 
     @AfterEach
     void truncate() {
@@ -42,7 +45,7 @@ public class PrivateIndividualControllerIT {
         // given
         var id = jdbc.getIndividualIdByPassport("1331 4429");
 
-        var adminToken = KeycloakUtils.adminToken().getToken();
+        var adminToken = KeycloakUtils.adminToken(securityConfig.getKeycloakServerUrl()).getToken();
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
         // when
@@ -60,7 +63,7 @@ public class PrivateIndividualControllerIT {
     void shouldActivateIndividualById() {
         // given
         var id = jdbc.getIndividualIdByPassport("1331 4429");
-        var adminToken = KeycloakUtils.adminToken().getToken();
+        var adminToken = KeycloakUtils.adminToken(securityConfig.getKeycloakServerUrl()).getToken();
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
@@ -77,7 +80,7 @@ public class PrivateIndividualControllerIT {
     void activateIndividualById_WhenIndividualIsAbsent_shouldReturn404() {
         // given
         var individualId = UUID.fromString("00000000-0000-0000-0000-000000000003");
-        var adminToken = KeycloakUtils.adminToken().getToken();
+        var adminToken = KeycloakUtils.adminToken(securityConfig.getKeycloakServerUrl()).getToken();
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(adminToken);
@@ -88,8 +91,8 @@ public class PrivateIndividualControllerIT {
         // then
         assertEquals(HttpStatus.NOT_FOUND, exchange.getStatusCode());
         assertThat(exchange.getBody())
-                .hasFieldOrPropertyWithValue("status",404)
-                .hasFieldOrPropertyWithValue("error","Individual with id [%s] not found".formatted(individualId));
+                .hasFieldOrPropertyWithValue("status", 404)
+                .hasFieldOrPropertyWithValue("error", "Individual with id [%s] not found".formatted(individualId));
     }
 }
 

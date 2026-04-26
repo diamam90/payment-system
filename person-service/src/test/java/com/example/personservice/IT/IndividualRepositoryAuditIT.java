@@ -1,6 +1,7 @@
 package com.example.personservice.IT;
 
-import com.example.personservice.config.AppContainers;
+import com.example.personservice.config.DatabaseConfig;
+import com.example.personservice.config.SecurityTestConfig;
 import com.example.personservice.entity.Address;
 import com.example.personservice.entity.Individual;
 import com.example.personservice.entity.User;
@@ -11,7 +12,7 @@ import com.example.personservice.stub.entity.IndividualStub;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.history.Revision;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -20,7 +21,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
-@ImportTestcontainers(AppContainers.class)
+@Import({DatabaseConfig.class, SecurityTestConfig.class})
 @Testcontainers(disabledWithoutDocker = true)
 public class IndividualRepositoryAuditIT {
 

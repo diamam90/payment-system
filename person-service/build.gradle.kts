@@ -40,18 +40,16 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.cloud:spring-cloud-starter-openfeign:${properties["openFeignVersion"]}")
     implementation("org.springframework.data:spring-data-envers")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${properties["springDocVersion"]}")
 
     // OBSERVABILITY
-    implementation("io.micrometer:micrometer-registry-prometheus")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${properties["springDocVersion"]}")
-    implementation("org.projectlombok:lombok")
-    implementation("net.logstash.logback:logstash-logback-encoder:${properties["logbackEncoderVersion"]}")
+    runtimeOnly("io.micrometer:micrometer-registry-prometheus")
     implementation("io.micrometer:micrometer-tracing-bridge-otel")
+    implementation("io.micrometer:micrometer-observation")
     implementation("io.micrometer:micrometer-tracing")
     implementation("io.opentelemetry:opentelemetry-exporter-otlp")
-    annotationProcessor("org.projectlombok:lombok")
 
-    // UTIL
+    // HELPERS
     implementation("org.aspectj:aspectjweaver")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${properties["springDocVersion"]}")
     implementation("org.projectlombok:lombok")
