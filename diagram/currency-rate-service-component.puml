@@ -1,0 +1,44 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Container(currencyRateContainer,"Currency-Rate-Service","Spring boot")
+
+Component(currencyController, "Currency Controller", "Rest Controller", "Получение и обновление информации о валютах")
+Component(currencyRateController, "Currency Rate Controller", "Rest Controller", "Расчет коэффициентов конвертации валют")
+Component(providerController, "Provider Controller", "Rest Controller", "Получение информации о провайдерах")
+Component(currencyRateUpdater, "Currency Rate Updater", "Cron job", "Обновление курсов валют по расписанию")
+
+Component(currencyService, "Currency Service","Сервис","Получение информации о валютах")
+Component(currencyRateService, "Currency Rate Service", "Сервис", "Создание, обновление, получение курсов валют")
+Component(providerService, "Provider Service", "Сервис провайдеров")
+Component(lockProvider, "Lock Provider", "Блокировка планировщика")
+
+Component(currencyRepository, "Currency Repository", "Репозиторий", "Справочник валют")
+Component(currencyRateRepository, "Currency Rate Repository", "Репозиторий", "Хранилище переводных коэффициентов")
+Component(providerRepository, "Provider Repository", "Репозиторий", "Хранилище провайдеров")
+
+Component(currencyDto, "Currency Dto", "Сгенерированные DTO")
+Component(currencyRateDto, "Currency Rate Dto", "Сгенерированные DTO")
+Component(providerDto, "Provider Dto", "Сгенерированные DTO")
+
+Lay_R(currencyRateContainer, currencyController)
+Lay_R(currencyController, currencyRateController)
+Lay_R(currencyRateController, providerController)
+
+Rel_D(currencyController,currencyService, "вызов")
+Rel_D(currencyRateController,currencyRateService, "вызов")
+Rel_D(providerController,providerService, "вызов")
+Rel_D(currencyRateUpdater, lockProvider, "вызов")
+
+Rel(currencyRateUpdater,currencyService, "вызов")
+Rel(currencyRateUpdater,currencyRateService, "вызов")
+Rel(currencyRateUpdater,providerService, "вызов")
+
+Rel_D(currencyService,currencyRepository, "вызов")
+Rel_D(currencyRateService,currencyRateRepository, "вызов")
+Rel_D(providerService,providerRepository, "вызов")
+
+Rel_U(currencyController, currencyDto, "использует")
+Rel_U(currencyRateController, currencyRateDto, "использует")
+Rel_U(providerController, providerDto, "использует")
+@enduml

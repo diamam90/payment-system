@@ -1,21 +1,40 @@
 @startuml
 actor Client
 participant IndividualsAPI
+participant CurrencyRateService
+database CurrencyRateServiceDB
 participant TransactionService
-participant WalletService
+database TransactionServiceDB
 
-Client -> IndividualsAPI: POST /transactions/transfer/init
-IndividualsAPI -> TransactionService: calc transfer conditions (init)
-TransactionService -> WalletService: Проверка обоих кошельков
-WalletService --> TransactionService: OK, комиссии, доступность
-TransactionService --> IndividualsAPI: Условия перевода
-IndividualsAPI --> Client: условия перевода
-
-Client -> IndividualsAPI: POST /transactions/transfer/confirm
-IndividualsAPI -> TransactionService: confirm transfer
-TransactionService -> WalletService: Debit + Credit
-WalletService -> DB: Две записи
-TransactionService -> DB: Статус транзакции COMPLETED
-TransactionService --> IndividualsAPI: COMPLETED, transactionId
-IndividualsAPI --> Client: COMPLETED, transactionId
+== Init ==
+Client -> IndividualsAPI: POST /api/v1/transactions/init  (type=transfer)
+alt currencyFrom != currencyTo
+IndividualsAPI -> CurrencyRateService: GET /api/v1/rates
+CurrencyRateService -> CurrencyRateServiceDB: find rate
+CurrencyRateServiceDB --> CurrencyRateService: rate
+CurrencyRateService --> IndividualsAPI: RateResponse
+else rate = 0
+end
+IndividualsAPI -> TransactionService: POST /api/v1/transactions/init (type=transfer) + rate
+TransactionService -> TransactionService: Проверка обоих кошельков
+TransactionService -> TransactionService: caclulate fee, validate balances
+TransactionService --> IndividualsAPI: TransactionInitResponse
+IndividualsAPI --> Client: TransactionInitResponse
+== Confirm ==
+Client -> IndividualsAPI: POST /api/v1/transactions/confirm (type=transfer)
+alt currencyFrom != currencyTo
+IndividualsAPI -> CurrencyRateService: GET /api/v1/rates
+CurrencyRateService -> CurrencyRateServiceDB: find rate
+CurrencyRateServiceDB --> CurrencyRateService: rate
+CurrencyRateService --> IndividualsAPI: RateResponse
+else rate = 0
+end
+IndividualsAPI -> TransactionService: POST /api/v1/transactions/confirm (type=transfer) + rate
+TransactionService -> TransactionService: Проверка обоих кошельков
+TransactionService -> TransactionService: caclulate fee, validate balances
+TransactionService -> TransactionService: Debit + Credit
+TransactionService -> TransactionServiceDB: Две записи
+TransactionService -> TransactionServiceDB: Статус транзакции COMPLETED
+TransactionService --> IndividualsAPI: TransactionConfirmResponse
+IndividualsAPI --> Client: TransactionConfirmResponse
 @enduml

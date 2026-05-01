@@ -12,6 +12,8 @@ System_Boundary(payment, "Payment system") {
 
     Container(ts, "Transaction Service", "Spring Boot", "Сервис транзакций")
     ContainerDb(tsDb, "Transaction DB", "Transaction Database")
+    Container(crs, "Currency Rate Service", "Spring boot", "Получение, хранение, расчет курсов валют")
+    ContainerDb(crsDb, "Currency Rate DB", "Currency Rate Database")
 }
 
 System_Ext(auth, "Authentication"){
@@ -27,6 +29,10 @@ System_Ext(obs, "Observability") {
     ContainerDb(tempo, "Grafana Tempo","Хранилище трассировок")
 }
 
+System_Ext(rateProvider, "External Rate Providers") {
+    Container(currate, "Currate")
+}
+
 System_Ext(paymentProvider, "Payment Provider", "Внешняя платежная система")
 
 Container_Ext(nexus,"Nexus","Репозиторий")
@@ -37,6 +43,9 @@ Rel_R(client, indApi,"Http","Запрос пользователя")
 
 Rel_D(indApi, ps,"Http", "Управление пользователями")
 Rel_D(ps,psDb, "Read/Write")
+Rel_D(ts,crs, "Http","Расчет валют")
+Rel_D(crs, crsDb, "Read/Write")
+Rel(crs, rateProvider, "Http","Получение курсов валют")
 
 Rel_D(indApi,ts,"Http","Управление платежами")
 Rel_D(ts,tsDb, "Read/Write")
@@ -60,5 +69,6 @@ Rel(alloy, kcDb, "Сбор метрик с БД")
 
 Rel(ps, nexus, "Публикация SDK","JAR")
 Rel(ts, nexus, "Публикация SDK","JAR")
+Rel(crs, nexus, "Публикация SDK","JAR")
 
 @enduml
