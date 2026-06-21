@@ -84,6 +84,15 @@
     "client": {
       "individuals-api": [
         {
+          "id": "1dc7450c-4f25-410c-9189-3cdc37c08ee8",
+          "name": "currency_rate_service_wr",
+          "description": "Currency-Rate-Service Write\\Read Role",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "989dbff8-ee80-4193-9431-206425375828",
+          "attributes": {}
+        },
+        {
           "id": "2b7e9ca3-6695-4785-9318-9d7681d45aad",
           "name": "person_service_wr",
           "description": "Person-Service Write\\Read Role",
@@ -339,6 +348,17 @@
         }
       ],
       "account-console": [],
+      "currency-rate-service": [
+        {
+          "id": "e76861f5-5c89-4a78-a90d-d0aa7bc336c4",
+          "name": "currency_rate_service_wr",
+          "description": "Currency-Rate-Service Write\\Read Role",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "f8e70c73-eb69-426f-93d0-635cd5b5d610",
+          "attributes": {}
+        }
+      ],
       "broker": [],
       "account": [
         {
@@ -438,6 +458,7 @@
       ],
       "clientRoles": {
         "individuals-api": [
+          "currency_rate_service_wr",
           "person_service_wr",
           "transaction_service_wr"
         ],
@@ -451,6 +472,9 @@
         ],
         "transaction-service": [
           "transaction_service_wr"
+        ],
+        "currency-rate-service": [
+          "currency_rate_service_wr"
         ]
       },
       "notBefore": 0,
@@ -616,6 +640,65 @@
       "nodeReRegistrationTimeout": 0,
       "defaultClientScopes": [],
       "optionalClientScopes": []
+    },
+    {
+      "id": "f8e70c73-eb69-426f-93d0-635cd5b5d610",
+      "clientId": "currency-rate-service",
+      "name": "client_currency_rate_service",
+      "description": "",
+      "rootUrl": "",
+      "adminUrl": "",
+      "baseUrl": "",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "**********",
+      "redirectUris": [
+        "/*"
+      ],
+      "webOrigins": [
+        "/*"
+      ],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "publicClient": false,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "attributes": {
+        "realm_client": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "client.secret.creation.time": "1781098611",
+        "backchannel.logout.session.required": "true",
+        "standard.token.exchange.enabled": "false",
+        "frontchannel.logout.session.required": "true",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "display.on.consent.screen": "false",
+        "backchannel.logout.revoke.offline.tokens": "false"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "organization",
+        "microprofile-jwt"
+      ]
     },
     {
       "id": "989dbff8-ee80-4193-9431-206425375828",
@@ -881,6 +964,7 @@
         "backchannel.logout.session.required": "true",
         "standard.token.exchange.enabled": "false",
         "frontchannel.logout.session.required": "true",
+        "post.logout.redirect.uris": "+",
         "oauth2.device.authorization.grant.enabled": "false",
         "display.on.consent.screen": "false",
         "backchannel.logout.revoke.offline.tokens": "false"
@@ -1665,14 +1749,14 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
+            "saml-user-attribute-mapper",
+            "oidc-address-mapper",
+            "oidc-usermodel-attribute-mapper",
             "oidc-full-name-mapper",
             "oidc-usermodel-property-mapper",
-            "saml-role-list-mapper",
-            "saml-user-attribute-mapper",
             "saml-user-property-mapper",
             "oidc-sha256-pairwise-sub-mapper",
-            "oidc-address-mapper",
-            "oidc-usermodel-attribute-mapper"
+            "saml-role-list-mapper"
           ]
         }
       },
@@ -1684,14 +1768,14 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
+            "oidc-usermodel-property-mapper",
+            "oidc-address-mapper",
             "oidc-sha256-pairwise-sub-mapper",
+            "saml-user-property-mapper",
             "saml-user-attribute-mapper",
             "oidc-full-name-mapper",
             "saml-role-list-mapper",
-            "oidc-address-mapper",
-            "oidc-usermodel-attribute-mapper",
-            "saml-user-property-mapper",
-            "oidc-usermodel-property-mapper"
+            "oidc-usermodel-attribute-mapper"
           ]
         }
       },

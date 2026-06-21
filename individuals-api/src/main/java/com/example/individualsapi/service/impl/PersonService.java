@@ -24,6 +24,8 @@ public class PersonService extends AbstractFeignClientService {
     private final PrivateApiClient privateClient;
     private final ObjectMapper objectMapper;
 
+    private final ExternalService service = ExternalService.PERSON_SERVICE;
+
     @NewSpan("person_service.create")
     public IndividualResponse create(IndividualRequest request) {
         var individual = executeRequest(() -> individualClient.create(request));
@@ -72,10 +74,5 @@ public class PersonService extends AbstractFeignClientService {
         var result = executeRequest(() -> privateClient.activateUser(id));
         log.debug("Individual deletion with Id {} compensated in person service", id);
         return result;
-    }
-
-    @Override
-    protected ExternalService getService() {
-        return ExternalService.PERSON_SERVICE;
     }
 }

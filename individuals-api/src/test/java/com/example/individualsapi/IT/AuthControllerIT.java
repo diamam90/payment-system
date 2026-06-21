@@ -2,12 +2,8 @@ package com.example.individualsapi.IT;
 
 import com.example.individuals.dto.TokenResponse;
 import com.example.individuals.dto.UserInfoResponse;
-import com.example.individualsapi.config.BaseIntegrationTest;
 import com.example.individualsapi.dto.keycloak.KeycloakTokenResponse;
 import org.assertj.core.api.Condition;
-import org.assertj.core.api.HamcrestCondition;
-import org.assertj.core.condition.Join;
-import org.assertj.core.internal.Conditions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
@@ -18,7 +14,6 @@ import org.testcontainers.junit.jupiter.EnabledIfDockerAvailable;
 
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

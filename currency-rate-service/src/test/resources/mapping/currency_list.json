@@ -1,0 +1,13 @@
+{
+  "request": {
+    "url": "/api/?get=currency_list&key=SECRET",
+    "method": "GET"
+  },
+  "response": {
+    "headers": {
+      "Content-Type": "text/html"
+    },
+    "status": 200,
+    "body": "{\"status\":\"200\",\"message\":\"currency_list\",\"data\":[\"BCHEUR\",\"BCHGBP\",\"BCHJPY\",\"BCHRUB\",\"BCHUSD\",\"BCHXRP\",\"BTCBCH\",\"BTCEUR\",\"BTCGBP\",\"BTCJPY\",\"BTCRUB\",\"BTCUSD\",\"BTCXRP\",\"BTGUSD\",\"BYNRUB\",\"CADRUB\",\"CHFRUB\",\"CNYEUR\",\"CNYRUB\",\"CNYUSD\",\"ETHEUR\",\"ETHGBP\",\"ETHJPY\",\"ETHRUB\",\"ETHUSD\",\"EURAED\",\"EURAMD\",\"EURBGN\",\"EURBYN\",\"EURGBP\",\"EURJPY\",\"EURKZT\",\"EURRUB\",\"EURTRY\",\"EURUSD\",\"GBPAUD\",\"GBPBYN\",\"GBPJPY\",\"GBPRUB\",\"GELRUB\",\"GELUSD\",\"IDRUSD\",\"JPYAMD\",\"JPYAZN\",\"JPYRUB\",\"LKREUR\",\"LKRRUB\",\"LKRUSD\",\"MDLEUR\",\"MDLRUB\",\"MDLUSD\",\"MMKEUR\",\"MMKRUB\",\"MMKUSD\",\"RSDEUR\",\"RSDRUB\",\"RSDUSD\",\"RUBAED\",\"RUBAMD\",\"RUBAUD\",\"RUBBGN\",\"RUBKZT\",\"RUBMYR\",\"RUBNZD\",\"RUBSGD\",\"RUBTRY\",\"RUBUAH\",\"THBCNY\",\"THBEUR\",\"THBRUB\",\"USDAED\",\"USDAMD\",\"USDAUD\",\"USDBGN\",\"USDBYN\",\"USDCAD\",\"USDGBP\",\"USDILS\",\"USDJPY\",\"USDKGS\",\"USDKZT\",\"USDMYR\",\"USDRUB\",\"USDTHB\",\"USDUAH\",\"USDVND\",\"XRPEUR\",\"XRPGBP\",\"XRPJPY\",\"XRPRUB\",\"XRPUSD\",\"ZECUSD\"]}"
+  }
+}

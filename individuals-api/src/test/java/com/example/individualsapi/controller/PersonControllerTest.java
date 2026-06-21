@@ -2,7 +2,7 @@ package com.example.individualsapi.controller;
 
 import com.example.individuals.dto.TokenResponse;
 import com.example.individuals.dto.UserRequest;
-import com.example.individualsapi.config.AppTestConfig;
+import com.example.individualsapi.config.MeterRegistryTestConfig;
 import com.example.individualsapi.configuration.AdminTokenHolder;
 import com.example.individualsapi.configuration.SecurityConfig;
 import com.example.individualsapi.exception.AccessDeniedException;
@@ -38,7 +38,7 @@ import static org.mockito.Mockito.when;
 
 @Import({
         SecurityConfig.class,
-        AppTestConfig.class,
+        MeterRegistryTestConfig.class,
         KeycloakMapper.class,
         PersonMapper.class
 })
@@ -107,7 +107,7 @@ class PersonControllerTest {
                 .expectStatus().value(new IsEqual<>(HttpStatus.BAD_GATEWAY.value()))
                 .expectBody().json("""
                             {
-                                "error": "Service Person-service is unavailable",
+                                "error": "Service Person-service unavailable",
                                 "status": 502
                             }
                         """, JsonCompareMode.STRICT);
@@ -339,7 +339,6 @@ class PersonControllerTest {
         return token;
     }
 
-
     private IndividualResponse individualResponse() {
         var individual = new IndividualResponse();
         individual.setId(individualId);
@@ -353,7 +352,6 @@ class PersonControllerTest {
         individual.setArchivedAt(ZonedDateTime.parse("2020-05-05T10:00:00Z"));
         return individual;
     }
-
 
     private Jwt jwt() {
         return Jwt.withTokenValue("access token value")

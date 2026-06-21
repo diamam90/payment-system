@@ -1,0 +1,30 @@
+{
+  "request": {
+    "urlPathTemplate": "/api/v1/rates",
+    "method": "GET",
+    "queryParameters": {
+      "from": {
+        "equalTo": "EUR"
+      },
+      "to": {
+        "equalTo": "USD"
+      },
+      "timestamp": {
+        "equalTo": "2026-06-06T00:00:00Z"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": {
+      "sourceCode": "EUR",
+      "destinationCode": "USD",
+      "rate": 23.04,
+      "rateTimestamp": "2026-06-06T00:00:00Z",
+      "providerCode": "tes"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

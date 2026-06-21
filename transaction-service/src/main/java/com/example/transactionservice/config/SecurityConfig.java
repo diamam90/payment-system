@@ -38,7 +38,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    @Bean
     Converter<Jwt, ? extends AbstractAuthenticationToken> converter() {
         var jwtConverter = new JwtAuthenticationConverter();
         jwtConverter.setJwtGrantedAuthoritiesConverter(authorityConverter());

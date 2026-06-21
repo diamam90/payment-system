@@ -3,6 +3,6 @@ package com.example.individualsapi.exception;
 public class ExternalServiceUnavailableException extends RuntimeException {
 
     public ExternalServiceUnavailableException(ExternalService service) {
-        super("Service %s is unavailable".formatted(service.getServiceName()));
+        super("Service %s unavailable".formatted(service.getServiceName()));
     }
 }

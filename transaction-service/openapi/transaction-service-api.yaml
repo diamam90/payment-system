@@ -247,13 +247,15 @@ components:
           format: uuid
         amount:
           type: number
+        rate:
+          type: number
         targetWalletUid:
           type: string
           format: uuid
         targetUserUid:
           type: string
           format: uuid
-      required: [ type, userUid, walletUid, amount, targetWalletUid, targetUserUid ]
+      required: [ type, userUid, walletUid, amount, targetWalletUid, targetUserUid, rate ]
 
     WithdrawalInitRequest:
       type: object
@@ -329,6 +331,8 @@ components:
           type: string
           format: uuid
         amount:
+          type: number
+        rate:
           type: number
         targetWalletUid:
           type: string

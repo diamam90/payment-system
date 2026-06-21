@@ -76,8 +76,8 @@ public class TransactionIT {
         headers.setBearerAuth(adminToken());
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        BigDecimal amount = BigDecimal.valueOf(250).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal expectedFee = amount.multiply(BigDecimal.valueOf(0.228d * 0.01d)).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal amount = BigDecimal.valueOf(250).setScale(2, RoundingMode.HALF_EVEN);
+        BigDecimal expectedFee = amount.multiply(BigDecimal.valueOf(0.01)).setScale(2, RoundingMode.HALF_EVEN);
         BigDecimal expectedAccrual = amount.subtract(expectedFee);
         // create wallet
         HttpEntity<String> walletRequest = new HttpEntity<>(createRubWalletRequest(), headers);
@@ -181,8 +181,8 @@ public class TransactionIT {
         headers.setBearerAuth(adminToken());
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        BigDecimal amount = BigDecimal.valueOf(250).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal expectedFee = amount.multiply(BigDecimal.valueOf(0.228d * 0.01d)).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal amount = BigDecimal.valueOf(250).setScale(2, RoundingMode.HALF_EVEN);
+        BigDecimal expectedFee = amount.multiply(BigDecimal.valueOf(0.01)).setScale(2, RoundingMode.HALF_EVEN);
         // create wallet
         HttpEntity<String> walletRequest = new HttpEntity<>(createRubWalletRequest(), headers);
         WalletResponse wallet = restTemplate.exchange("/api/v1/wallets", POST, walletRequest, WalletResponse.class)
@@ -242,7 +242,7 @@ public class TransactionIT {
                 .untilAsserted(walletCallable,
                         response -> assertThat(response)
                                 .isNotNull()
-                                .hasFieldOrPropertyWithValue("balance", BigDecimal.valueOf(0.00).setScale(2, RoundingMode.HALF_UP))
+                                .hasFieldOrPropertyWithValue("balance", BigDecimal.valueOf(0.00).setScale(2, RoundingMode.HALF_EVEN))
                 );
     }
 
@@ -256,8 +256,8 @@ public class TransactionIT {
 
         BigDecimal balance = BigDecimal.valueOf(99.06);
         BigDecimal amount = BigDecimal.valueOf(40.00);
-        BigDecimal expectedFee = amount.multiply(BigDecimal.valueOf(0.0228d * 0.02d)).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal totalSum = amount.add(expectedFee).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal expectedFee = amount.multiply(BigDecimal.valueOf(0.02)).setScale(2, RoundingMode.HALF_EVEN);
+        BigDecimal totalSum = amount.add(expectedFee).setScale(2, RoundingMode.HALF_EVEN);
         BigDecimal expectedBalance = balance.subtract(totalSum);
 
         // withdrawal init
@@ -325,8 +325,8 @@ public class TransactionIT {
 
         BigDecimal balance = BigDecimal.valueOf(99.06);
         BigDecimal amount = BigDecimal.valueOf(40.00);
-        BigDecimal expectedFee = amount.multiply(BigDecimal.valueOf(0.0228d * 0.02d)).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal totalSum = amount.add(expectedFee).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal expectedFee = amount.multiply(BigDecimal.valueOf(0.02)).setScale(2, RoundingMode.HALF_EVEN);
+        BigDecimal totalSum = amount.add(expectedFee).setScale(2, RoundingMode.HALF_EVEN);
 
         // withdrawal init
         HttpEntity<String> withdrawalInitRequest = new HttpEntity<>(InitStringRequestStub.withdrawalInitRequest(amount), headers);
@@ -463,27 +463,64 @@ public class TransactionIT {
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         BigDecimal amount = BigDecimal.valueOf(46.06);
-        BigDecimal expectedFee = BigDecimal.valueOf(0.0228 * 0.001).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal rate = BigDecimal.valueOf(1);
+        BigDecimal expectedFee = amount.multiply(rate).multiply(BigDecimal.valueOf(0.001)).setScale(2, RoundingMode.HALF_EVEN);
+        BigDecimal toBeTransferred = amount.subtract(expectedFee);
         // transfer init
-        HttpEntity<String> transferInitRequest = new HttpEntity<>(InitStringRequestStub.transferInitRequest(amount), headers);
+        HttpEntity<String> transferInitRequest = new HttpEntity<>(InitStringRequestStub.transferInitRequest(amount, rate), headers);
         ResponseEntity<TransactionInitResponse> initResponse = restTemplate
                 .exchange("/api/v1/transactions/init", POST, transferInitRequest, TransactionInitResponse.class);
 
         assertThat(initResponse)
                 .hasFieldOrPropertyWithValue("status", HttpStatus.OK)
                 .extracting("body")
-                .hasFieldOrPropertyWithValue("amount", amount)
+                .hasFieldOrPropertyWithValue("amount", toBeTransferred)
                 .hasFieldOrPropertyWithValue("fee", expectedFee);
 
         // transfer confirm
-        HttpEntity<String> transferConfirmRequest = new HttpEntity<>(InitStringRequestStub.transferInitRequest(amount), headers);
+        HttpEntity<String> transferConfirmRequest = new HttpEntity<>(InitStringRequestStub.transferInitRequest(amount, rate), headers);
         ResponseEntity<TransactionConfirmResponse> confirmResponse = restTemplate
                 .exchange("/api/v1/transactions/confirm", POST, transferConfirmRequest, TransactionConfirmResponse.class);
 
         assertThat(confirmResponse)
                 .hasFieldOrPropertyWithValue("status", HttpStatus.OK)
                 .extracting("body")
-                .hasFieldOrPropertyWithValue("amount", amount)
+                .hasFieldOrPropertyWithValue("amount", toBeTransferred)
+                .hasFieldOrPropertyWithValue("fee", expectedFee)
+                .hasFieldOrPropertyWithValue("status", TransactionStatus.COMPLETED.name());
+    }
+
+    @Sql("/sql/transfer-different-currencies.sql")
+    @Test
+    void shouldTransferWithDifferentCurrencies(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(adminToken());
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        BigDecimal amount = BigDecimal.valueOf(46.06);
+        BigDecimal rate = BigDecimal.valueOf(3.14159);
+        BigDecimal expectedFee = amount.multiply(rate).multiply(BigDecimal.valueOf(0.001)).setScale(2, RoundingMode.HALF_EVEN);
+        BigDecimal toBeTransferred = amount.subtract(expectedFee);
+        // transfer init
+        HttpEntity<String> transferInitRequest = new HttpEntity<>(InitStringRequestStub.transferInitRequest(amount, rate), headers);
+        ResponseEntity<TransactionInitResponse> initResponse = restTemplate
+                .exchange("/api/v1/transactions/init", POST, transferInitRequest, TransactionInitResponse.class);
+
+        assertThat(initResponse)
+                .hasFieldOrPropertyWithValue("status", HttpStatus.OK)
+                .extracting("body")
+                .hasFieldOrPropertyWithValue("amount", toBeTransferred)
+                .hasFieldOrPropertyWithValue("fee", expectedFee);
+
+        // transfer confirm
+        HttpEntity<String> transferConfirmRequest = new HttpEntity<>(InitStringRequestStub.transferInitRequest(amount, rate), headers);
+        ResponseEntity<TransactionConfirmResponse> confirmResponse = restTemplate
+                .exchange("/api/v1/transactions/confirm", POST, transferConfirmRequest, TransactionConfirmResponse.class);
+
+        assertThat(confirmResponse)
+                .hasFieldOrPropertyWithValue("status", HttpStatus.OK)
+                .extracting("body")
+                .hasFieldOrPropertyWithValue("amount", toBeTransferred)
                 .hasFieldOrPropertyWithValue("fee", expectedFee)
                 .hasFieldOrPropertyWithValue("status", TransactionStatus.COMPLETED.name());
     }
@@ -496,8 +533,9 @@ public class TransactionIT {
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         BigDecimal amount = BigDecimal.valueOf(246.06);
+        BigDecimal rate = BigDecimal.valueOf(1);
         // transfer init
-        HttpEntity<String> transferInitRequest = new HttpEntity<>(InitStringRequestStub.transferInitRequest(amount), headers);
+        HttpEntity<String> transferInitRequest = new HttpEntity<>(InitStringRequestStub.transferInitRequest(amount, rate), headers);
         ResponseEntity<ErrorResponse> initResponse = restTemplate
                 .exchange("/api/v1/transactions/init", POST, transferInitRequest, ErrorResponse.class);
 
@@ -509,7 +547,7 @@ public class TransactionIT {
 
 
         // transfer confirm
-        HttpEntity<String> transferConfirmRequest = new HttpEntity<>(ConfirmStringRequestStub.transferConfirmRequest(amount), headers);
+        HttpEntity<String> transferConfirmRequest = new HttpEntity<>(ConfirmStringRequestStub.transferConfirmRequest(amount, rate), headers);
         ResponseEntity<ErrorResponse> confirmResponse = restTemplate
                 .exchange("/api/v1/transactions/confirm", POST, transferConfirmRequest, ErrorResponse.class);
 

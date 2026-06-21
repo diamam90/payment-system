@@ -17,7 +17,7 @@ public class InitStringRequestStub {
                         """.formatted(walletId);
     }
 
-    public static String transferInitRequest(BigDecimal amount) {
+    public static String transferInitRequest(BigDecimal amount, BigDecimal rate) {
         return //language=JSON
                 """
                         {
@@ -25,10 +25,11 @@ public class InitStringRequestStub {
                           "userUid": "00000000-0000-0000-0000-000000000001",
                           "walletUid": "fa65903f-2441-4ada-81fa-d8cd6a2e00a1",
                           "amount": "%s",
+                          "rate": "%s",
                           "targetWalletUid": "fa65903f-2441-4ada-81fa-d8cd6a2e00a2",
                           "targetUserUid": "00000000-0000-0000-0000-000000000003"
                         }
-                        """.formatted(amount);
+                        """.formatted(amount, rate);
     }
 
     public static String withdrawalInitRequest(BigDecimal amount) {

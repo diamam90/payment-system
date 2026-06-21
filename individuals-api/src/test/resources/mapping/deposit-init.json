@@ -1,0 +1,25 @@
+{
+  "request": {
+    "url": "/api/v1/transactions/init",
+    "method": "POST",
+    "bodyPatterns": [
+      {
+        "matchesJsonPath": {
+          "expression": "$.type",
+          "contains": "DEPOSIT"
+        }
+      }
+    ]
+  },
+  "response": {
+    "status": 201,
+    "jsonBody": {
+      "walletUid": "12341234-1234-1234-1234-123412341234",
+      "amount": "50.66",
+      "fee": "2.33"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

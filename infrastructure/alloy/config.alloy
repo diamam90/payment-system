@@ -19,6 +19,21 @@ prometheus.scrape "scraper" {
             "__metrics_path__" = "/actuator/prometheus",
             "instance" = "transaction-service",
         },
+        {
+            "__address__" = "currency-rate-service-1:8084",
+            "__metrics_path__" = "/actuator/prometheus",
+            "instance" = "currency-rate-service-1",
+        },
+        {
+            "__address__" = "currency-rate-service-2:8084",
+            "__metrics_path__" = "/actuator/prometheus",
+            "instance" = "currency-rate-service-2",
+        },
+        {
+            "__address__" = "currency-rate-service-3:8084",
+            "__metrics_path__" = "/actuator/prometheus",
+            "instance" = "currency-rate-service-3",
+        },
     ]
     scrape_interval = "10s"
     scrape_timeout = "5s"
@@ -47,6 +62,7 @@ prometheus.exporter.postgres "psdbs" {
     "postgresql://transactionadmin:transactionadmin@transaction-shard0:5432/transaction?sslmode=disable",
     "postgresql://transactionadmin:transactionadmin@transaction-shard1:5432/transaction?sslmode=disable",
     "postgresql://transactionadmin:transactionadmin@transaction-shard2:5432/transaction?sslmode=disable",
+    "postgresql://currencyrateadmin:currencyrateadmin@currency-rate-db:5432/currencyrate?sslmode=disable",
   ]
 }
 
