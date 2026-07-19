@@ -1,6 +1,5 @@
 server:
   port: 8084
-
 spring:
   application:
     name: currency-rate-service
@@ -15,12 +14,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none
-    show-sql: true
     properties:
       hibernate:
-        format_sql: true
         jdbc:
-          batch_size: 50
+          batch_size: 300
         order_updates: true
         order_inserts: true
         generate_statistics: true
@@ -45,9 +42,11 @@ management:
   tracing:
     sampling:
       probability: 1.0
-  otlp:
-    tracing:
-      endpoint: ${TEMPO_URL}/v1/traces
+  opentelemetry:
+    logging:
+      export:
+        otlp:
+          endpoint: ${TEMPO_URL}/v1/traces
 
 currency-rate-service:
   provider:
@@ -58,4 +57,36 @@ currency-rate-service:
       name: currate
       description: first currency provider
       priority: 1
-
+resilience4j:
+  circuitbreaker:
+    instances:
+      currate:
+        minimum-number-of-calls: 3
+        wait-duration-in-open-state:
+          seconds: 20
+        failure-rate-threshold: 50.0
+        slow-call-duration-threshold:
+          seconds: 30
+        slow-call-rate-threshold: 100.0
+        sliding-window-type: time_based
+        sliding-window-size: 30
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 1.5
+  retry:
+    instances:
+      currate:
+        max-attempts: 3
+        wait-duration:
+          seconds: 10
+  ratelimiter:
+    instances:
+      currate:
+        limit-for-period: 5
+        limit-refresh-period:
+          seconds: 1
+  bulkhead:
+    instances:
+      currate:
+        max-concurrent-calls: 5
+        max-wait-duration:
+          seconds: 1

@@ -7,8 +7,10 @@ import com.example.currencyrateservice.job.CurrencyRateUpdater;
 import com.example.currencyrateservice.service.CurrencyRateService;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -16,6 +18,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -26,6 +29,8 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 @SpringBootTest
+@ExtendWith(MockitoExtension.class)
+@Testcontainers(disabledWithoutDocker = true)
 @Import({WireMockConfig.class, TestSecurityConfig.class})
 class CurrencyRateUpdaterIT {
 

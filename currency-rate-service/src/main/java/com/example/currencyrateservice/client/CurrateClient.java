@@ -1,43 +1,49 @@
 package com.example.currencyrateservice.client;
 
-import com.example.currencyrateservice.config.LoggingClientInterceptor;
+import com.example.currate.api.CurrateApi;
+import com.example.currate.dto.CurrencyRequest;
+import com.example.currate.dto.CurrencyResponse;
+import com.example.currate.dto.RateRequest;
+import com.example.currate.dto.RateResponse;
 import com.example.currencyrateservice.exception.BadRequestException;
-import com.example.currencyrateservice.model.CurrateCurrencyRateResponse;
-import com.example.currencyrateservice.model.CurrateCurrencyResponse;
 import com.example.currencyrateservice.model.ProviderMetadata;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.http.MediaType;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import io.github.resilience4j.bulkhead.annotation.Bulkhead;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import io.github.resilience4j.retry.annotation.Retry;
+import io.micrometer.core.annotation.Timed;
+import io.micrometer.tracing.annotation.NewSpan;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Component
-@EnableConfigurationProperties(CurrateProperties.class)
+@RequiredArgsConstructor
 public class CurrateClient implements ProviderClient {
 
-    private final RestClient currateClient;
+    private final CurrateApi currateClient;
     private final CurrateProperties currate;
 
-    public CurrateClient(CurrateProperties currate) {
-        this.currate = currate;
-        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
-        converter.setSupportedMediaTypes(List.of(MediaType.TEXT_HTML));
-        this.currateClient = RestClient.builder()
-                .baseUrl(currate.getBaseUrl())
-                .messageConverters(List.of(converter))
-                .requestInterceptor(new LoggingClientInterceptor())
-                .build();
-    }
+    private static final Integer OK_STATUS = 200;
 
     @Override
+    @Timed("currate.getActiveCurrencies")
+    @NewSpan("currency_rate_service.getActiveCurrencies")
+    @CircuitBreaker(name = "currate")
+    @Retry(name = "currate")
+    @RateLimiter(name = "currate")
+    @Bulkhead(name = "currate")
     public List<String> getActiveCurrencies() {
-        List<String> availablePairs = currencyList().data();
+        CurrencyResponse response = currencyList();
+        if (!OK_STATUS.equals(response.getStatus())) {
+            throw new BadRequestException(response.getMessage());
+        }
+
+        List<String> availablePairs = response.getData();
         List<String> extendedClientCurrencyPairs = new ArrayList<>(availablePairs.size() * 2);
         availablePairs.forEach(pair -> {
             String srcCode = pair.substring(0, 3);
@@ -50,38 +56,36 @@ public class CurrateClient implements ProviderClient {
     }
 
     @Override
+    @Timed("currate.getCurrencyRates")
+    @NewSpan("currency_rate_service.getCurrencyRates")
+    @CircuitBreaker(name = "currate")
+    @Retry(name = "currate")
+    @RateLimiter(name = "currate")
+    @Bulkhead(name = "currate")
     public Map<String, BigDecimal> getCurrencyRates(List<String> pairs) {
-        CurrateCurrencyRateResponse response = rates(pairs);
-        if (!response.status().equals(200)) {
-            throw new BadRequestException(response.message());
+        RateResponse response = rates(pairs);
+        if (!OK_STATUS.equals(response.getStatus())) {
+            throw new BadRequestException(response.getMessage());
         }
-        return response.data();
+        return response.getData();
     }
 
-    private CurrateCurrencyRateResponse rates(List<String> pairs) {
-        var queryParams = new HashMap<String, Object>();
+    private RateResponse rates(List<String> pairs) {
+        RateRequest request = new RateRequest();
+        request.setGet("rates");
+        request.setKey(currate.getApiKey());
         if (!pairs.isEmpty()) {
-            queryParams.put("pairs", String.join(",", pairs));
+            request.setPairs(String.join(",", pairs));
         }
-        queryParams.put("method", "rates");
-        queryParams.put("apiKey", currate.getApiKey());
-        return currateClient.get()
-                .uri("/api/?get={method}&pairs={pairs}&key={apiKey}", queryParams)
-                .accept(MediaType.TEXT_HTML)
-                .retrieve()
-                .body(CurrateCurrencyRateResponse.class);
+
+        return (RateResponse) currateClient.actualData(request).getBody();
     }
 
-    private CurrateCurrencyResponse currencyList() {
-        var queryParams = new HashMap<String, Object>();
-        queryParams.put("method", "currency_list");
-        queryParams.put("apiKey", currate.getApiKey());
-
-        return currateClient.get()
-                .uri("/api/?get={method}&key={apiKey}", queryParams)
-                .accept(MediaType.TEXT_HTML)
-                .retrieve()
-                .body(CurrateCurrencyResponse.class);
+    private CurrencyResponse currencyList() {
+        CurrencyRequest request = new CurrencyRequest();
+        request.setGet("currency_list");
+        request.setKey(currate.getApiKey());
+        return (CurrencyResponse) currateClient.actualData(request).getBody();
     }
 
     @Override

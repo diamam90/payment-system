@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -129,6 +130,7 @@ public class TransactionServiceImpl extends AbstractFeignClientService implement
         Mono<WalletResponse> targetWalletMono = walletService.getById(targetWalletUid);
 
         return Mono.zip(sourceWalletMono, targetWalletMono)
+                .publishOn(Schedulers.boundedElastic())
                 .flatMap(tuple -> {
                     String sourceCode = extractCurrencyCode(tuple.getT1());
                     String destinationCode = extractCurrencyCode(tuple.getT2());

@@ -6,17 +6,19 @@ import org.apache.http.HttpHeaders;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.AccessTokenResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -24,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(TestSecurityConfig.class)
+@Testcontainers(disabledWithoutDocker = true)
 public class CurrencyRateControllerIT {
 
     @Autowired
@@ -78,10 +81,9 @@ public class CurrencyRateControllerIT {
                 .andExpect(status().isUnauthorized());
     }
 
-    @WithMockUser(authorities = "test")
     @Test
     void rateByFilter_withInvalidAuthorities_shouldReturn403() throws Exception {
-        mvc.perform(MockMvcRequestBuilders.get("/api/v1/currencies"))
+        mvc.perform(MockMvcRequestBuilders.get("/api/v1/currencies").with(jwt()))
                 .andExpect(status().isForbidden());
     }
 }

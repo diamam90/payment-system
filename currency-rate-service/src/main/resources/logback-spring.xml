@@ -3,10 +3,38 @@
 
 <configuration>
     <import class="net.logstash.logback.encoder.LogstashEncoder"/>
-
     <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="LogstashEncoder"/>
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <mdc/>
+                <pattern>
+                    <omitEmptyFields>true</omitEmptyFields>
+                    <pattern>
+                        {
+                            "timestamp": "%date{yyyy-MM-dd'T'HH:mm:ss.SSS}",
+                            "level": "%level",
+                            "logger": "%logger",
+                            "traceId": "%mdc{traceId}",
+                            "spanId": "%mdc{spanId}",
+                            "message": "%message"
+                        }
+                    </pattern>
+                </pattern>
+                <stackTrace>
+                    <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+                        <maxDepthPerThrowable>30</maxDepthPerThrowable>
+                        <maxLength>2048</maxLength>
+                        <shortenedClassNameLength>20</shortenedClassNameLength>
+                        <exclude>^sun\.reflect\..*\.invoke</exclude>
+                        <exclude>^net\.sf\.cglib\.proxy\.MethodProxy\.invoke</exclude>
+                        <rootCauseFirst>true</rootCauseFirst>
+                    </throwableConverter>
+                </stackTrace>
+
+            </providers>
+        </encoder>
     </appender>
+
     <root level="INFO">
         <appender-ref ref="JSON_CONSOLE"/>
     </root>

@@ -1,6 +1,6 @@
 package com.example.individualsapi.IT;
 
-import com.example.currency.api.CurrencyRateApiClient;
+import com.example.currency.api.CurrencyRateApi;
 import com.example.individuals.dto.TransactionInitResponse;
 import com.example.transaction.api.TransactionApiClient;
 import com.example.transaction.dto.TransferInitRequest;
@@ -35,7 +35,7 @@ public class TransactionControllerIT extends BaseIntegrationTest {
     @Autowired
     WebTestClient client;
     @MockitoSpyBean
-    CurrencyRateApiClient currencyRateApiClient;
+    CurrencyRateApi currencyRateApiClient;
     @MockitoSpyBean
     TransactionApiClient transactionApiClient;
     @Captor

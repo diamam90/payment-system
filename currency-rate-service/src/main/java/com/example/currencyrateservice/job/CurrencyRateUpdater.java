@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StopWatch;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -65,6 +66,8 @@ public class CurrencyRateUpdater {
     @Scheduled(cron = "${CURRENCY-RATE-SERVICE_UPDATE-RATE-CRON:-}")
     public void doJob() {
         LockAssert.assertLocked();
+        StopWatch watch = new StopWatch();
+        watch.start();
         log.info("Start updating currency job...");
         List<Provider> providers = providerService.getByProviderCodes(providerClientByCode.keySet());
         Map<String, Provider> providerByCode = providerByCode(providers);
@@ -85,8 +88,10 @@ public class CurrencyRateUpdater {
 
         if (!result.isEmpty()) {
             currencyRateService.saveCurrencyRates(result);
+            log.info("{} currency rates updated", result.size());
         }
-        log.info("End updating currency job...");
+        watch.stop();
+        log.info("End updating currency job, duration: {} sec", watch.getTotalTimeSeconds());
     }
 
     private Map<String, ProviderClient> clientByCode(Collection<ProviderClient> clients) {
@@ -163,11 +168,13 @@ public class CurrencyRateUpdater {
     ) {
         ProviderClient client = entry.getKey();
         Provider provider = entry.getValue();
+        log.debug("Trying to update currency rates for provider: {}", provider.getProviderName());
         try {
             List<String> clientCurrencyPairs = client.getActiveCurrencies();
             List<String> currencyPairs = new ArrayList<>(codePairs);
             currencyPairs.retainAll(clientCurrencyPairs);
             Map<String, BigDecimal> currencyRates = client.getCurrencyRates(currencyPairs);
+            log.debug("Provider [{}] return {} currency rates", provider.getProviderName(), currencyRates.size());
             return currencyRates.entrySet()
                     .stream()
                     .map(entrySet -> {

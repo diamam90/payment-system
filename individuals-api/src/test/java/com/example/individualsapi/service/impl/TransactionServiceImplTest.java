@@ -1,6 +1,6 @@
 package com.example.individualsapi.service.impl;
 
-import com.example.currency.api.CurrencyRateApiClient;
+import com.example.currency.api.CurrencyRateApi;
 import com.example.currency.dto.RateResponse;
 import com.example.individualsapi.mapper.TransactionMapperImpl;
 import com.example.individualsapi.mapper.WalletMapperImpl;
@@ -49,7 +49,7 @@ class TransactionServiceImplTest {
     @MockitoBean
     WalletApiClient walletApiClient;
     @MockitoBean
-    CurrencyRateApiClient currencyRateApiClient;
+    CurrencyRateApi currencyRateApiClient;
     @MockitoBean
     Clock clock;
 

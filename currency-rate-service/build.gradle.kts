@@ -4,24 +4,23 @@ import org.gradle.api.publish.maven.MavenPublication
 val versions = mapOf(
     "mapstructVersion" to "1.5.5.Final",
     "springdocOpenapiStarterWebmvcUiVersion" to "2.5.0",
-    "springCloudStarterOpenfeign" to "4.1.1",
     "testContainersVersion" to "1.19.3",
-    "shardingSphereVersion" to "5.5.2",
     "hibernateJpamodelgenVersion" to "6.1.7.Final",
     "testContainersKeycloakVersion" to "3.4.0",
     "logbackEncoderVersion" to "8.0",
-    "springDocVersion" to "2.5.0",
     "wireMockVersion" to "1.0-alpha-13",
-    "shedlockVersion" to "6.3.1"
+    "shedlockVersion" to "6.3.1",
+    "springCloudVersion" to "5.0.2",
+    "bulkheadVersion" to "2.4.0"
 )
 
 plugins {
     idea
     java
-    id("org.springframework.boot") version "3.5.0"
+    id("org.springframework.boot") version "4.1.0"
     id("io.spring.dependency-management") version "1.1.7"
     id("maven-publish")
-    id("org.openapi.generator") version "7.13.0"
+    id("org.openapi.generator") version "7.23.0"
 }
 
 group = "com.example"
@@ -40,7 +39,6 @@ repositories {
 
 dependencyManagement {
     imports {
-        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2025.0.0")
         mavenBom("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:2.15.0")
     }
 }
@@ -52,18 +50,17 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+    implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${versions["springdocOpenapiStarterWebmvcUiVersion"]}")
-    implementation("org.springframework.cloud:spring-cloud-starter-openfeign:${versions["springCloudStarterOpenfeign"]}")
-    implementation("org.springframework.kafka:spring-kafka")
+    implementation("org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j:${versions["springCloudVersion"]}")
+    implementation("org.springframework.cloud:spring-cloud-starter-circuitbreaker-spring-retry:${versions["springCloudVersion"]}")
+    implementation("io.github.resilience4j:resilience4j-bulkhead:${versions["bulkheadVersion"]}")
 
     // OBSERVABILITY
-    implementation("io.opentelemetry:opentelemetry-exporter-otlp")
-    implementation("io.micrometer:micrometer-observation")
-    implementation("io.micrometer:micrometer-tracing")
-    implementation("io.micrometer:micrometer-tracing-bridge-otel")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
 
     // PERSISTENCE
@@ -71,7 +68,6 @@ dependencies {
     implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:${versions["shedlockVersion"]}")
     implementation("org.postgresql:postgresql")
     implementation("org.flywaydb:flyway-database-postgresql")
-    implementation("org.apache.shardingsphere:shardingsphere-jdbc:${versions["shardingSphereVersion"]}")
     annotationProcessor("org.hibernate:hibernate-jpamodelgen:${versions["hibernateJpamodelgenVersion"]}")
 
     // HELPERS
@@ -83,6 +79,8 @@ dependencies {
 
     // TEST
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-data-jpa-test")
+    testImplementation("org.springframework.boot:spring-boot-webmvc-test")
     testImplementation("org.springframework.security:spring-security-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testCompileOnly("org.projectlombok:lombok")
@@ -128,16 +126,16 @@ var generatedTasks = specifications.map { spec ->
         val base = "com.example.${specName.substringBefore("-").lowercase()}"
         configOptions.set(
             mapOf(
-                "library" to "spring-cloud",
+                "library" to "spring-http-interface",
                 "skipDefaultInterface" to "true",
                 "useBeanValidation" to "true",
                 "openApiNullable" to "false",
                 "useJakartaEe" to "true",
-                "useFeignClientUrl" to "true",
                 "useTags" to "true",
                 "apiPackage" to "$base.api",
                 "modelPackage" to "$base.dto",
-                "configPackage" to "$base.config"
+                "configPackage" to "$base.config",
+                "useSpringBoot4" to "true"
             )
         )
         doFirst {

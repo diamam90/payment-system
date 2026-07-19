@@ -1,6 +1,5 @@
 package com.example.individualsapi.configuration;
 
-import com.example.currency.api.CurrencyRateApiClient;
 import com.example.person.api.IndividualsApiClient;
 import com.example.person.api.PrivateApiClient;
 import com.example.transaction.api.TransactionApiClient;
@@ -21,7 +20,7 @@ import org.springframework.context.annotation.Import;
 @Configuration
 @RequiredArgsConstructor
 @Import(FeignClientsConfiguration.class)
-public class FeignConfiguration {
+public class FeignConfig {
 
     private final AppProperties properties;
     private final AdminTokenHolder tokenHolder;
@@ -80,22 +79,6 @@ public class FeignConfiguration {
                 .addCapability(capability)
                 .requestInterceptor(new AdminTokenInterceptor(tokenHolder))
                 .target(TransactionApiClient.class, properties.getTransaction().getBaseUrl());
-    }
-
-    @Bean
-    CurrencyRateApiClient currencyRateApiClient(
-            Contract contract,
-            Encoder encoder,
-            Decoder decoder,
-            MicrometerObservationCapability capability
-    ) {
-        return Feign.builder()
-                .contract(contract)
-                .decoder(decoder)
-                .encoder(encoder)
-                .addCapability(capability)
-                .requestInterceptor(new AdminTokenInterceptor(tokenHolder))
-                .target(CurrencyRateApiClient.class, properties.getCurrencyRate().getBaseUrl());
     }
 
     @Bean

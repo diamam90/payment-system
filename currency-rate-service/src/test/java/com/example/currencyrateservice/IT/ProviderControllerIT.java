@@ -6,21 +6,24 @@ import org.apache.http.HttpHeaders;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.AccessTokenResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(TestSecurityConfig.class)
+@Testcontainers(disabledWithoutDocker = true)
 public class ProviderControllerIT {
 
     @Autowired
@@ -74,10 +77,9 @@ public class ProviderControllerIT {
                 .andExpect(status().isUnauthorized());
     }
 
-    @WithMockUser(authorities = "test")
     @Test
     void rateProviders_withInvalidAuthorities_shouldReturn403() throws Exception {
-        mvc.perform(MockMvcRequestBuilders.get("/api/v1/rate-providers"))
+        mvc.perform(MockMvcRequestBuilders.get("/api/v1/rate-providers").with(jwt()))
                 .andExpect(status().isForbidden());
     }
 }
