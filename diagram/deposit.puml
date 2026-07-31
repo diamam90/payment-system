@@ -6,30 +6,32 @@ database DB
 queue Kafka
 
 == Init ==
-
-Client -> IndividualsAPI: POST /transactions/deposit/init
-IndividualsAPI -> TransactionService: calc deposit conditions (init)
+Client -> IndividualsAPI: POST /api/v1/transactions/init (type=deposit)
+IndividualsAPI -> TransactionService: POST /api/v1/transactions/init (type=deposit)
 TransactionService -> TransactionService: Проверка кошелька
-
 alt Пополнение возможно
-    TransactionService --> IndividualsAPI: Условия (комиссия, доступность)
-    IndividualsAPI --> Client: Условия пополнения
+    TransactionService --> IndividualsAPI: TransactionInitResponse
+    IndividualsAPI --> Client: TransactionInitResponse
 else Пополнение невозможно
     TransactionService --> IndividualsAPI: ErrorResponse
     IndividualsAPI --> Client: ErrorResponse
 end
-
 == Confirm ==
+Client -> IndividualsAPI: POST /api/v1/transactions/confirm (type=deposit)
+IndividualsAPI -> TransactionService: POST /api/v1/transactions/confirm (type=deposit)
+TransactionService -> TransactionService: Проверка кошелька
+alt Пополнение невозможно
+    TransactionService --> IndividualsAPI: ErrorResponse
+    IndividualsAPI --> Client: ErrorResponse
+end
 
-Client -> IndividualsAPI: POST /transactions/deposit/confirm
-IndividualsAPI -> TransactionService: confirm deposit
 group transaction
-    TransactionService -> Kafka: DepositRequested
+    TransactionService -> Kafka: TransactionCreatedEvent
     TransactionService -> DB: Создать транзакцию PENDING
 end
-  TransactionService --> IndividualsAPI: Принято, status=PENDING, transactionId
-IndividualsAPI --> Client: status=PENDING, transactionId
-Kafka -> TransactionService: DepositCompleted (async)
+  TransactionService --> IndividualsAPI: TransactionConfirmResponse
+IndividualsAPI --> Client: TransactionConfirmResponse
+Kafka -> TransactionService: TransactionCompletedEvent (async)
 TransactionService -> TransactionService: Зачислить средства
 group transaction
     TransactionService -> DB: Баланс++

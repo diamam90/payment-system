@@ -14,6 +14,7 @@ public class AppProperties {
     private KeycloakProperties keycloak;
     private PersonServiceProperties person;
     private TransactionServiceProperties transaction;
+    private CurrencyRateServiceProperties currencyRate;
 
     @Getter
     @Setter
@@ -33,6 +34,12 @@ public class AppProperties {
     @Getter
     @Setter
     public static class TransactionServiceProperties {
+        private String baseUrl;
+    }
+
+    @Getter
+    @Setter
+    public static class CurrencyRateServiceProperties {
         private String baseUrl;
     }
 }

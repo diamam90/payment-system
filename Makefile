@@ -3,7 +3,7 @@ NEXUS_URL = http://localhost:8800
 NEXUS_USERNAME = admin
 NEXUS_PASSWORD = admin
 
-INFRA_SERVICES ?= nexus keycloak keycloak-postgres person-db prometheus loki tempo grafana kafka kafka-ui transaction-db1 transaction-db2 transaction-db3
+INFRA_SERVICES ?= nexus keycloak keycloak-postgres person-db prometheus loki tempo grafana kafka kafka-ui transaction-db1 transaction-db2 transaction-db3 currency-rate-db
 
 .PHONY: all up start stop logs rebuild infra infra-logs infra-stop eula-agree
 
@@ -41,6 +41,9 @@ up:
 build-artifact: up eula-agree
 	$(DOCKER_COMPOSE) build person-service --no-cache
 	$(DOCKER_COMPOSE) build transaction-service --no-cache
+	$(DOCKER_COMPOSE) build currency-rate-service-1 --no-cache
+	$(DOCKER_COMPOSE) build currency-rate-service-2 --no-cache
+	$(DOCKER_COMPOSE) build currency-rate-service-3 --no-cache
 
 start: 
 	$(DOCKER_COMPOSE) up -d
@@ -51,6 +54,7 @@ down:
 clean: down
 	rm -rf ./person-service/build
 	rm -rf ./transaction-service/build
+	rm -rf ./currency-rate-service/build
 
 logs: 
 	$(DOCKER_COMPOSE) logs -f --tail=200

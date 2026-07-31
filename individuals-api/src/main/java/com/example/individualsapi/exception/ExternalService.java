@@ -9,7 +9,9 @@ public enum ExternalService {
 
     PERSON_SERVICE("Person-service"),
     TRANSACTION_SERVICE("Transaction-service"),
-    KEYCLOAK("Keycloak");
+    KEYCLOAK("Keycloak"),
+    CURRENCY_RATE_SERVICE("Currency-rate-service")
+    ;
 
     private final String serviceName;
 }

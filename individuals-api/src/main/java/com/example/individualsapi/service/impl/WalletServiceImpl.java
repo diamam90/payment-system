@@ -28,10 +28,7 @@ public class WalletServiceImpl extends AbstractFeignClientService implements Wal
     private final WalletMapper walletMapper;
     private final ObjectMapper objectMapper;
 
-    @Override
-    protected ExternalService getService() {
-        return ExternalService.TRANSACTION_SERVICE;
-    }
+    private final ExternalService service = ExternalService.TRANSACTION_SERVICE;
 
     @Override
     @NewSpan("wallet_service.create")

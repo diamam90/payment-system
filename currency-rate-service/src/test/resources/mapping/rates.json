@@ -1,0 +1,24 @@
+{
+  "request": {
+    "urlPath": "/api/",
+    "queryParameters": {
+      "key": {
+        "equalTo": "SECRET"
+      },
+      "get": {
+        "equalTo": "rates"
+      },
+      "pairs": {
+        "matches": "([A-Z]{6}\\,*)+"
+      }
+    },
+    "method": "GET"
+  },
+  "response": {
+    "headers": {
+      "Content-Type": "text/html"
+    },
+    "status": 200,
+    "body": "{\"status\":200,\"message\":\"rates\",\"data\":{\"RUBUSD\":\"30\",\"USDRUB\":\"0.033\", \"USDEUR\":\"1\",\"EURUSD\":\"1\"}}"
+  }
+}

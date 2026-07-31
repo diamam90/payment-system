@@ -39,6 +39,8 @@ individuals-api:
     base-url: ${PERSON_SERVICE_BASE_URL}
   transaction:
     base-url: ${TRANSACTION_SERVICE_BASE_URL}
+  currency-rate:
+    base-url: ${CURRENCY_RATE_SERVICE_BASE_URL}
 logging:
   level:
     com.example: debug

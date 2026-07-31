@@ -1,0 +1,18 @@
+@startuml sequence
+participant CurrencyRateService as service
+database CurrencyRateDatabase as db
+participant ExternalProviderClient as provider
+
+service -> db: Try acquire lock ("updateRates")
+alt Lock granted
+    db -> service: locked
+    service -> provider: get rates
+    provider -> service: RateResponse
+    service -> service: update currency rates
+    service -> db: save updated rates
+    service -> db: release lock
+else Already running elsewhere
+    db -> service: lock already acquired
+end
+@enduml
+

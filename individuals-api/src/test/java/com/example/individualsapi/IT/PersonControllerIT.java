@@ -5,7 +5,6 @@ import com.example.individuals.dto.TokenResponse;
 import com.example.individuals.dto.UserInfoResponse;
 import com.example.individuals.dto.UserResponse;
 import com.example.individualsapi.client.KeycloakClient;
-import com.example.individualsapi.config.BaseIntegrationTest;
 import com.example.individualsapi.configuration.AppProperties;
 import com.example.individualsapi.service.impl.PersonService;
 import org.apache.http.HttpHeaders;
@@ -48,7 +47,6 @@ public class PersonControllerIT extends BaseIntegrationTest {
         // given
         var requestBody = userRequest();
         var adminToken = adminToken().block();
-
         // when
         TokenResponse tokenResponse = client.post()
                 .uri("/api/v1/individuals")
@@ -102,7 +100,6 @@ public class PersonControllerIT extends BaseIntegrationTest {
     void registration_WhenRequestInvalid_ShouldReturn400() {
         // given
         var requestBody = invalidRequest();
-
         // when
         var errorResponse = client.post()
                 .uri("/api/v1/individuals")
@@ -119,7 +116,6 @@ public class PersonControllerIT extends BaseIntegrationTest {
         assertThat(errorResponse)
                 .hasFieldOrPropertyWithValue("properties.error", "Bad Request")
                 .hasFieldOrPropertyWithValue("status", 400);
-
     }
 
     @Test
@@ -137,7 +133,7 @@ public class PersonControllerIT extends BaseIntegrationTest {
         // then
         assertThat(errorResponse)
                 .hasFieldOrPropertyWithValue("status", 502)
-                .hasFieldOrPropertyWithValue("error", "Service Person-service is unavailable");
+                .hasFieldOrPropertyWithValue("error", "Service Person-service unavailable");
 
         verify(personService, never()).compensateCreation(any());
         verify(keycloakClient, never()).registration(any(), any());
@@ -152,7 +148,6 @@ public class PersonControllerIT extends BaseIntegrationTest {
 
         var tokenResponse = userTokenResponse("user@aaa.ru", "34222").block();
         var userToken = tokenResponse.accessToken();
-
         // when
         var response = client.post()
                 .uri("/api/v1/individuals/{individualId}", individualId)
@@ -189,7 +184,6 @@ public class PersonControllerIT extends BaseIntegrationTest {
 
         var tokenResponse = userTokenResponse("user@aaa.ru", "34222").block();
         var userToken = tokenResponse.accessToken();
-
         // when
         var response = client.post()
                 .uri("/api/v1/individuals/{individualId}", individualId)
@@ -292,7 +286,6 @@ public class PersonControllerIT extends BaseIntegrationTest {
         var userId = createUser(email, "34222", adminToken, individualId).block();
         var tokenResponse = userTokenResponse(email, "34222").block();
         var userToken = tokenResponse.accessToken();
-
         // when
         var response = client.get()
                 .uri("/api/v1/individuals/{individualId}", individualId)

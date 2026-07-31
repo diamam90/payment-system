@@ -10,7 +10,7 @@ import org.springframework.web.server.adapter.WebHttpHandlerBuilder;
 
 @Configuration(proxyBeanMethods = false)
 @RequiredArgsConstructor
-public class HttpHandlerConfiguration {
+public class HttpHandlerConfig {
 
     private final ApplicationContext context;
 

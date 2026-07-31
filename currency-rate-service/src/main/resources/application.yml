@@ -1,0 +1,92 @@
+server:
+  port: 8084
+spring:
+  application:
+    name: currency-rate-service
+  datasource:
+    url: jdbc:postgresql://${CURRENCY-RATE-SERVICE_DB_HOST}:${CURRENCY-RATE-SERVICE_DB_PORT}/currencyrate
+    username: ${CURRENCY-RATE-SERVICE_DB_USERNAME}
+    password: ${CURRENCY-RATE-SERVICE_DB_PASSWORD}
+  flyway:
+    url: jdbc:postgresql://${CURRENCY-RATE-SERVICE_DB_HOST}:${CURRENCY-RATE-SERVICE_DB_PORT}/currencyrate
+    user: ${CURRENCY-RATE-SERVICE_DB_USERNAME}
+    password: ${CURRENCY-RATE-SERVICE_DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 300
+        order_updates: true
+        order_inserts: true
+        generate_statistics: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${KEYCLOAK_URL}/realms/payment/protocol/openid-connect/certs
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  observations:
+    annotations:
+      enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  opentelemetry:
+    logging:
+      export:
+        otlp:
+          endpoint: ${TEMPO_URL}/v1/traces
+
+currency-rate-service:
+  provider:
+    currate:
+      api-key: ${CURRATE_API_KEY}
+      base-url: https://currate.ru
+      code: cur
+      name: currate
+      description: first currency provider
+      priority: 1
+resilience4j:
+  circuitbreaker:
+    instances:
+      currate:
+        minimum-number-of-calls: 3
+        wait-duration-in-open-state:
+          seconds: 20
+        failure-rate-threshold: 50.0
+        slow-call-duration-threshold:
+          seconds: 30
+        slow-call-rate-threshold: 100.0
+        sliding-window-type: time_based
+        sliding-window-size: 30
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 1.5
+  retry:
+    instances:
+      currate:
+        max-attempts: 3
+        wait-duration:
+          seconds: 10
+  ratelimiter:
+    instances:
+      currate:
+        limit-for-period: 5
+        limit-refresh-period:
+          seconds: 1
+  bulkhead:
+    instances:
+      currate:
+        max-concurrent-calls: 5
+        max-wait-duration:
+          seconds: 1

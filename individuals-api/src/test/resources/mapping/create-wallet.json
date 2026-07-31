@@ -1,0 +1,29 @@
+{
+  "request": {
+    "urlPath": "/api/v1/wallets",
+    "method": "POST"
+  },
+  "response": {
+    "status": 201,
+    "jsonBody": {
+      "uid": "00000000-0000-0000-0000-000000000001",
+      "name": "IT test wallet",
+      "type": {
+        "uid": "22222222-2222-2222-2222-222222222222",
+        "name": "WALLET TYPE IT name",
+        "currencyCode": "EUR",
+        "status": "active",
+        "userType": "test type"
+      },
+      "userUid": "00000000-0000-0000-0000-000011110000",
+      "status": "active",
+      "balance": 0.00,
+      "archivedAt": "2025-05-05T10:00:00Z",
+      "createdAt": "2025-05-05T11:00:00Z",
+      "updatedAt": "2025-05-05T12:00:00Z"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

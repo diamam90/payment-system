@@ -12,21 +12,6 @@ public interface TransactionService {
 
     Mono<TransactionConfirmResponse> transactionConfirm(TransactionConfirmRequest request);
 
-    /*
-    Mono<TransactionInitResponse> depositInit(DepositInitRequest request);
-
-    Mono<TransactionInitResponse> transferInit(TransferInitRequest request);
-
-    Mono<TransactionInitResponse> withdrawalInit(WithdrawalInitRequest request);
-
-    Mono<TransactionConfirmResponse> depositConfirm(DepositConfirmRequest request);
-
-    Mono<TransactionConfirmResponse> transferConfirm(TransferConfirmRequest request);
-
-    Mono<TransactionConfirmResponse> withdrawalConfirm(WithdrawalConfirmRequest request);
-
-     */
-
     Flux<TransactionStatusResponse> findBy(TransactionFilterRequest request);
 
     Mono<TransactionStatusResponse> findById(UUID transactionId);

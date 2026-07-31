@@ -1,4 +1,21 @@
 services:
+  nginx:
+    image: nginx:stable-alpine3.23
+    container_name: nginx
+    ports:
+      - "8000:80"
+    volumes:
+      - ./infrastructure/nginx:/etc/nginx/conf.d/
+    depends_on:
+      currency-rate-service-1:
+        condition: service_healthy
+      currency-rate-service-2:
+        condition: service_healthy
+      currency-rate-service-3:
+        condition: service_healthy
+    networks:
+      - payment_system_network
+
   individuals-api:
     build:
       context: ./individuals-api
@@ -11,6 +28,7 @@ services:
       TEMPO_URL: http://tempo:4318
       PERSON_SERVICE_BASE_URL: http://person-service:8082
       TRANSACTION_SERVICE_BASE_URL: http://transaction-service:8083
+      CURRENCY_RATE_SERVICE_BASE_URL: http://nginx:80
     depends_on:
       keycloak:
         condition: service_healthy
@@ -340,6 +358,101 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - payment_system_network
+
+  currency-rate-db:
+    container_name: currency-rate-db
+    image: postgres:17
+    environment:
+      POSTGRES_DB: currencyrate
+      POSTGRES_USER: currencyrateadmin
+      POSTGRES_PASSWORD: currencyrateadmin
+    ports:
+      - "5438:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d currencyrate -U currencyrateadmin" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payment_system_network
+
+  currency-rate-service-1:
+    container_name: currency-rate-service-1
+    build:
+      context: ./currency-rate-service
+    environment:
+      KEYCLOAK_URL: http://individuals-keycloak:8080
+      TEMPO_URL: http://tempo:4318
+      CURRATE_API_KEY: aa56360f4be253ea7723179cd83d5f81
+      CURRENCY_RATE_SERVICE_DB_HOST: currency-rate-db
+      CURRENCY_RATE_SERVICE_DB_PORT: 5432
+      CURRENCY_RATE_SERVICE_DB_USERNAME: currencyrateadmin
+      CURRENCY_RATE_SERVICE_DB_PASSWORD: currencyrateadmin
+      CURRENCY-RATE-SERVICE_UPDATE-RATE-CRON: 0 */15 * * * *
+    healthcheck:
+      test: [ "CMD","wget","--spider","http://localhost:8084/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - 8084:8084
+    depends_on:
+      currency-rate-db:
+        condition: service_healthy
+    networks:
+      - payment_system_network
+
+  currency-rate-service-2:
+    container_name: currency-rate-service-2
+    build:
+      context: ./currency-rate-service
+    environment:
+      KEYCLOAK_URL: http://individuals-keycloak:8080
+      TEMPO_URL: http://tempo:4318
+      CURRATE_API_KEY: aa56360f4be253ea7723179cd83d5f81
+      CURRENCY_RATE_SERVICE_DB_HOST: currency-rate-db
+      CURRENCY_RATE_SERVICE_DB_PORT: 5432
+      CURRENCY_RATE_SERVICE_DB_USERNAME: currencyrateadmin
+      CURRENCY_RATE_SERVICE_DB_PASSWORD: currencyrateadmin
+      CURRENCY-RATE-SERVICE_UPDATE-RATE-CRON: 0 */15 * * * *
+    healthcheck:
+      test: [ "CMD","wget","--spider","http://localhost:8084/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - 8085:8084
+    depends_on:
+      currency-rate-db:
+        condition: service_healthy
+    networks:
+      - payment_system_network
+
+  currency-rate-service-3:
+    container_name: currency-rate-service-3
+    build:
+      context: ./currency-rate-service
+    environment:
+      KEYCLOAK_URL: http://individuals-keycloak:8080
+      TEMPO_URL: http://tempo:4318
+      CURRATE_API_KEY: aa56360f4be253ea7723179cd83d5f81
+      CURRENCY_RATE_SERVICE_DB_HOST: currency-rate-db
+      CURRENCY_RATE_SERVICE_DB_PORT: 5432
+      CURRENCY_RATE_SERVICE_DB_USERNAME: currencyrateadmin
+      CURRENCY_RATE_SERVICE_DB_PASSWORD: currencyrateadmin
+      CURRENCY-RATE-SERVICE_UPDATE-RATE-CRON: 0 */15 * * * *
+    healthcheck:
+      test: [ "CMD","wget","--spider","http://localhost:8084/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - 8086:8084
+    depends_on:
+      currency-rate-db:
+        condition: service_healthy
     networks:
       - payment_system_network
 

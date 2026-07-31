@@ -10,7 +10,6 @@ import java.util.UUID;
 
 public class WalletDtoStub {
 
-
     public static CreateWalletRequest createWalletRequest(UUID userId, UUID walletTypeId) {
         CreateWalletRequest request = new CreateWalletRequest();
         request.setName("test wallet");
@@ -54,4 +53,20 @@ public class WalletDtoStub {
         return response;
     }
 
+    public static WalletResponse walletResponse_2(UUID userId, UUID walletId,String currencyCode) {
+        WalletResponse response = new WalletResponse();
+        response.setUid(walletId);
+        response.setBalance(BigDecimal.ZERO);
+        response.setStatus("active");
+        response.setUserUid(userId);
+        response.setName("wallet name");
+        WalletTypeResponse walletTypeResponse = new WalletTypeResponse();
+        walletTypeResponse.setUid(UUID.fromString("00000000-0000-0000-0000-000000000000"));
+        walletTypeResponse.setStatus("ACTIVE");
+        walletTypeResponse.setName("test wallet type name");
+        walletTypeResponse.setCurrencyCode(currencyCode);
+        response.setType(walletTypeResponse);
+
+        return response;
+    }
 }

@@ -2,7 +2,7 @@ package com.example.individualsapi.controller;
 
 import com.example.individuals.dto.TokenResponse;
 import com.example.individuals.dto.UserInfoResponse;
-import com.example.individualsapi.config.AppTestConfig;
+import com.example.individualsapi.config.MeterRegistryTestConfig;
 import com.example.individualsapi.configuration.AdminTokenHolder;
 import com.example.individualsapi.configuration.SecurityConfig;
 import com.example.individualsapi.mapper.KeycloakMapper;
@@ -27,7 +27,7 @@ import java.util.UUID;
 import static org.mockito.Mockito.when;
 
 @Import({SecurityConfig.class,
-        AppTestConfig.class,
+        MeterRegistryTestConfig.class,
         KeycloakMapper.class})
 @WebFluxTest(controllers = AuthController.class)
 class AuthControllerTest {
@@ -130,8 +130,6 @@ class AuthControllerTest {
                 }
                 """;
     }
-
-
 
     private TokenResponse tokenResponse() {
         var token = new TokenResponse();

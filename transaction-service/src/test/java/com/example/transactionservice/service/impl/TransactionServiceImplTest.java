@@ -39,7 +39,7 @@ import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.UUID;
 
-import static java.math.RoundingMode.HALF_UP;
+import static java.math.RoundingMode.HALF_EVEN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -80,9 +80,9 @@ class TransactionServiceImplTest {
     private static final String TRANSACTION_BY_UID_AND_USER_UID = "SELECT * from transaction.transactions WHERE uid = ? and user_uid = ?";
     private static final String WALLET_BY_UID_AND_USER_UID = "SELECT * from transaction.wallets WHERE uid = ? and user_uid = ?";
 
-    private static final BigDecimal RUB_DEPOSIT_FEE = BigDecimal.valueOf(0.228 * 0.01);
-    private static final BigDecimal USD_TRANSFER_FEE = BigDecimal.valueOf(0.0228 * 0.001);
-    private static final BigDecimal USD_WITHDRAWAL_FEE = BigDecimal.valueOf(0.0228 * 0.02);
+    private static final BigDecimal DEPOSIT_FEE = BigDecimal.valueOf(0.01);
+    private static final BigDecimal TRANSFER_FEE = BigDecimal.valueOf(0.001);
+    private static final BigDecimal WITHDRAWAL_FEE = BigDecimal.valueOf(0.02);
 
     @AfterEach
     void truncateTable() {
@@ -94,10 +94,10 @@ class TransactionServiceImplTest {
     void depositInit() {
         // given
         DepositInitRequest request = TransactionRequestStub.depositInit();
-        var expectedFee = RUB_DEPOSIT_FEE.multiply(request.getAmount()).setScale(2, HALF_UP);
+        var expectedFee = DEPOSIT_FEE.multiply(request.getAmount()).setScale(2, HALF_EVEN);
 
         TransactionInitResponse expected = new TransactionInitResponse();
-        expected.setAmount(request.getAmount().setScale(2, HALF_UP));
+        expected.setAmount(request.getAmount().setScale(2, HALF_EVEN));
         expected.setFee(expectedFee);
         expected.setWalletUid(request.getWalletUid());
         // when
@@ -116,13 +116,14 @@ class TransactionServiceImplTest {
     void transferInit() {
         // given
         TransferInitRequest request = TransactionRequestStub.transferInit();
-        var expectedAmount = request.getAmount().setScale(2, HALF_UP);
-        var expectedFee = USD_TRANSFER_FEE.multiply(expectedAmount).setScale(2, HALF_UP);
+        var amount = request.getAmount().setScale(2, HALF_EVEN);
+        var expectedFee = TRANSFER_FEE.multiply(amount).multiply(request.getRate()).setScale(2, HALF_EVEN);
+        var toBeTransferred = amount.subtract(expectedFee).setScale(2, HALF_EVEN);
 
         TransactionInitResponse expected = new TransactionInitResponse();
         expected.setWalletUid(request.getWalletUid());
         expected.setFee(expectedFee);
-        expected.setAmount(expectedAmount);
+        expected.setAmount(toBeTransferred);
         expected.setTargetWalletUid(request.getTargetWalletUid());
         // when
         TransactionInitResponse actual = transactionService.transferInit(request);
@@ -138,8 +139,8 @@ class TransactionServiceImplTest {
     void withdrawalInit() {
         // given
         WithdrawalInitRequest request = TransactionRequestStub.withdrawalInit();
-        var expectedFee = USD_WITHDRAWAL_FEE.multiply(request.getAmount()).setScale(2, HALF_UP);
-        var expectedAmount = request.getAmount().add(expectedFee).setScale(2, HALF_UP);
+        var expectedFee = WITHDRAWAL_FEE.multiply(request.getAmount()).setScale(2, HALF_EVEN);
+        var expectedAmount = request.getAmount().add(expectedFee).setScale(2, HALF_EVEN);
 
         TransactionInitResponse expected = new TransactionInitResponse();
         expected.setAmount(expectedAmount);
@@ -161,10 +162,10 @@ class TransactionServiceImplTest {
         // given
         DepositConfirmRequest request = TransactionRequestStub.depositConfirm();
 
-        var expectedAmount = request.getAmount().setScale(2, HALF_UP);
+        var expectedAmount = request.getAmount().setScale(2, HALF_EVEN);
         var balance = BigDecimal.valueOf(50.05);
-        var expectedFee = RUB_DEPOSIT_FEE.multiply(expectedAmount).setScale(2, HALF_UP);
-        var expectedAccrual = expectedAmount.subtract(expectedFee).setScale(2, HALF_UP);
+        var expectedFee = DEPOSIT_FEE.multiply(expectedAmount).setScale(2, HALF_EVEN);
+        var expectedAccrual = expectedAmount.subtract(expectedFee).setScale(2, HALF_EVEN);
 
         TransactionConfirmResponse expected = new TransactionConfirmResponse();
         expected.setUserUid(request.getUserUid());
@@ -228,10 +229,10 @@ class TransactionServiceImplTest {
         WithdrawalConfirmRequest request = TransactionRequestStub.withdrawalConfirm();
 
         var balance = BigDecimal.valueOf(99.06);
-        var expectedAmount = request.getAmount().setScale(2, HALF_UP);
-        var expectedFee = USD_WITHDRAWAL_FEE.multiply(expectedAmount).setScale(2, HALF_UP);
-        var expectedFinalAmount = expectedAmount.add(expectedFee).setScale(2, HALF_UP);
-        var expectedBalance = balance.subtract(expectedFinalAmount).setScale(2, HALF_UP);
+        var expectedAmount = request.getAmount().setScale(2, HALF_EVEN);
+        var expectedFee = WITHDRAWAL_FEE.multiply(expectedAmount).setScale(2, HALF_EVEN);
+        var expectedFinalAmount = expectedAmount.add(expectedFee).setScale(2, HALF_EVEN);
+        var expectedBalance = balance.subtract(expectedFinalAmount).setScale(2, HALF_EVEN);
 
         TransactionCreatedEvent kafkaRequest = TransactionCreatedEvent.builder()
                 .userId(request.getUserUid())
@@ -297,12 +298,13 @@ class TransactionServiceImplTest {
 
         var balance = BigDecimal.valueOf(99.06);
         var targetBalance = BigDecimal.valueOf(30.01);
-        var expectedAmount = request.getAmount().setScale(2, HALF_UP);
-        var expectedFee = USD_TRANSFER_FEE.multiply(expectedAmount).setScale(2, HALF_UP);
-        var expectedAccrual = expectedAmount.subtract(expectedFee);
+        var amount = request.getAmount().setScale(2, HALF_EVEN);
+        var expectedFee = TRANSFER_FEE.multiply(request.getRate()).multiply(amount).setScale(2, HALF_EVEN);
+        var expectedAccrual = amount.subtract(expectedFee);
+        var toBeTransferred = amount.subtract(expectedFee).setScale(2, HALF_EVEN);
 
-        var expectedBalance = balance.subtract(expectedAmount.add(expectedFee)).setScale(2, HALF_UP);
-        var expectedTargetBalance = targetBalance.add(expectedAccrual).setScale(2, HALF_UP);
+        var expectedBalance = balance.subtract(amount).setScale(2, HALF_EVEN);
+        var expectedTargetBalance = targetBalance.add(expectedAccrual).setScale(2, HALF_EVEN);
         // when
         TransactionConfirmResponse result = transactionService.transferConfirm(request);
 
@@ -314,7 +316,7 @@ class TransactionServiceImplTest {
         assertThat(result)
                 .hasFieldOrPropertyWithValue("userUid", request.getUserUid())
                 .hasFieldOrPropertyWithValue("walletUid", request.getWalletUid())
-                .hasFieldOrPropertyWithValue("amount", expectedAmount)
+                .hasFieldOrPropertyWithValue("amount", toBeTransferred)
                 .hasFieldOrPropertyWithValue("type", "TRANSFER")
                 .hasFieldOrPropertyWithValue("status", "COMPLETED")
                 .hasFieldOrPropertyWithValue("comment", null)
@@ -325,7 +327,7 @@ class TransactionServiceImplTest {
         assertThat(transactionParams)
                 .hasFieldOrPropertyWithValue("user_uid", request.getUserUid())
                 .hasFieldOrPropertyWithValue("wallet_uid", request.getWalletUid())
-                .hasFieldOrPropertyWithValue("amount", expectedAmount)
+                .hasFieldOrPropertyWithValue("amount", toBeTransferred)
                 .hasFieldOrPropertyWithValue("type", "TRANSFER")
                 .hasFieldOrPropertyWithValue("status", "COMPLETED")
                 .hasFieldOrPropertyWithValue("comment", null)
@@ -376,8 +378,8 @@ class TransactionServiceImplTest {
                 .hasFieldOrPropertyWithValue("uid", event.transactionId())
                 .hasFieldOrPropertyWithValue("user_uid", userId)
                 .hasFieldOrPropertyWithValue("wallet_uid", walletId)
-                .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(30.00).setScale(2, HALF_UP))
-                .hasFieldOrPropertyWithValue("fee", BigDecimal.valueOf(0.16).setScale(2, HALF_UP))
+                .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(30.00).setScale(2, HALF_EVEN))
+                .hasFieldOrPropertyWithValue("fee", BigDecimal.valueOf(0.16).setScale(2, HALF_EVEN))
                 .hasFieldOrPropertyWithValue("type", TransactionType.DEPOSIT.name())
                 .hasFieldOrPropertyWithValue("status", TransactionStatus.FAILED.name())
                 .hasFieldOrPropertyWithValue("comment", null)
@@ -417,8 +419,8 @@ class TransactionServiceImplTest {
                 .hasFieldOrPropertyWithValue("uid", event.transactionId())
                 .hasFieldOrPropertyWithValue("user_uid", userId)
                 .hasFieldOrPropertyWithValue("wallet_uid", walletId)
-                .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(30.00).setScale(2, HALF_UP))
-                .hasFieldOrPropertyWithValue("fee", BigDecimal.valueOf(0.16).setScale(2, HALF_UP))
+                .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(30.00).setScale(2, HALF_EVEN))
+                .hasFieldOrPropertyWithValue("fee", BigDecimal.valueOf(0.16).setScale(2, HALF_EVEN))
                 .hasFieldOrPropertyWithValue("type", TransactionType.WITHDRAWAL.name())
                 .hasFieldOrPropertyWithValue("status", TransactionStatus.FAILED.name())
                 .hasFieldOrPropertyWithValue("comment", null)
@@ -431,7 +433,7 @@ class TransactionServiceImplTest {
                 .hasFieldOrPropertyWithValue("user_uid", userId)
                 .hasFieldOrPropertyWithValue("name", "custom_wallet")
                 .hasFieldOrPropertyWithValue("status", "active")
-                .hasFieldOrPropertyWithValue("balance", BigDecimal.valueOf(50.05 + 30.00 + 0.16).setScale(2, HALF_UP))
+                .hasFieldOrPropertyWithValue("balance", BigDecimal.valueOf(50.05 + 30.00 + 0.16).setScale(2, HALF_EVEN))
                 .hasFieldOrPropertyWithValue("archived_at", Timestamp.valueOf("2030-01-01 00:00:00"));
     }
 
@@ -458,8 +460,8 @@ class TransactionServiceImplTest {
                 .hasFieldOrPropertyWithValue("uid", event.transactionId())
                 .hasFieldOrPropertyWithValue("user_uid", userId)
                 .hasFieldOrPropertyWithValue("wallet_uid", walletId)
-                .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(30.00).setScale(2, HALF_UP))
-                .hasFieldOrPropertyWithValue("fee", BigDecimal.valueOf(0.16).setScale(2, HALF_UP))
+                .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(30.00).setScale(2, HALF_EVEN))
+                .hasFieldOrPropertyWithValue("fee", BigDecimal.valueOf(0.16).setScale(2, HALF_EVEN))
                 .hasFieldOrPropertyWithValue("type", TransactionType.DEPOSIT.name())
                 .hasFieldOrPropertyWithValue("status", TransactionStatus.COMPLETED.name())
                 .hasFieldOrPropertyWithValue("comment", null)
@@ -472,7 +474,7 @@ class TransactionServiceImplTest {
                 .hasFieldOrPropertyWithValue("user_uid", userId)
                 .hasFieldOrPropertyWithValue("name", "custom_wallet")
                 .hasFieldOrPropertyWithValue("status", "active")
-                .hasFieldOrPropertyWithValue("balance", BigDecimal.valueOf(50.05 + 30.00).setScale(2, HALF_UP))
+                .hasFieldOrPropertyWithValue("balance", BigDecimal.valueOf(50.05 + 30.00).setScale(2, HALF_EVEN))
                 .hasFieldOrPropertyWithValue("archived_at", Timestamp.valueOf("2030-01-01 00:00:00"));
     }
 
@@ -499,8 +501,8 @@ class TransactionServiceImplTest {
                 .hasFieldOrPropertyWithValue("uid", event.transactionId())
                 .hasFieldOrPropertyWithValue("user_uid", userId)
                 .hasFieldOrPropertyWithValue("wallet_uid", walletId)
-                .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(30.00).setScale(2, HALF_UP))
-                .hasFieldOrPropertyWithValue("fee", BigDecimal.valueOf(0.16).setScale(2, HALF_UP))
+                .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(30.00).setScale(2, HALF_EVEN))
+                .hasFieldOrPropertyWithValue("fee", BigDecimal.valueOf(0.16).setScale(2, HALF_EVEN))
                 .hasFieldOrPropertyWithValue("type", TransactionType.WITHDRAWAL.name())
                 .hasFieldOrPropertyWithValue("status", TransactionStatus.COMPLETED.name())
                 .hasFieldOrPropertyWithValue("comment", null)
@@ -513,7 +515,7 @@ class TransactionServiceImplTest {
                 .hasFieldOrPropertyWithValue("user_uid", userId)
                 .hasFieldOrPropertyWithValue("name", "custom_wallet")
                 .hasFieldOrPropertyWithValue("status", "active")
-                .hasFieldOrPropertyWithValue("balance", BigDecimal.valueOf(50.05).setScale(2, HALF_UP))
+                .hasFieldOrPropertyWithValue("balance", BigDecimal.valueOf(50.05).setScale(2, HALF_EVEN))
                 .hasFieldOrPropertyWithValue("archived_at", Timestamp.valueOf("2030-01-01 00:00:00"));
     }
 

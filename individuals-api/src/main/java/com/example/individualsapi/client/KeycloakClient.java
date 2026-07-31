@@ -5,6 +5,7 @@ import com.example.individualsapi.dto.keycloak.*;
 import com.example.individualsapi.exception.AccessDeniedException;
 import com.example.individualsapi.exception.ExternalService;
 import com.example.individualsapi.exception.ExternalServiceUnavailableException;
+import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.tracing.annotation.NewSpan;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,11 +24,20 @@ import java.util.function.Function;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class KeycloakClient {
 
     private final WebClient keycloakClient;
     private final AppProperties properties;
+
+    public KeycloakClient(AppProperties properties, ObservationRegistry registry) {
+        this.properties = properties;
+        var baseUrl = properties.getKeycloak().getBaseUrl();
+        log.debug("keycloak base url: {}", baseUrl);
+        this.keycloakClient = WebClient.builder()
+                .baseUrl(baseUrl)
+                .observationRegistry(registry)
+                .build();
+    }
 
     private static final String USERS_URI = "/admin/realms/{realm}/users";
     private static final String USER_URI = "/admin/realms/{realm}/users/{userId}";

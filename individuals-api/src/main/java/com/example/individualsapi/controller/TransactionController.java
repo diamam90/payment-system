@@ -4,6 +4,7 @@ import com.example.individuals.api.TransactionServiceApi;
 import com.example.individuals.dto.*;
 import com.example.individualsapi.service.TransactionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
@@ -38,6 +39,6 @@ public class TransactionController implements TransactionServiceApi {
     @Override
     public Mono<ResponseEntity<TransactionInitResponse>> transactionInit(Mono<TransactionInitRequest> transactionInitRequest, ServerWebExchange exchange) {
         return transactionInitRequest.flatMap(transactionService::transactionInit)
-                .map(ResponseEntity::ok);
+                .map(response -> new ResponseEntity<>(response, HttpStatus.CREATED));
     }
 }

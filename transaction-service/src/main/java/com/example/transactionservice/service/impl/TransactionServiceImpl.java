@@ -33,7 +33,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
-import static java.math.RoundingMode.HALF_UP;
+import static java.math.RoundingMode.HALF_EVEN;
 
 @Slf4j
 @Service
@@ -56,10 +56,10 @@ public class TransactionServiceImpl implements TransactionService {
     @Transactional(readOnly = true)
     public TransactionInitResponse depositInit(DepositInitRequest request) {
         UUID walletUid = request.getWalletUid();
-        BigDecimal amount = request.getAmount().setScale(2, HALF_UP);
+        BigDecimal amount = request.getAmount().setScale(2, HALF_EVEN);
         Wallet wallet = walletService.getByIdAndUserId(walletUid, request.getUserUid());
         checkWalletStatus(wallet, TransactionType.DEPOSIT);
-        BigDecimal fee = calculateFee(wallet, amount, TransactionType.DEPOSIT);
+        BigDecimal fee = calculateFee(amount, TransactionType.DEPOSIT);
 
         var response = new TransactionInitResponse();
         response.setWalletUid(walletUid);
@@ -81,8 +81,8 @@ public class TransactionServiceImpl implements TransactionService {
         Wallet targetWallet = walletService.getByIdAndUserId(targetWalletId, request.getTargetUserUid());
         checkWalletStatus(targetWallet, TransactionType.TRANSFER);
 
-        BigDecimal amount = request.getAmount().setScale(2, HALF_UP);
-        BigDecimal fee = calculateFee(wallet, amount, TransactionType.TRANSFER);
+        BigDecimal amount = request.getAmount().setScale(2, HALF_EVEN);
+        BigDecimal fee = calculateTransferFee(request.getRate(), amount, TransactionType.TRANSFER);
         BigDecimal accrual = amount.subtract(fee);
         validateTransfer(wallet, amount);
 
@@ -102,8 +102,8 @@ public class TransactionServiceImpl implements TransactionService {
         Wallet wallet = walletService.getByIdAndUserId(walletId, request.getUserUid());
         checkWalletStatus(wallet, TransactionType.WITHDRAWAL);
 
-        BigDecimal amount = request.getAmount().setScale(2, HALF_UP);
-        BigDecimal fee = calculateFee(wallet, amount, TransactionType.WITHDRAWAL);
+        BigDecimal amount = request.getAmount().setScale(2, HALF_EVEN);
+        BigDecimal fee = calculateFee(amount, TransactionType.WITHDRAWAL);
         BigDecimal total = amount.add(fee);
 
         validateTransfer(wallet, total);
@@ -122,8 +122,8 @@ public class TransactionServiceImpl implements TransactionService {
         Wallet wallet = walletService.getByIdAndUserId(request.getWalletUid(), request.getUserUid());
         checkWalletStatus(wallet, TransactionType.DEPOSIT);
 
-        BigDecimal amount = request.getAmount().setScale(2, HALF_UP);
-        BigDecimal fee = calculateFee(wallet, amount, TransactionType.DEPOSIT);
+        BigDecimal amount = request.getAmount().setScale(2, HALF_EVEN);
+        BigDecimal fee = calculateFee(amount, TransactionType.DEPOSIT);
         BigDecimal accrual = amount.subtract(fee);
 
         Transaction transaction = deposit(wallet, accrual, fee, request.getComment());
@@ -150,7 +150,7 @@ public class TransactionServiceImpl implements TransactionService {
         checkWalletStatus(targetWallet, TransactionType.TRANSFER);
 
         BigDecimal amount = request.getAmount();
-        BigDecimal fee = calculateFee(wallet, amount, TransactionType.TRANSFER);
+        BigDecimal fee = calculateTransferFee(request.getRate(), amount, TransactionType.TRANSFER);
         BigDecimal accrual = amount.subtract(fee);
         validateTransfer(wallet, amount);
 
@@ -172,8 +172,8 @@ public class TransactionServiceImpl implements TransactionService {
         Wallet wallet = walletService.getByIdAndUserId(request.getWalletUid(), request.getUserUid());
         checkWalletStatus(wallet, TransactionType.WITHDRAWAL);
 
-        BigDecimal amount = request.getAmount().setScale(2, HALF_UP);
-        BigDecimal fee = calculateFee(wallet, amount, TransactionType.WITHDRAWAL);
+        BigDecimal amount = request.getAmount().setScale(2, HALF_EVEN);
+        BigDecimal fee = calculateFee(amount, TransactionType.WITHDRAWAL);
         BigDecimal total = amount.add(fee);
         validateTransfer(wallet, total);
 
@@ -210,7 +210,7 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setStatus(TransactionStatus.COMPLETED);
         log.info("Transaction with id {} completed", transaction.getId());
         if (TransactionType.DEPOSIT.equals(transaction.getType())) {
-            BigDecimal accrual = transaction.getAmount().setScale(2, HALF_UP);
+            BigDecimal accrual = transaction.getAmount().setScale(2, HALF_EVEN);
             wallet.increaseBalance(accrual);
             log.debug("Wallet [id={}] balance successfully increased, amount: {}, transaction: {}", wallet.getId(), accrual, transaction);
         }
@@ -235,7 +235,7 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setFailureReason(event.failureReason());
         log.info("Transaction with id {} failed", transaction.getId());
         if (TransactionType.WITHDRAWAL.equals(transaction.getType())) {
-            BigDecimal amount = transaction.getAmount().setScale(2, HALF_UP);
+            BigDecimal amount = transaction.getAmount().setScale(2, HALF_EVEN);
             BigDecimal fee = transaction.getFee();
             wallet.increaseBalance(amount.add(fee));
             log.debug("Wallet [id={}] balance successfully increased, amount: {}, transaction: {}", wallet.getId(), amount, transaction);
@@ -265,19 +265,16 @@ public class TransactionServiceImpl implements TransactionService {
         }
     }
 
-    private BigDecimal calculateFee(Wallet wallet, BigDecimal amount, TransactionType type) {
-        var currencyCode = wallet.getType().getCurrencyCode();
-        return amount.multiply(getCurrencyCodePart().apply(currencyCode))
+    private BigDecimal calculateFee(BigDecimal amount, TransactionType type) {
+        return amount
                 .multiply(getTransactionTypePart().apply(type))
-                .setScale(2, HALF_UP);
+                .setScale(2, HALF_EVEN);
     }
 
-    private Function<String, BigDecimal> getCurrencyCodePart() {
-        return code -> {
-            if ("RUB".equals(code)) return BigDecimal.valueOf(0.228);
-            else if ("USD".equals(code)) return BigDecimal.valueOf(0.0228);
-            return BigDecimal.ZERO;
-        };
+    private BigDecimal calculateTransferFee(BigDecimal rate, BigDecimal amount, TransactionType type) {
+        return amount.multiply(rate)
+                .multiply(getTransactionTypePart().apply(type))
+                .setScale(2, HALF_EVEN);
     }
 
     private Function<TransactionType, BigDecimal> getTransactionTypePart() {

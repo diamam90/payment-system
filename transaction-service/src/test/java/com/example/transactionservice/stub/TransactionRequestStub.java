@@ -27,6 +27,7 @@ public class TransactionRequestStub {
         request.setTargetUserUid(targetUserId);
         request.setTargetWalletUid(targetWalletId);
         request.setAmount(BigDecimal.valueOf(50));
+        request.setRate(BigDecimal.ONE);
 
         return request;
     }
@@ -78,6 +79,7 @@ public class TransactionRequestStub {
         request.setTargetUserUid(targetUserId);
         request.setTargetWalletUid(targetWalletId);
         request.setAmount(BigDecimal.valueOf(50));
+        request.setRate(BigDecimal.ONE);
 
         return request;
     }

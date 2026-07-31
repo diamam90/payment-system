@@ -9,6 +9,7 @@ var properties = mapOf(
     "testContainersJunitVersion" to "1.21.3",
     "personServiceApiVersion" to "1.0.0-SNAPSHOT",
     "transactionServiceApiVersion" to "1.0.0-SNAPSHOT",
+    "currencyRateServiceApiVersion" to "1.0.0-SNAPSHOT",
     "wireMockVersion" to "1.0-alpha-13",
     "nettyDnsResolver" to "4.1.72.Final:osx-aarch_64",
     "archunitVersion" to "1.4.1",
@@ -67,6 +68,7 @@ dependencies {
     // PAYMENT SYSTEM
     implementation("com.example:person-service-api:${properties["personServiceApiVersion"]}")
     implementation("com.example:transaction-service-api:${properties["transactionServiceApiVersion"]}")
+    implementation("com.example:currency-rate-service-api:${properties["currencyRateServiceApiVersion"]}")
 
     // OBSERVABILITY
     implementation("io.micrometer:micrometer-registry-prometheus")

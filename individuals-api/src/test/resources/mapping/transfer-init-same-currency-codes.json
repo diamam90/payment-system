@@ -1,0 +1,32 @@
+{
+  "request": {
+    "url": "/api/v1/transactions/init",
+    "method": "POST",
+    "bodyPatterns": [
+      {
+        "matchesJsonPath": {
+          "expression": "$.type",
+          "contains": "TRANSFER"
+        }
+      },
+      {
+        "matchesJsonPath": {
+          "expression": "$.targetWalletUid",
+          "contains": "12341234-1234-1234-1234-123412341234"
+        }
+      }
+    ]
+  },
+  "response": {
+    "status": 201,
+    "jsonBody": {
+      "walletUid": "12341234-1234-1234-1234-123412341234",
+      "targetWalletUid": "12341234-1234-1234-1234-123412341234",
+      "amount": "256",
+      "fee": "100.00"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

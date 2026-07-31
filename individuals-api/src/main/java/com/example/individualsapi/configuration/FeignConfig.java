@@ -20,7 +20,7 @@ import org.springframework.context.annotation.Import;
 @Configuration
 @RequiredArgsConstructor
 @Import(FeignClientsConfiguration.class)
-public class FeignConfiguration {
+public class FeignConfig {
 
     private final AppProperties properties;
     private final AdminTokenHolder tokenHolder;

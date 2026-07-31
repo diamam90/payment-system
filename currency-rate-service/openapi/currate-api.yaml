@@ -1,0 +1,92 @@
+openapi: 3.0.0
+info:
+  title: Currate API
+  version: 1.0.0
+  description:
+    API для получения валют и их курсов от провайдера Currate.
+
+tags:
+  - name: Currate
+
+paths:
+  /api/:
+    get:
+      operationId: actualData
+      tags: [ Currate ]
+      summary: Получение списка валют/курса валют
+      parameters:
+        - name: params
+          in: query
+          required: true
+          schema:
+            type: object
+            oneOf:
+              - $ref: '#/components/schemas/CurrencyRequest'
+              - $ref: '#/components/schemas/RateRequest'
+            discriminator:
+              propertyName: get
+              mapping:
+                currency_list: '#/components/schemas/CurrencyRequest'
+                rates: '#/components/schemas/RateRequest'
+
+      responses:
+        '200':
+          description: Успешный запрос
+          content:
+            text/html:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/CurrencyResponse'
+                  - $ref: '#/components/schemas/RateResponse'
+                discriminator:
+                  propertyName: message
+                  mapping:
+                    currency_list: '#/components/schemas/CurrencyResponse'
+                    rates: '#/components/schemas/RateResponse'
+
+components:
+  schemas:
+    CurrencyRequest:
+      type: object
+      properties:
+        get:
+          type: string
+        key:
+          type: string
+    RateRequest:
+      type: object
+      properties:
+        get:
+          type: string
+        key:
+          type: string
+        pairs:
+          type: string
+
+    CurrencyResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          description: статус ответа
+        message:
+          type: string
+          description: сообщение
+        data:
+          type: array
+          items:
+            type: string
+
+    RateResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          description: статус ответа
+        message:
+          type: string
+          description: сообщение
+        data:
+          type: object
+          additionalProperties:
+            type: number
