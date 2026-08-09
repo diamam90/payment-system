@@ -3,45 +3,47 @@
 
 Container(fakePaymentProviderContainer,"Fake Payment Provider","Spring boot")
 
-Component(transactionController, "Transaction Controller", "Rest Controller", "Получение и создание транзакций пополнения")
-Component(payoutController, "Payout Controller", "Rest Controller", "Получение и создание транзакций выплат")
-Component(webhookController, "Webhook Controller", "Rest Controller", "Получение вебхуков транзакций")
+System_Boundary(container,"Fake Payment Provider Service") {
+    Component(transactionController, "Transaction Controller", "Сгенерированные DTO", "Получение и создание транзакций пополнения")
+    Component(payoutController, "Payout Controller", "Сгенерированные DTO", "Получение и создание транзакций выплат")
+    Component(webhookController, "Webhook Controller", "Сгенерированные DTO", "Получение вебхуков транзакций")
 
-Component(transactionService, "Transaction Service","Сервис","Обработка транзакций пополнения")
-Component(payoutService, "Payout Service", "Сервис", "Обработка транзакций выплат")
-Component(webhookService, "Webhook Service","Сервис", "Обработка вебхуков")
-Component(merchantService, "Merchant Service", "Сервис", "Аутентификация пользователей")
+    Component(transactionService, "Transaction Service","Сервис","Обработка транзакций пополнения")
+    Component(payoutService, "Payout Service", "Сервис", "Обработка транзакций выплат")
+    Component(webhookService, "Webhook Service","Сервис", "Обработка вебхуков")
+    Component(merchantService, "Merchant Service", "Сервис", "Аутентификация пользователей")
+    Component(webhookAuthService, "Webhook Auth Service", "Использование белых списков", "Аутентификация вебхуков")
 
-Component(transactionRepository, "Transaction Repository", "Репозиторий", "Хранилище транзакций пополнения")
-Component(payoutRepository, "Payout Repository", "Репозиторий", "Хранилище транзакций выплат")
-Component(webhookRepository, "Webhook Repository", "Репозиторий", "Аудит вебхуков")
-Component(merchantRepository, "Merchant Repository", "Репозиторий", "Хранилище пользователей")
+    Component(transactionRepository, "Transaction Repository", "Spring Data JPA", "Сохранение транзакций пополнения")
+    Component(payoutRepository, "Payout Repository", "Spring Data JPA", "Сохранение транзакций выплат")
+    Component(webhookRepository, "Webhook Repository", "Spring Data JPA", "Сохранение вебхуков")
+    Component(merchantRepository, "Merchant Repository", "Spring Data JPA", "Сохранение пользователей")
+}
 
-
-Component(transactionDto, "Transaction Dto", "Сгенерированные DTO")
-Component(payoutDto, "Payout Dto", "Сгенерированные DTO")
-Component(webhookDto, "Webhook Dto", "Сгенерированные DTO")
+SystemDb_Ext(psql, "Postgre", "База данных",  ,  ,  , SQL)
 
 Lay_R(fakePaymentProviderContainer, transactionController)
 Lay_R(transactionController, payoutController)
 Lay_R(payoutController, webhookController)
 
-Rel_D(transactionController,transactionService, "вызов")
-Rel_D(payoutController,payoutService, "вызов")
-Rel_D(webhookController,webhookService, "вызов")
+Rel_D(transactionController,transactionService, "Вызов")
+Rel_D(payoutController,payoutService, "Вызов")
+Rel_D(webhookController,webhookService, "Вызов")
 
-Rel(webhookService,payoutService, "вызов")
-Rel(webhookService,transactionService, "вызов")
+Rel(webhookService,payoutService, "Вызов")
+Rel(webhookService,transactionService, "Вызов")
+Rel_D(webhookService, webhookAuthService, "Вызов")
 
 Rel_D(transactionService, merchantService, "Вызов")
 Rel_D(payoutService, merchantService, "Вызов")
 
-Rel_D(transactionService,transactionRepository, "вызов")
-Rel_D(payoutService,payoutRepository, "вызов")
-Rel_D(webhookService,webhookRepository, "вызов")
-Rel_D(merchantService, merchantRepository, "вызов")
+Rel_D(transactionService,transactionRepository, "Вызов")
+Rel_D(payoutService,payoutRepository, "Вызов")
+Rel_D(webhookService,webhookRepository, "Вызов")
+Rel_D(merchantService, merchantRepository, "Вызов")
 
-Rel_U(transactionController, transactionDto, "использует")
-Rel_U(payoutController, payoutDto, "использует")
-Rel_U(webhookController, webhookDto, "использует")
+Rel_D(merchantRepository, psql, "JDBC")
+Rel_D(transactionRepository, psql, "JDBC")
+Rel_D(payoutRepository, psql, "JDBC")
+Rel_D(webhookRepository, psql, "JDBC")
 @enduml

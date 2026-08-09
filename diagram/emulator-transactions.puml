@@ -15,21 +15,33 @@ deactivate API
 
 === Async later ==
 
+loop Retry up to 3 times if Http status 503 exponential backoff
 ExtNet -> API: POST /webhook/transaction ({id, status="SUCCESS|FAILED"})
 
 activate API
-    API -> API: Validate payload
-    alt payload invalid
+
+API -> API: Authenticate webhook
+alt auth failed
     API --> ExtNet: Http status (401)
+end
+group transaction
+    API -> DB: get transaction by Id
+    DB --> API: Transaction
+    alt Транзакция не найдена
+        API --> ExtNet: Http status (404)
+    else Если транзакция в конечном статусе, и он отличается от статуса в запросе
+        API --> ExtNet: Http status (400)
+    else Если транзакция уже в этом статусе
+        API --> ExtNet: Http status (200)
     end
-    loop Retry up to 3 times
-        API -> DB: UPDATE transaction.status = SUCCESS|FAILED
-        API -> DB: INSERT into webhooks (entity_id, payload)
-    end
-    alt success
-        API --> ExtNet: HTTP status (200)
-    else  After 3 failed attempts
-        API --> ExtNet: HTTP status (503)
-    end
+    API -> DB: UPDATE transaction.status = SUCCESS|FAILED
+    API -> DB: INSERT into webhooks (entity_id, payload, entity_type)
+end
+alt success
+    API --> ExtNet: HTTP status (200)
+else  failed
+    API --> ExtNet: HTTP status (503)
+end
 deactivate API
+end
 @enduml
