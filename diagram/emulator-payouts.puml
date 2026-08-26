@@ -3,32 +3,54 @@ actor MerchantApp as "Merchant Application"
 participant API as "Payment Provider API (Emulator)"
 database DB as "Payment Provider DB"
 participant ExtNet as "External Test Service"
-
 === Payouts ==
 MerchantApp -> API: POST /api/v1/payouts (Basic Auth)
 activate API
-  API -> API: Validate payout request
   API -> API: Authenticate merchant
-  API -> DB: INSERT INTO payouts(status=PENDING)
-  API <-- DB: returns payout ID
+  API -> API: Validate request data
+  API -> DB: INSERT into payout (status=PENDING)
+  API <-- DB: new payout record (ID)
   API -> MerchantApp: 201 Created (status=PENDING)
 deactivate API
 
 === Async later ==
+
+loop Retry up to 3 times if Http status 503 exponential backoff
 ExtNet -> API: POST /webhook/payout ({id, status="SUCCESS|FAILED"})
+
 activate API
+
+API -> API: Authenticate webhook
+break auth failed
+    API --> ExtNet: Http status (401)
+end
     API -> API: Validate payload
-    alt payload invalid
-        API --> ExtNet: Http status (401)
+break validation failed
+    API --> ExtNet: Http status (400)
+end
+group in transaction
+    API -> DB: get payout by id
+    DB --> API: Payout
+
+    break Если выплата в конечном статусе, и он отличается от статуса в запросе
+        API --> ExtNet: Http status (400)
     end
-    loop Retry up to 3 times
-        API -> DB: UPDATE payouts.status=SUCCESS|FAILED
-        API -> DB: INSERT INTO webhooks
+    break Если выплата уже в этом статусе
+        API --> ExtNet: Http status (200)
     end
-    alt sucess
-          API --> ExtNet: HTTP status (200)
-    else After 3 failed attempts
-     API --> ExtNet: HTTP status (502)
+    break Выплата не найдена
+        API --> ExtNet: Http status (400)
     end
+
+    alt Перевод выплаты в конечный статус
+        API -> DB: UPDATE payout.status = SUCCESS|FAILED
+        API -> DB: INSERT into webhooks (entity_id, payload, event_type)
+        API --> ExtNet: HTTP status (200)
+    else Возникла ошибка при обновлении
+          API --> ExtNet: HTTP status (503)
+    end
+end
+
 deactivate API
+end
 @enduml
