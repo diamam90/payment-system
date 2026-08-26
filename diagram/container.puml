@@ -39,8 +39,10 @@ System_Ext(rateProvider, "External Rate Providers") {
 
 System_Ext(extProviderSystem, "External Payment Provider System", "Внешняя платежная система") {
     Container(fakePP, "Fake Payment Provider", "Эмулятор платежного провайдера")
+    Container(extNet, "External Test Service","Имитация внешней сети")
+    ContainerDb(fakePPDb, "Fake Payment Db", "Fake Payment Database")
 
-    note right of fakePP
+    note left of extNet
       Обработка webhook:
       • до 3 попыток (retry)
       • экспоненциальный backoff
@@ -75,6 +77,9 @@ Rel_D(ts,tsDb, "Read/Write")
 
 Rel(indApi, kc, "Http","Создание пользователей")
 Rel_R(kc,kcDb,"Read/Write")
+
+Rel_D(extNet, fakePP, "Http", "Отправка вебхуков")
+Rel_D(fakePP, fakePPDb, "Read/Write","Хранение транзакций и вебхуков")
 
 BiRel_L(ts,kafka,"tcp","чтение и запись сообщений")
 

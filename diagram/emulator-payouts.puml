@@ -21,27 +21,36 @@ ExtNet -> API: POST /webhook/payout ({id, status="SUCCESS|FAILED"})
 activate API
 
 API -> API: Authenticate webhook
-alt auth failed
+break auth failed
     API --> ExtNet: Http status (401)
 end
-group transaction
+    API -> API: Validate payload
+break validation failed
+    API --> ExtNet: Http status (400)
+end
+group in transaction
     API -> DB: get payout by id
     DB --> API: Payout
-    alt Выплата не найдена
-        API --> ExtNet: Http status (404)
-    else Если выплата в конечном статусе, и он отличается от статуса в запросе
+
+    break Если выплата в конечном статусе, и он отличается от статуса в запросе
         API --> ExtNet: Http status (400)
-    else Если выплата уже в этом статусе
+    end
+    break Если выплата уже в этом статусе
         API --> ExtNet: Http status (200)
     end
-    API -> DB: UPDATE payout.status = SUCCESS|FAILED
-    API -> DB: INSERT into webhooks (entity_id, payload, entity_type)
+    break Выплата не найдена
+        API --> ExtNet: Http status (400)
+    end
+
+    alt Перевод выплаты в конечный статус
+        API -> DB: UPDATE payout.status = SUCCESS|FAILED
+        API -> DB: INSERT into webhooks (entity_id, payload, event_type)
+        API --> ExtNet: HTTP status (200)
+    else Возникла ошибка при обновлении
+          API --> ExtNet: HTTP status (503)
+    end
 end
-alt success
-    API --> ExtNet: HTTP status (200)
-else  failed
-    API --> ExtNet: HTTP status (503)
-end
+
 deactivate API
 end
 @enduml
