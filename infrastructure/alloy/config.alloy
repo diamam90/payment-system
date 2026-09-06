@@ -34,6 +34,11 @@ prometheus.scrape "scraper" {
             "__metrics_path__" = "/actuator/prometheus",
             "instance" = "currency-rate-service-3",
         },
+        {
+             "__address__" = "fake-payment-provider:8087",
+             "__metrics_path__" = "/actuator/prometheus",
+             "instance" = "fake-payment-provider",
+        },
     ]
     scrape_interval = "10s"
     scrape_timeout = "5s"
@@ -63,6 +68,7 @@ prometheus.exporter.postgres "psdbs" {
     "postgresql://transactionadmin:transactionadmin@transaction-shard1:5432/transaction?sslmode=disable",
     "postgresql://transactionadmin:transactionadmin@transaction-shard2:5432/transaction?sslmode=disable",
     "postgresql://currencyrateadmin:currencyrateadmin@currency-rate-db:5432/currencyrate?sslmode=disable",
+    "postgresql://fakepaymentadmin:fakepaymentadmin@fake-payment-provider-db:5432/payment?sslmode=disable",
   ]
 }
 

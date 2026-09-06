@@ -37,11 +37,25 @@ System_Ext(rateProvider, "External Rate Providers") {
     Container(currate, "Currate")
 }
 
-System_Ext(paymentProvider, "Payment Provider", "Внешняя платежная система")
+System_Ext(extProviderSystem, "External Payment Provider System", "Внешняя платежная система") {
+    Container(fakePP, "Fake Payment Provider", "Эмулятор платежного провайдера")
+    Container(extNet, "External Test Service","Имитация внешней сети")
+    ContainerDb(fakePPDb, "Fake Payment Db", "Fake Payment Database")
+
+    note left of extNet
+      Обработка webhook:
+      • до 3 попыток (retry)
+      • экспоненциальный backoff
+      • при успехе - фиксируем статус (SUCCESS/FAILED)
+      • при исчерпании попыток — статус домена по бизнес-правилам
+    end note
+}
 
 Container_Ext(nexus,"Nexus","Репозиторий")
 
 SystemQueue_Ext(kafka, "Kafka", "Брокер сообщений")
+
+Lay_D(kafka, extProviderSystem)
 
 Rel_R(client, indApi,"Http","Запрос пользователя")
 
@@ -64,8 +78,10 @@ Rel_D(ts,tsDb, "Read/Write")
 Rel(indApi, kc, "Http","Создание пользователей")
 Rel_R(kc,kcDb,"Read/Write")
 
+Rel_D(extNet, fakePP, "Http", "Отправка вебхуков")
+Rel_D(fakePP, fakePPDb, "Read/Write","Хранение транзакций и вебхуков")
+
 BiRel_L(ts,kafka,"tcp","чтение и запись сообщений")
-BiRel_L(kafka,paymentProvider,"tcp", "чтение и запись сообщений")
 
 Rel_D(grafana, prometheus,"Чтение метрик")
 Rel_D(grafana, loki,"Чтение логов")
@@ -81,5 +97,4 @@ Rel(alloy, kcDb, "Сбор метрик с БД")
 Rel(ps, nexus, "Публикация SDK","JAR")
 Rel(ts, nexus, "Публикация SDK","JAR")
 Rel(crs3, nexus, "Публикация SDK","JAR")
-
 @enduml

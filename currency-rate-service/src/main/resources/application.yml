@@ -43,10 +43,14 @@ management:
     sampling:
       probability: 1.0
   opentelemetry:
-    logging:
+    tracing:
       export:
         otlp:
           endpoint: ${TEMPO_URL}/v1/traces
+  otlp:
+    metrics:
+      export:
+        enabled: false
 
 currency-rate-service:
   provider:
