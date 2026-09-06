@@ -4,7 +4,7 @@ import com.example.fake.dto.StatusUpdate;
 
 public interface WebhookService {
 
-    void updatePayout(StatusUpdate status);
+    void updatePayout(StatusUpdate request);
 
-    void updateTransaction(StatusUpdate status);
+    void updateTransaction(StatusUpdate request);
 }

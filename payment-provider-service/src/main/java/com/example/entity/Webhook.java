@@ -3,6 +3,8 @@ package com.example.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -15,13 +17,18 @@ public class Webhook {
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "webhookIdGenerator")
-    @SequenceGenerator(name = "webhookIdGenerator", sequenceName = "webhook_id_seq")
+    @SequenceGenerator(schema = "payment", name = "webhookIdGenerator", sequenceName = "webhooks_id_seq", allocationSize = 1)
     private Long id;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "event_type")
-    private String eventType;
+    private EventType eventType;
+
+    @Column(name = "entity_id")
+    private Long entityId;
 
     @Column(name = "payload")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String payload;
 
     @Column(name = "received_at")

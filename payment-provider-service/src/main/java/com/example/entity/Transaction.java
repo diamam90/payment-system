@@ -17,7 +17,7 @@ public class Transaction {
 
     @Id
     @Column(name = "id")
-    @SequenceGenerator(schema = "payment", name = "transactionIdGenerator", sequenceName = "transactions_id_seq")
+    @SequenceGenerator(schema = "payment", name = "transactionIdGenerator", sequenceName = "transactions_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "transactionIdGenerator")
     private Long id;
 
@@ -63,5 +63,9 @@ public class Transaction {
             this.merchantId = merchant.getId();
         }
         this.merchant = merchant;
+    }
+
+    public boolean isFinalStatus() {
+        return Status.FAILED.equals(status) || Status.SUCCESS.equals(status);
     }
 }

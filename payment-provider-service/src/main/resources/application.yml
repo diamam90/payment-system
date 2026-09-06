@@ -1,0 +1,44 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: fake-payment-privder
+  datasource:
+    url: jdbc:postgresql://${FAKE_PAYMENT_PROVIDER_DB_HOST}:${FAKE_PAYMENT_PROVIDER_DB_PORT}/payment
+    username: ${FAKE_PAYMENT_PROVIDER_DB_USERNAME}
+    password: ${FAKE_PAYMENT_PROVIDER_DB_PASSWORD}
+  flyway:
+    url: jdbc:postgresql://${FAKE_PAYMENT_PROVIDER_DB_HOST}:${FAKE_PAYMENT_PROVIDER_DB_PORT}/payment
+    user: ${FAKE_PAYMENT_PROVIDER_DB_USERNAME}
+    password: ${FAKE_PAYMENT_PROVIDER_DB_PASSWORD}
+
+fake-payment-provider:
+  webhook-clients:
+    client1: "$2a$10$IxM.qbvWNwQojJz6qSmiPuv3sePoXAb.W6PRg/clqwKQh3fQrkVj2"
+    client2: "$2a$10$2mv/7HtbM05UwzYd4L36ju4tlcT3wUkEd8Gl2L4c7x5f2zYsnJvWq"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  observations:
+    annotations:
+      enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${TEMPO_URL}/v1/traces
+  otlp:
+    metrics:
+      export:
+        enabled: false

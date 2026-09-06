@@ -55,9 +55,6 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${versions["springdocOpenapiStarterWebmvcUiVersion"]}")
-    implementation("org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j:${versions["springCloudVersion"]}")
-    implementation("org.springframework.cloud:spring-cloud-starter-circuitbreaker-spring-retry:${versions["springCloudVersion"]}")
-    implementation("io.github.resilience4j:resilience4j-bulkhead:${versions["bulkheadVersion"]}")
 
     // OBSERVABILITY
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")

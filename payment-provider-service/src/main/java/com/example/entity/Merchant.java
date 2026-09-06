@@ -20,7 +20,7 @@ public class Merchant implements UserDetails {
 
     @Id
     @Column(name = "id")
-    @SequenceGenerator(name = "merchantIdGenerator", sequenceName = "merchant_id_seq")
+    @SequenceGenerator(name = "merchantIdGenerator", sequenceName = "merchant_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "merchantIdGenerator")
     private Integer id;
 

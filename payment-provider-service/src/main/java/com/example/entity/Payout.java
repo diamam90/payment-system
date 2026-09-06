@@ -17,7 +17,7 @@ public class Payout {
 
     @Id
     @Column(name = "id")
-    @SequenceGenerator(schema = "payment", name = "payoutIdGenerator", sequenceName = "payouts_id_seq")
+    @SequenceGenerator(schema = "payment", name = "payoutIdGenerator", sequenceName = "payouts_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "payoutIdGenerator")
     private Long id;
 
@@ -59,4 +59,7 @@ public class Payout {
         this.merchant = merchant;
     }
 
+    public boolean isFinalStatus() {
+        return Status.FAILED.equals(status) || Status.SUCCESS.equals(status);
+    }
 }

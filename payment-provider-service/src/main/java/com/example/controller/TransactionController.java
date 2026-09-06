@@ -1,5 +1,6 @@
 package com.example.controller;
 
+import com.example.entity.Merchant;
 import com.example.entity.Transaction;
 import com.example.fake.api.TransactionApi;
 import com.example.fake.dto.TransactionRequest;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
@@ -25,23 +27,31 @@ public class TransactionController implements TransactionApi {
 
     @Override
     public ResponseEntity<TransactionResponse> createTransaction(TransactionRequest transactionRequest) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Transaction transaction = transactionService.create(transactionRequest, authentication);
+        Merchant merchant = getMerchant();
+        Transaction transaction = transactionService.create(transactionRequest, merchant);
         return new ResponseEntity<>(transactionMapper.toResponse(transaction), HttpStatus.CREATED);
     }
 
     @Override
     public ResponseEntity<TransactionResponse> getTransactionById(Long id) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Transaction transaction = transactionService.getById(id, authentication);
+        Merchant merchant = getMerchant();
+        Transaction transaction = transactionService.getById(id, merchant.getId());
         return new ResponseEntity<>(transactionMapper.toResponse(transaction), HttpStatus.OK);
     }
 
     @Override
     public ResponseEntity<List<TransactionResponse>> getTransactions(ZonedDateTime startDate, ZonedDateTime endDate) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        List<Transaction> transactions = transactionService.findBy(startDate, endDate, authentication);
+        Merchant merchant = getMerchant();
+        List<Transaction> transactions = transactionService.findBy(startDate, endDate, merchant.getId());
         List<TransactionResponse> response = transactions.stream().map(transactionMapper::toResponse).toList();
         return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    private Merchant getMerchant() {
+        return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+                .map(Authentication::getPrincipal)
+                .filter(Merchant.class::isInstance)
+                .map(Merchant.class::cast)
+                .orElseThrow();
     }
 }
