@@ -2,7 +2,12 @@
 actor Client
 participant IndividualsAPI
 participant TransactionService
-database DB
+database TransactionDB
+participant PaymentService
+database PaymentServiceDB
+participant FakePaymentProvider
+database FakePaymentProviderDB
+
 queue Kafka
 
 == Init ==
@@ -18,23 +23,40 @@ else Пополнение невозможно
 end
 == Confirm ==
 Client -> IndividualsAPI: POST /api/v1/transactions/confirm (type=deposit)
+activate IndividualsAPI
+
 IndividualsAPI -> TransactionService: POST /api/v1/transactions/confirm (type=deposit)
+activate TransactionService
 TransactionService -> TransactionService: Проверка кошелька
-alt Пополнение невозможно
+break Пополнение невозможно
     TransactionService --> IndividualsAPI: ErrorResponse
     IndividualsAPI --> Client: ErrorResponse
 end
 
 group transaction
+    TransactionService -> TransactionDB: Создать транзакцию PENDING
     TransactionService -> Kafka: TransactionCreatedEvent
-    TransactionService -> DB: Создать транзакцию PENDING
+    TransactionDB --> TransactionService: OK, transactionId, PENDING
 end
-  TransactionService --> IndividualsAPI: TransactionConfirmResponse
+    TransactionService --> IndividualsAPI: TransactionConfirmResponse
+    deactivate TransactionService
+    IndividualsAPI -> PaymentService: POST /api/v1/payments
+    activate PaymentService
+    PaymentService -> PaymentServiceDB: Создать платеж со статусом PENDING
+    PaymentService -> FakePaymentProvider: /api/v1/transactions
+    FakePaymentProvider -> FakePaymentProviderDB: save transaction
+    FakePaymentProviderDB --> FakePaymentProvider: OK, transactionId, PENDING
+    FakePaymentProvider --> PaymentService: Транзакция со статусом PENDING
+     PaymentService --> IndividualsAPI: PaymentResponse
+    deactivate PaymentService
+
 IndividualsAPI --> Client: TransactionConfirmResponse
+deactivate IndividualsAPI
+
 Kafka -> TransactionService: TransactionCompletedEvent (async)
 TransactionService -> TransactionService: Зачислить средства
 group transaction
-    TransactionService -> DB: Баланс++
-    TransactionService -> DB: Статус транзакции COMPLETED
+    TransactionService -> TransactionDB: Баланс++
+    TransactionService -> TransactionDB: Статус транзакции COMPLETED
 end
 @enduml
