@@ -29,8 +29,8 @@ break validation failed
     API --> ExtNet: Http status (400)
 end
 group in transaction
-    API -> DB: get payout by id
-    DB --> API: Payout
+    API -> DB: get transaction by id
+    DB --> API: Transaction
 
     break Если пополнение в конечном статусе, и он отличается от статуса в запросе
         API --> ExtNet: Http status (400)
