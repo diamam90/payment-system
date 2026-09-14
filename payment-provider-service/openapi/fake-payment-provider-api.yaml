@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   title: Fake Payment Provider API
   version: "1.0"
-  description: >
+  description: |
     API для учебного микросервиса "Фейковый провайдер платежей".
     Поддерживает операции с транзакциями пополнения, выплатами,
     и обработку webhook-уведомлений.
@@ -16,15 +16,14 @@ tags:
     description: Обработка вебхуков
 
 security:
-  - basicAuth: []   # По умолчанию все приватные методы требуют Basic Auth
+  - merchantAuth: []   # По умолчанию все приватные методы требуют Basic Auth
+
 paths:
   /api/v1/transactions:
     post:
       summary: Создать новую транзакцию пополнения
       operationId: createTransaction
-      tags: [Transaction]
-      security:
-        - basicAuth: []
+      tags: [ Transaction ]
       requestBody:
         required: true
         content:
@@ -50,8 +49,6 @@ paths:
       summary: Получить список транзакций за период дат
       operationId: getTransactions
       tags: [ Transaction ]
-      security:
-        - basicAuth: []
       parameters:
         - in: query
           name: start_date
@@ -89,8 +86,6 @@ paths:
       summary: Получить детали конкретной транзакции
       operationId: getTransactionById
       tags: [ Transaction ]
-      security:
-        - basicAuth: []
       parameters:
         - in: path
           name: id
@@ -119,8 +114,6 @@ paths:
       summary: Создать запрос на выплату
       operationId: createPayout
       tags: [ Payout ]
-      security:
-        - basicAuth: []
       requestBody:
         required: true
         content:
@@ -146,8 +139,6 @@ paths:
       summary: Получить список всех выплат (при желании - за период)
       operationId: getPayouts
       tags: [ Payout ]
-      security:
-        - basicAuth: []
       parameters:
         - in: query
           name: start_date
@@ -179,8 +170,6 @@ paths:
       summary: Получить детали конкретной выплаты
       operationId: getPayoutById
       tags: [ Payout ]
-      security:
-        - basicAuth: []
       parameters:
         - in: path
           name: id
@@ -209,7 +198,8 @@ paths:
       summary: Входящее уведомление о статусе транзакции (успех/неуспех)
       operationId: updateTransaction
       tags: [ Webhook ]
-      security: []   # вебхуки не требуют Basic Auth (предполагается своя проверка по подписи)
+      security:
+        - webhookAuth: []
       requestBody:
         required: true
         content:
@@ -232,7 +222,8 @@ paths:
       summary: Входящее уведомление о статусе выплаты
       operationId: updatePayout
       tags: [ Webhook ]
-      security: []
+      security:
+        - webhookAuth: []
       requestBody:
         required: true
         content:
@@ -253,24 +244,32 @@ paths:
 
 components:
   securitySchemes:
-    basicAuth:
+    merchantAuth:
       type: http
       scheme: basic
+      description: аутентификация клиентов транзакций
+    webhookAuth:
+      type: http
+      scheme: basic
+      description: аутентификация клиентов вебхуков
+
   schemas:
     TransactionRequest:
       type: object
-      required: [amount, currency, method]
+      required: [ amount, currency, method ]
       properties:
         amount:
           type: number
-          format: double
           minimum: 0.01
+          x-field-extra-annotation: "@jakarta.validation.constraints.Digits(integer = 18, fraction = 2)"
           description: Сумма пополнения (должна быть > 0)
         currency:
           type: string
+          pattern: '^[A-Z]{3}$'
           description: Трехбуквенный код валюты (ISO 4217), напр. "USD"
         method:
           type: string
+          enum: ['CARD', 'CASH']
           description: Способ оплаты, например "CARD" (если не поддерживается, вернется ошибка)
         description:
           type: string
@@ -285,7 +284,6 @@ components:
           type: string
         amount:
           type: number
-          format: double
         currency:
           type: string
         method:
@@ -303,18 +301,19 @@ components:
           type: string
         externalId:
           type: string
-      required: [id, merchantId, amount, currency, method, status, createdAt]
+      required: [ id, merchantId, amount, currency, method, status, createdAt ]
     PayoutRequest:
       type: object
-      required: [amount, currency]
+      required: [ amount, currency ]
       properties:
         amount:
           type: number
-          format: double
           minimum: 0.01
           description: Сумма выплаты (должна быть > 0)
+          x-field-extra-annotation: "@jakarta.validation.constraints.Digits(integer = 18, fraction = 2)"
         currency:
           type: string
+          pattern: '^[A-Z]{3}$'
           description: Код валюты выплаты
     PayoutResponse:
       type: object
@@ -326,7 +325,6 @@ components:
           type: string
         amount:
           type: number
-          format: double
         currency:
           type: string
         status:
@@ -340,17 +338,18 @@ components:
           format: date-time
         externalId:
           type: string
-      required: [id, merchantId, amount, currency, status, createdAt]
-    StatusUpdate:   # схема для webhook-уведомления о статусе
+      required: [ id, merchantId, amount, currency, status, createdAt ]
+    StatusUpdate: # схема для webhook-уведомления о статусе
       type: object
-      required: [id, status]
+      required: [ id, status ]
       properties:
         id:
           type: integer
           format: int64
+          minimum: 1
           description: ID транзакции/выплаты, статус которой обновляется
         status:
-          type: string
+          enum: [ "SUCCESS","FAILED" ]
           description: Новый статус ("SUCCESS" или "FAILED")
         reason:
           type: string
@@ -364,4 +363,4 @@ components:
         message:
           type: string
           description: Описание ошибки для отображения или логирования
-      required: [error, message]
+      required: [ error, message ]

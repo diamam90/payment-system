@@ -5,10 +5,6 @@ import com.example.fake.dto.PayoutRequest;
 import com.example.fake.dto.PayoutResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.ValueMapping;
-
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 
 @Mapper(componentModel = "spring", uses = DateTimeMapper.class)
 public interface PayoutMapper {

@@ -4,8 +4,11 @@ import com.example.dto.StatusCode;
 import com.example.repository.PayoutRepository;
 import com.example.repository.TransactionRepository;
 import com.example.repository.WebhookRepository;
+import jakarta.annotation.PostConstruct;
 import org.apache.http.HttpHeaders;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -13,23 +16,29 @@ import org.postgresql.util.PGobject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.client.RestTestClient;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -42,9 +51,9 @@ public class WebhookIT {
     @Autowired
     MockMvc mvc;
     @Autowired
-    ObjectMapper objectMapper;
-    @Autowired
     JdbcClient jdbc;
+
+    RestTestClient restTestClient;
 
     @MockitoSpyBean
     WebhookRepository webhookRepository;
@@ -53,6 +62,10 @@ public class WebhookIT {
     @MockitoSpyBean
     PayoutRepository payoutRepository;
 
+    @PostConstruct
+    void setup() {
+        restTestClient = RestTestClient.bindTo(mvc).build();
+    }
 
     @AfterEach
     void truncate() {
@@ -90,6 +103,37 @@ public class WebhookIT {
                 .hasFieldOrPropertyWithValue("method", "CARD");
 
         verify(webhookRepository).save(any());
+    }
+
+    @RepeatedTest(3)
+    @Sql("/sql/webhook-transaction-update.sql")
+    void updateTransaction_whenParallelRequestExecutes_shouldUpdateExactlyOnce() throws Exception {
+        try (ExecutorService executorService = new ThreadPoolExecutor(5, 5, 30, TimeUnit.SECONDS, new LinkedBlockingQueue<>())) {
+            List<Callable<RestTestClient.ResponseSpec>> tasks = new ArrayList<>();
+            tasks.add(this::failedTransaction);
+            tasks.add(this::failedTransaction);
+            tasks.add(this::failedTransaction);
+            tasks.add(this::successTransaction);
+            tasks.add(this::successTransaction);
+            executorService.invokeAll(tasks);
+
+            Map<String, Object> transactionParams = jdbc.sql("SELECT * FROM payment.transactions WHERE id = :transactionId")
+                    .param("transactionId", 6L)
+                    .query()
+                    .singleRow();
+
+            assertThat(transactionParams)
+                    .hasFieldOrPropertyWithValue("merchant_id", 1)
+                    .extractingByKey("status", InstanceOfAssertFactories.STRING)
+                    .isNotEqualTo("PENDING");
+
+            assertTrue(
+                    jdbc.sql("SELECT count(id) = 1 FROM payment.webhooks WHERE event_type = 'TRANSACTION' AND entity_id = :transactionId")
+                            .param("transactionId", 6L)
+                            .query(Boolean.class)
+                            .single()
+            );
+        }
     }
 
     @Sql("/sql/webhook-transaction-update.sql")
@@ -231,6 +275,37 @@ public class WebhookIT {
         verify(webhookRepository).save(any());
     }
 
+    @RepeatedTest(3)
+    @Sql("/sql/webhook-payout-update.sql")
+    void updatePayout_whenParallelRequestExecutes_shouldUpdateExactlyOnce() throws Exception {
+        try (ExecutorService executorService = new ThreadPoolExecutor(5, 5, 30, TimeUnit.SECONDS, new LinkedBlockingQueue<>())) {
+            List<Callable<RestTestClient.ResponseSpec>> tasks = new ArrayList<>();
+            tasks.add(this::failedPayout);
+            tasks.add(this::failedPayout);
+            tasks.add(this::failedPayout);
+            tasks.add(this::successPayout);
+            tasks.add(this::successPayout);
+            executorService.invokeAll(tasks);
+
+            Map<String, Object> transactionParams = jdbc.sql("SELECT * FROM payment.payouts WHERE id = :paymentId")
+                    .param("paymentId", 23L)
+                    .query()
+                    .singleRow();
+
+            assertThat(transactionParams)
+                    .hasFieldOrPropertyWithValue("merchant_id", 1)
+                    .extractingByKey("status", InstanceOfAssertFactories.STRING)
+                    .isNotEqualTo("PENDING");
+
+            assertTrue(
+                    jdbc.sql("SELECT count(id) = 1 FROM payment.webhooks WHERE event_type = 'PAYOUT' AND entity_id = :paymentId")
+                            .param("paymentId", 23L)
+                            .query(Boolean.class)
+                            .single()
+            );
+        }
+    }
+
 
     @Sql("/sql/webhook-payout-update.sql")
     @Test
@@ -290,11 +365,20 @@ public class WebhookIT {
                         .content(//language=JSON//
                                 """
                                         {
-                                            "id": 6,
+                                            "id": 23,
                                             "status": "SUCCESS"
                                         }
                                         """))
                 .andExpect(status().isBadRequest());
+
+        Map<String, Object> payoutParams = jdbc.sql("SELECT * FROM payment.payouts WHERE id = :payoutId")
+                .param("payoutId", 23L)
+                .query()
+                .singleRow();
+
+        assertThat(payoutParams)
+                .hasFieldOrPropertyWithValue("id", 23L)
+                .hasFieldOrPropertyWithValue("status", "FAILED");
 
         verify(webhookRepository, never()).save(any());
     }
@@ -337,5 +421,159 @@ public class WebhookIT {
                 );
 
         verify(webhookRepository, never()).save(any());
+    }
+
+    @Sql("/sql/webhook-payout-update.sql")
+    @Test
+    void updatePayout_whenStatusFromRequestDoesNotEqualSuccessOrFailed_shouldReturn400() throws Exception {
+        // update payout client1
+        mvc.perform(post("/webhook/payout")
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "Y2xpZW50MTpwYXNzd29yZA==")
+                        .contentType(APPLICATION_JSON)
+                        .content(//language=JSON//
+                                """
+                                        {
+                                            "id": 6,
+                                            "status": "PENDING"
+                                        }
+                                        """))
+                .andExpect(status().isBadRequest())
+                .andDo(print());
+
+        Map<String, Object> payoutParams = jdbc.sql("SELECT * FROM payment.payouts WHERE id = :payoutId")
+                .param("payoutId", 23L)
+                .query()
+                .singleRow();
+
+        assertThat(payoutParams)
+                .hasFieldOrPropertyWithValue("id", 23L)
+                .hasFieldOrPropertyWithValue("status", "PENDING");
+
+        verify(webhookRepository, never()).save(any());
+    }
+
+    @Test
+    void updatePayout_whenRequestIdIsNegative_shouldReturn400() throws Exception {
+        // update payout client1
+        mvc.perform(post("/webhook/payout")
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "Y2xpZW50MTpwYXNzd29yZA==")
+                        .contentType(APPLICATION_JSON)
+                        .content(//language=JSON//
+                                """
+                                        {
+                                            "id": -6,
+                                            "status": "SUCCESS"
+                                        }
+                                        """))
+                .andExpect(status().isBadRequest())
+                .andDo(print());
+
+        verify(webhookRepository, never()).save(any());
+    }
+
+    @Sql("/sql/webhook-transaction-update.sql")
+    @Test
+    void updateTransaction_whenStatusFromRequestDoesNotEqualSuccessOrFailed_shouldReturn400() throws Exception {
+        // update payout client1
+        mvc.perform(post("/webhook/transaction")
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "Y2xpZW50MTpwYXNzd29yZA==")
+                        .contentType(APPLICATION_JSON)
+                        .content(//language=JSON//
+                                """
+                                        {
+                                            "id": 6,
+                                            "status": "PENDING"
+                                        }
+                                        """))
+                .andExpect(status().isBadRequest())
+                .andDo(print());
+
+        Map<String, Object> payoutParams = jdbc.sql("SELECT * FROM payment.transactions WHERE id = :transactionId")
+                .param("transactionId", 6L)
+                .query()
+                .singleRow();
+
+        assertThat(payoutParams)
+                .hasFieldOrPropertyWithValue("id", 6L)
+                .hasFieldOrPropertyWithValue("status", "PENDING");
+
+        verify(webhookRepository, never()).save(any());
+    }
+
+    @Test
+    void updateTransaction_whenRequestIdIsNegative_shouldReturn400() throws Exception {
+        // update payout client1
+        mvc.perform(post("/webhook/transaction")
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "Y2xpZW50MTpwYXNzd29yZA==")
+                        .contentType(APPLICATION_JSON)
+                        .content(//language=JSON//
+                                """
+                                        {
+                                            "id": -6,
+                                            "status": "SUCCESS"
+                                        }
+                                        """))
+                .andExpect(status().isBadRequest())
+                .andDo(print());
+
+        verify(webhookRepository, never()).save(any());
+    }
+
+    private RestTestClient.ResponseSpec failedTransaction() {
+        return restTestClient.post()
+                .uri("/webhook/transaction")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, "Basic " + "Y2xpZW50MTpwYXNzd29yZA==")
+                .body("""
+                        {
+                            "id": 6,
+                            "status": "FAILED"
+                        }
+                        """)
+                .exchange();
+    }
+
+    private RestTestClient.ResponseSpec successTransaction() {
+        return restTestClient.post()
+                .uri("/webhook/transaction")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, "Basic " + "Y2xpZW50MTpwYXNzd29yZA==")
+                .body("""
+                        {
+                            "id": 6,
+                            "status": "SUCCESS"
+                        }
+                        """)
+                .exchange();
+    }
+
+    private RestTestClient.ResponseSpec failedPayout() {
+        return restTestClient.post()
+                .uri("/webhook/payout")
+                .header(HttpHeaders.AUTHORIZATION, "Basic " + "Y2xpZW50MTpwYXNzd29yZA==")
+                .contentType(APPLICATION_JSON)
+                .body(//language=JSON//
+                        """
+                                {
+                                    "id": 23,
+                                    "status": "FAILED"
+                                }
+                                """)
+                .exchange();
+    }
+
+    private RestTestClient.ResponseSpec successPayout() {
+        return restTestClient.post()
+                .uri("/webhook/payout")
+                .header(HttpHeaders.AUTHORIZATION, "Basic " + "Y2xpZW50MTpwYXNzd29yZA==")
+                .contentType(APPLICATION_JSON)
+                .body(//language=JSON//
+                        """
+                                {
+                                    "id": 23,
+                                    "status": "SUCCESS"
+                                }
+                                """)
+                .exchange();
     }
 }

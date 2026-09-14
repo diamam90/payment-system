@@ -226,7 +226,6 @@ tasks.compileJava {
 file(".env").takeIf { it.exists() }?.readLines()?.forEach {
     var (k, v) = it.split("=", limit = 2)
     System.setProperty(k.trim(), v.trim())
-    logger.lifecycle("${k.trim()}=${v.trim()}")
 }
 
 val nexusUrl = System.getenv("NEXUS_URL") ?: System.getProperty("NEXUS_URL")

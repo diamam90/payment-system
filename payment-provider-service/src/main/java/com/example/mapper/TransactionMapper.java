@@ -5,12 +5,6 @@ import com.example.fake.dto.TransactionRequest;
 import com.example.fake.dto.TransactionResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.Named;
-import org.mapstruct.ValueMapping;
-
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 
 @Mapper(componentModel = "spring", uses = DateTimeMapper.class)
 public interface TransactionMapper {

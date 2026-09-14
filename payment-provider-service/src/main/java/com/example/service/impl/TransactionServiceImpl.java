@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -29,8 +31,9 @@ public class TransactionServiceImpl implements TransactionService {
     public Transaction create(TransactionRequest request, Merchant merchant) {
         Transaction transaction = transactionMapper.create(request);
         transaction.setMerchant(merchant);
-        log.debug("Транзакция на пополнение успешно создана, id: {}", transaction.getId());
-        return transactionRepository.save(transaction);
+        transactionRepository.save(transaction);
+        log.info("Транзакция на пополнение успешно создана, id: {}", transaction.getId());
+        return transaction;
     }
 
     @Override
@@ -43,12 +46,16 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     @Transactional(readOnly = true)
     public List<Transaction> findBy(ZonedDateTime start, ZonedDateTime end, Integer merchantId) {
+        LocalDateTime startLocal = start.withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
+        LocalDateTime endLocal = end.withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
+
         return transactionRepository
-                .findByMerchantIdAndCreatedAtBetween(merchantId, start.toLocalDateTime(), end.toLocalDateTime());
+                .findByMerchantIdAndCreatedAtBetween(merchantId, startLocal, endLocal);
     }
 
     @Override
-    public Optional<Transaction> findById(Long id) {
-        return transactionRepository.findById(id);
+    @Transactional(readOnly = true)
+    public Optional<Transaction> findByIdPessimisticWrite(Long id) {
+        return transactionRepository.findByIdPessimisticWrite(id);
     }
 }

@@ -24,7 +24,7 @@ public class Payout {
     @Column(name = "merchant_id", insertable = false, updatable = false)
     private Integer merchantId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "merchant_id")
     private Merchant merchant;
 

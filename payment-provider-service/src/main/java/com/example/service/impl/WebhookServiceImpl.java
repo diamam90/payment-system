@@ -28,15 +28,13 @@ public class WebhookServiceImpl implements WebhookService {
 
     @Override
     public void updatePayout(StatusUpdate request) {
-        validateRequest(request);
-
-        Payout payout = payoutService.findById(request.getId())
+        Payout payout = payoutService.findByIdPessimisticWrite(request.getId())
                 .orElseThrow(() -> new BadRequestException(
                         String.format("Выплата с идентификатором [%s] не найдена", request.getId()))
                 );
 
         Status payoutStatus = payout.getStatus();
-        Status requestStatus = Status.valueOf(request.getStatus());
+        Status requestStatus = Status.fromRequest(request.getStatus());
 
         if (payout.isFinalStatus()) {
             if (payoutStatus.equals(requestStatus)) return;
@@ -60,15 +58,13 @@ public class WebhookServiceImpl implements WebhookService {
 
     @Override
     public void updateTransaction(StatusUpdate request) {
-        validateRequest(request);
-
-        Transaction transaction = transactionService.findById(request.getId())
+        Transaction transaction = transactionService.findByIdPessimisticWrite(request.getId())
                 .orElseThrow(() -> new BadRequestException(
                         String.format("Пополнение с идентификатором [%s] не найдено", request.getId()))
                 );
 
         Status payoutStatus = transaction.getStatus();
-        Status requestStatus = Status.valueOf(request.getStatus());
+        Status requestStatus = Status.fromRequest(request.getStatus());
 
         if (transaction.isFinalStatus()) {
             if (payoutStatus.equals(requestStatus)) return;
@@ -93,14 +89,4 @@ public class WebhookServiceImpl implements WebhookService {
         return objectMapper.writeValueAsString(status);
     }
 
-    private void validateRequest(StatusUpdate request) {
-        if (request.getId() < 0) {
-            throw new BadRequestException("Id must be positive");
-        }
-        try {
-            Status.valueOf(request.getStatus());
-        } catch (IllegalArgumentException ex) {
-            throw new BadRequestException("Incorrect status: " + request.getStatus());
-        }
-    }
 }

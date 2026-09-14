@@ -24,7 +24,7 @@ public class Transaction {
     @Column(name = "merchant_id", updatable = false, insertable = false)
     private Integer merchantId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "merchant_id")
     private Merchant merchant;
 

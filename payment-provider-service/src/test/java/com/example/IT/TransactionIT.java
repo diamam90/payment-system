@@ -1,5 +1,6 @@
 package com.example.IT;
 
+import com.example.fake.dto.TransactionRequest;
 import com.example.fake.dto.TransactionResponse;
 import org.apache.http.HttpHeaders;
 import org.assertj.core.api.Condition;
@@ -8,6 +9,9 @@ import org.hamcrest.core.IsEqual;
 import org.hamcrest.core.IsIterableContaining;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -58,14 +62,14 @@ public class TransactionIT {
                         .content(//language=JSON
                                 """
                                         {
-                                            "amount": 12.3,
+                                            "amount": 12.99,
                                             "currency": "RUB",
                                             "method":  "CARD"
                                         }
                                         """))
                 .andExpectAll(status().isCreated(),
                         jsonPath("status").value("PENDING"),
-                        jsonPath("amount").value(12.3),
+                        jsonPath("amount").value(12.99),
                         jsonPath("method").value("CARD"),
                         jsonPath("currency").value("RUB"),
                         jsonPath("id").isNotEmpty(),
@@ -96,7 +100,7 @@ public class TransactionIT {
                 )
                 .andExpectAll(status().isOk(),
                         jsonPath("status").value("SUCCESS"),
-                        jsonPath("amount").value(12.3),
+                        jsonPath("amount").value(12.99),
                         jsonPath("method").value("CARD"),
                         jsonPath("currency").value("RUB"),
                         jsonPath("id").isNotEmpty(),
@@ -116,6 +120,73 @@ public class TransactionIT {
                 .containsEntry("entity_id", response.getId())
                 .hasEntrySatisfying("payload", new Condition<>(Objects::nonNull, "Payload must not be null"))
                 .hasEntrySatisfying("notification_url", new Condition<>(Objects::isNull, "Notification_url must be null"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"RUBS", "RU", "rub"})
+    void createTransaction_whenInvalidCurrencyCode_shouldReturn400(String currency) throws Exception {
+        mvc.perform(post("/api/v1/transactions")
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQxOm1lcmNoYW50IDEgcGFzc3dvcmQ=")
+                        .contentType(APPLICATION_JSON)
+                        .content(//language=JSON
+                                """
+                                        {
+                                            "amount": 12.99,
+                                            "currency": "%s",
+                                            "method":  "CARD"
+                                        }
+                                        """.formatted(currency)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createTransaction_whenInvalidMethod_shouldReturn400() throws Exception {
+        mvc.perform(post("/api/v1/transactions")
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQxOm1lcmNoYW50IDEgcGFzc3dvcmQ=")
+                        .contentType(APPLICATION_JSON)
+                        .content(//language=JSON
+                                """
+                                        {
+                                            "amount": 12.99,
+                                            "currency": "USD",
+                                            "method":  "NOT_SUPPORTED"
+                                        }
+                                        """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = TransactionRequest.MethodEnum.class)
+    void createTransaction_withOnlyValidMethodName_shouldReturn201(TransactionRequest.MethodEnum method) throws Exception {
+        mvc.perform(post("/api/v1/transactions")
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQxOm1lcmNoYW50IDEgcGFzc3dvcmQ=")
+                        .contentType(APPLICATION_JSON)
+                        .content(//language=JSON
+                                """
+                                        {
+                                            "amount": 12.99,
+                                            "currency": "USD",
+                                            "method":  "%s"
+                                        }
+                                        """.formatted(method.getValue())))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void transaction_withInvalidAmountScale_shouldReturn400() throws Exception {
+        // create transaction
+        mvc.perform(post("/api/v1/transactions")
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQxOm1lcmNoYW50IDEgcGFzc3dvcmQ=")
+                        .contentType(APPLICATION_JSON)
+                        .content(//language=JSON
+                                """
+                                        {
+                                            "amount": 12.333,
+                                            "currency": "RUB",
+                                            "method":  "CARD"
+                                        }
+                                        """))
+                .andExpect(status().isBadRequest());
     }
 
     @Sql("/sql/transaction-by-id.sql")
@@ -177,6 +248,25 @@ public class TransactionIT {
                         jsonPath("$..id").value(IsIterableContaining.hasItem(7)),
                         jsonPath("$..currency").value("EUR"),
                         jsonPath("$..status").value("SUCCESS")
+                );
+    }
+
+    @Sql("/sql/transaction-filter.sql")
+    @Test
+    void getTransactions_whenOffset_shouldReturn4Transaction() throws Exception {
+        mvc.perform(get("/api/v1/transactions?start_date={1}&end_date={2}",
+                        ZonedDateTime.parse("2027-03-03T03:00:00+03:00"),
+                        ZonedDateTime.parse("2027-03-04T05:59:59+06:00")
+                )
+                        // merchant 2 auth
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQyOm1lcmNoYW50IDIgcGFzc3dvcmQ="))
+                .andExpectAll(
+                        status().isOk(),
+                        jsonPath("$.length()").value(4),
+                        jsonPath("$..merchantId").value(Every.everyItem(IsEqual.equalTo("merchant2"))),
+                        jsonPath("$..id").value(IsIterableContaining.hasItems(10, 11, 12, 13)),
+                        jsonPath("$..currency").value(Every.everyItem(IsEqual.equalTo("RUB"))),
+                        jsonPath("$..status").value(Every.everyItem(IsEqual.equalTo("PENDING")))
                 );
     }
 
