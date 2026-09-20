@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Slf4j
 @Service
@@ -25,6 +27,7 @@ public class WebhookServiceImpl implements WebhookService {
     private final TransactionService transactionService;
     private final PayoutService payoutService;
     private final ObjectMapper objectMapper;
+    private final ReadWriteLock rwl = new ReentrantReadWriteLock();
 
     @Override
     public void updatePayout(StatusUpdate request) {
@@ -32,28 +35,12 @@ public class WebhookServiceImpl implements WebhookService {
                 .orElseThrow(() -> new BadRequestException(
                         String.format("Выплата с идентификатором [%s] не найдена", request.getId()))
                 );
-
-        Status payoutStatus = payout.getStatus();
         Status requestStatus = Status.fromRequest(request.getStatus());
 
-        if (payout.isFinalStatus()) {
-            if (payoutStatus.equals(requestStatus)) return;
-
-            throw new BadRequestException(
-                    String.format("Не подходящий статус %s для выплаты с ID: %s ", requestStatus, request.getId())
-            );
+        if (updatePayoutStatus(payout, requestStatus)) {
+            Webhook webhook = createWebhook(EventType.PAYOUT, request);
+            webhookRepository.save(webhook);
         }
-
-        payout.setStatus(requestStatus);
-
-        Webhook webhook = new Webhook();
-        webhook.setEntityId(request.getId());
-        webhook.setEventType(EventType.PAYOUT);
-        webhook.setReceivedAt(LocalDateTime.now());
-        webhook.setPayload(getPayload(request));
-        webhookRepository.save(webhook);
-
-        log.info("Выплата с идентификатором [{}] обновила статус: {}", request.getId(), requestStatus);
     }
 
     @Override
@@ -62,31 +49,99 @@ public class WebhookServiceImpl implements WebhookService {
                 .orElseThrow(() -> new BadRequestException(
                         String.format("Пополнение с идентификатором [%s] не найдено", request.getId()))
                 );
-
-        Status payoutStatus = transaction.getStatus();
         Status requestStatus = Status.fromRequest(request.getStatus());
 
-        if (transaction.isFinalStatus()) {
-            if (payoutStatus.equals(requestStatus)) return;
+        if (updateTransactionStatus(transaction, requestStatus)) {
+            Webhook webhook = createWebhook(EventType.TRANSACTION, request);
+            webhookRepository.save(webhook);
+        }
+    }
 
+    private boolean updatePayoutStatus(Payout payout, Status requestStatus) {
+        rwl.readLock().lock();
+        Status payoutStatus = payout.getStatus();
+
+        if (payout.isFinalStatus()) {
+            if (payoutStatus.equals(requestStatus)) {
+                log.info("Выплата уже находится в статусе {}", payoutStatus);
+                rwl.readLock().unlock();
+                return false;
+            }
+            rwl.readLock().unlock();
             throw new BadRequestException(
-                    String.format("Не подходящий статус %s для пополнения с ID: %s ", requestStatus, request.getId())
+                    String.format("Не подходящий статус %s для выплаты с ID: %s ", requestStatus, payout.getId())
             );
         }
 
-        transaction.setStatus(requestStatus);
+        try {
+            rwl.readLock().unlock();
+            rwl.writeLock().lock();
 
+            if (payout.isFinalStatus()) {
+                if (payout.getStatus().equals(requestStatus)) {
+                    log.info("Выплата уже находится в статусе {}", payout.getStatus());
+                    return false;
+                }
+
+                throw new BadRequestException(
+                        String.format("Не подходящий статус %s для выплаты с ID: %s ", requestStatus, payout.getId())
+                );
+            } else {
+                payout.setStatus(requestStatus);
+                return true;
+            }
+        } finally {
+            rwl.writeLock().unlock();
+        }
+    }
+
+    private boolean updateTransactionStatus(Transaction transaction, Status requestStatus) {
+        rwl.readLock().lock();
+        Status transactionStatus = transaction.getStatus();
+
+        if (transaction.isFinalStatus()) {
+            rwl.readLock().unlock();
+            if (transactionStatus.equals(requestStatus)) {
+                log.info("Пополнение уже находится в статусе {}", transactionStatus);
+                return false;
+            }
+
+            throw new BadRequestException(
+                    String.format("Не подходящий статус %s для пополнения с ID: %s ", requestStatus, transaction.getId())
+            );
+        }
+        try {
+            rwl.readLock().unlock();
+            rwl.writeLock().lock();
+
+            if (transaction.isFinalStatus()) {
+                if (transaction.getStatus().equals(requestStatus)) {
+                    log.info("Пополнение уже находится в статусе {}", transaction.getStatus());
+                    return false;
+                }
+
+                throw new BadRequestException(
+                        String.format("Не подходящий статус %s для пополнения с ID: %s ", requestStatus, transaction.getId())
+                );
+            } else {
+                transaction.setStatus(requestStatus);
+                return true;
+            }
+        } finally {
+            rwl.writeLock().unlock();
+        }
+    }
+
+    private Webhook createWebhook(EventType type, StatusUpdate request) {
         Webhook webhook = new Webhook();
-        webhook.setEventType(EventType.TRANSACTION);
+        webhook.setEventType(type);
         webhook.setEntityId(request.getId());
         webhook.setPayload(getPayload(request));
         webhook.setReceivedAt(LocalDateTime.now());
-        webhookRepository.save(webhook);
-        log.info("Пополнение с идентификатором [{}] обновило статус: {}", request.getId(), requestStatus);
+        return webhook;
     }
 
     private String getPayload(StatusUpdate status) {
         return objectMapper.writeValueAsString(status);
     }
-
 }

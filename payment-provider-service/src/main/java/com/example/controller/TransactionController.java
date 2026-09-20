@@ -8,6 +8,7 @@ import com.example.fake.dto.TransactionResponse;
 import com.example.mapper.TransactionMapper;
 import com.example.service.TransactionService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -18,6 +19,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 public class TransactionController implements TransactionApi {
@@ -29,6 +31,7 @@ public class TransactionController implements TransactionApi {
     public ResponseEntity<TransactionResponse> createTransaction(TransactionRequest transactionRequest) {
         Merchant merchant = getMerchant();
         Transaction transaction = transactionService.create(transactionRequest, merchant);
+        log.info("Транзакция на пополнение успешно создана, id: {}", transaction.getId());
         return new ResponseEntity<>(transactionMapper.toResponse(transaction), HttpStatus.CREATED);
     }
 

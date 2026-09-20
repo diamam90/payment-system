@@ -261,7 +261,7 @@ components:
         amount:
           type: number
           minimum: 0.01
-          x-field-extra-annotation: "@jakarta.validation.constraints.Digits(integer = 18, fraction = 2)"
+          x-field-extra-annotation: "@jakarta.validation.constraints.Digits(integer = 16, fraction = 2)"
           description: Сумма пополнения (должна быть > 0)
         currency:
           type: string
@@ -274,6 +274,7 @@ components:
         description:
           type: string
           description: Необязательное описание или назначение платежа
+          maxLength: 255
     TransactionResponse:
       type: object
       properties:
@@ -310,7 +311,7 @@ components:
           type: number
           minimum: 0.01
           description: Сумма выплаты (должна быть > 0)
-          x-field-extra-annotation: "@jakarta.validation.constraints.Digits(integer = 18, fraction = 2)"
+          x-field-extra-annotation: "@jakarta.validation.constraints.Digits(integer = 16, fraction = 2)"
         currency:
           type: string
           pattern: '^[A-Z]{3}$'

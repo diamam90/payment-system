@@ -8,6 +8,7 @@ import com.example.fake.dto.PayoutResponse;
 import com.example.mapper.PayoutMapper;
 import com.example.service.PayoutService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 public class PayoutController implements PayoutApi {
@@ -30,6 +32,7 @@ public class PayoutController implements PayoutApi {
     public ResponseEntity<PayoutResponse> createPayout(PayoutRequest payoutRequest) {
         Merchant merchant = getMerchant();
         Payout payout = payoutService.create(payoutRequest, merchant);
+        log.info("Транзакция на выплату успешно создана, id: {}", payout.getId());
         return new ResponseEntity<>(payoutMapper.toResponse(payout), HttpStatus.CREATED);
     }
 

@@ -1,6 +1,7 @@
 package com.example.IT;
 
 import com.example.fake.dto.TransactionResponse;
+import com.example.repository.PayoutRepository;
 import org.apache.http.HttpHeaders;
 import org.assertj.core.api.Condition;
 import org.hamcrest.core.Every;
@@ -14,6 +15,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -29,13 +31,13 @@ import java.util.Map;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @AutoConfigureMockMvc
 @Testcontainers(disabledWithoutDocker = true)
@@ -55,6 +57,9 @@ public class PayoutIT {
     Clock clock;
 
     Clock fixed = Clock.fixed(Instant.parse("2027-05-05T12:00:00+04:00"), ZoneOffset.UTC);
+
+    @MockitoSpyBean
+    private PayoutRepository payoutRepository;
 
     @AfterEach
     void truncate() {
@@ -144,6 +149,32 @@ public class PayoutIT {
                                         """))
                 .andExpect(status().isBadRequest())
                 .andDo(print());
+    }
+
+    @Test
+    void transaction_whenAmountDigitGreaterThan16_shouldReturn400() throws Exception {
+        mvc.perform(post("/api/v1/payouts")
+                        // merchant 2
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQyOm1lcmNoYW50IDIgcGFzc3dvcmQ=")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(//language=JSON
+                                """
+                                        {
+                                          "amount": 12345678901234567.99,
+                                          "currency": "USD"
+                                        }
+                                        """))
+                .andExpectAll(status().isBadRequest(),
+                        jsonPath("$.error").value("ERROR_400"),
+                        jsonPath("$.message").exists(),
+                        jsonPath("$.detail").doesNotExist(),
+                        jsonPath("$.instance").doesNotExist(),
+                        jsonPath("$.status").doesNotExist(),
+                        jsonPath("$.title").doesNotExist(),
+                        content().contentType(jakarta.ws.rs.core.MediaType.APPLICATION_JSON))
+                .andDo(print());
+
+        verify(payoutRepository, never()).save(any());
     }
 
     @Sql("/sql/payout-by-id.sql")

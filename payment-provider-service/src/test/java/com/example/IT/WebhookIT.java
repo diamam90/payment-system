@@ -10,14 +10,14 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.postgresql.util.PGobject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
@@ -25,13 +25,11 @@ import org.springframework.test.web.servlet.client.RestTestClient;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -39,10 +37,9 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ExtendWith(MockitoExtension.class)
+@TestPropertySource(properties = "logging.level.sql=debug")
 @AutoConfigureMockMvc
 @Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -105,17 +102,34 @@ public class WebhookIT {
         verify(webhookRepository).save(any());
     }
 
-    @RepeatedTest(3)
+    @RepeatedTest(6)
     @Sql("/sql/webhook-transaction-update.sql")
     void updateTransaction_whenParallelRequestExecutes_shouldUpdateExactlyOnce() throws Exception {
         try (ExecutorService executorService = new ThreadPoolExecutor(5, 5, 30, TimeUnit.SECONDS, new LinkedBlockingQueue<>())) {
+            Map<HttpStatusCode, Integer> result = new HashMap<>();
+
             List<Callable<RestTestClient.ResponseSpec>> tasks = new ArrayList<>();
             tasks.add(this::failedTransaction);
+            tasks.add(this::successTransaction);
+            tasks.add(this::failedTransaction);
+            tasks.add(this::failedTransaction);
+            tasks.add(this::successTransaction);
             tasks.add(this::failedTransaction);
             tasks.add(this::failedTransaction);
             tasks.add(this::successTransaction);
             tasks.add(this::successTransaction);
-            executorService.invokeAll(tasks);
+            tasks.add(this::successTransaction);
+            // По 5 запросов со статусами SUCCESS и FAILED. Независимо от первого принятого запроса,
+            // количество неуспешных запросов
+            int failedCount = 5;
+
+            executorService.invokeAll(tasks)
+                    .forEach(future -> {
+                        assertDoesNotThrow(() -> {
+                            var rez = future.get().returnResult();
+                            result.compute(rez.getStatus(), (_, v) -> v == null ? 1 : v + 1);
+                        });
+                    });
 
             Map<String, Object> transactionParams = jdbc.sql("SELECT * FROM payment.transactions WHERE id = :transactionId")
                     .param("transactionId", 6L)
@@ -133,6 +147,10 @@ public class WebhookIT {
                             .query(Boolean.class)
                             .single()
             );
+
+            assertThat(result)
+                    .containsEntry(HttpStatusCode.valueOf(200), tasks.size() - failedCount)
+                    .containsEntry(HttpStatusCode.valueOf(400), failedCount);
         }
     }
 
@@ -238,8 +256,14 @@ public class WebhookIT {
                                         """))
                 .andExpectAll(status().isBadRequest(),
                         jsonPath("$.error").value(StatusCode.ERROR_400.name()),
-                        jsonPath("$.message").value("Пополнение с идентификатором [6] не найдено")
-                );
+                        jsonPath("$.message").value("Пополнение с идентификатором [6] не найдено"),
+                        jsonPath("$.detail").doesNotExist(),
+                        jsonPath("$.instance").doesNotExist(),
+                        jsonPath("$.status").doesNotExist(),
+                        jsonPath("$.title").doesNotExist(),
+                        content().contentType(jakarta.ws.rs.core.MediaType.APPLICATION_JSON)
+                )
+                .andDo(print());
 
         verify(webhookRepository, never()).save(any());
     }
@@ -275,17 +299,36 @@ public class WebhookIT {
         verify(webhookRepository).save(any());
     }
 
-    @RepeatedTest(3)
+    @RepeatedTest(7)
+//    @Test
     @Sql("/sql/webhook-payout-update.sql")
     void updatePayout_whenParallelRequestExecutes_shouldUpdateExactlyOnce() throws Exception {
         try (ExecutorService executorService = new ThreadPoolExecutor(5, 5, 30, TimeUnit.SECONDS, new LinkedBlockingQueue<>())) {
+            Map<HttpStatusCode, Integer> result = new HashMap<>();
+
             List<Callable<RestTestClient.ResponseSpec>> tasks = new ArrayList<>();
             tasks.add(this::failedPayout);
+            tasks.add(this::successPayout);
+            tasks.add(this::successPayout);
             tasks.add(this::failedPayout);
             tasks.add(this::failedPayout);
             tasks.add(this::successPayout);
             tasks.add(this::successPayout);
-            executorService.invokeAll(tasks);
+            tasks.add(this::failedPayout);
+            tasks.add(this::successPayout);
+            tasks.add(this::failedPayout);
+
+            // По 5 запросов со статусами SUCCESS и FAILED. Независимо от первого принятого запроса,
+            // количество неуспешных запросов
+            int failedCount = 5;
+
+            executorService.invokeAll(tasks)
+                    .forEach(future -> {
+                        assertDoesNotThrow(() -> {
+                            var rez = future.get().returnResult();
+                            result.compute(rez.getStatus(), (_, v) -> v == null ? 1 : v + 1);
+                        });
+                    });
 
             Map<String, Object> transactionParams = jdbc.sql("SELECT * FROM payment.payouts WHERE id = :paymentId")
                     .param("paymentId", 23L)
@@ -303,6 +346,10 @@ public class WebhookIT {
                             .query(Boolean.class)
                             .single()
             );
+
+            assertThat(result)
+                    .containsEntry(HttpStatusCode.valueOf(200), tasks.size() - failedCount)
+                    .containsEntry(HttpStatusCode.valueOf(400), failedCount);
         }
     }
 
@@ -433,11 +480,14 @@ public class WebhookIT {
                         .content(//language=JSON//
                                 """
                                         {
-                                            "id": 6,
+                                            "id": 23,
                                             "status": "PENDING"
                                         }
                                         """))
-                .andExpect(status().isBadRequest())
+                .andExpectAll(status().isBadRequest(),
+                        jsonPath("$.error").value("ERROR_400"),
+                        jsonPath("$.message").value("Failed to read request")
+                )
                 .andDo(print());
 
         Map<String, Object> payoutParams = jdbc.sql("SELECT * FROM payment.payouts WHERE id = :payoutId")
@@ -465,7 +515,14 @@ public class WebhookIT {
                                             "status": "SUCCESS"
                                         }
                                         """))
-                .andExpect(status().isBadRequest())
+                .andExpectAll(status().isBadRequest(),
+                        jsonPath("$.error").value("ERROR_400"),
+                        jsonPath("$.message").exists(),
+                        jsonPath("$.detail").doesNotExist(),
+                        jsonPath("$.instance").doesNotExist(),
+                        jsonPath("$.status").doesNotExist(),
+                        jsonPath("$.title").doesNotExist(),
+                        content().contentType(jakarta.ws.rs.core.MediaType.APPLICATION_JSON))
                 .andDo(print());
 
         verify(webhookRepository, never()).save(any());

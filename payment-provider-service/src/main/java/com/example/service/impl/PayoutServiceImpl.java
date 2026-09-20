@@ -10,15 +10,16 @@ import com.example.repository.PayoutRepository;
 import com.example.service.PayoutService;
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.*;
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
-@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -33,7 +34,6 @@ public class PayoutServiceImpl implements PayoutService {
         Payout payout = payoutMapper.create(request);
         payout.setMerchant(merchant);
         payoutRepository.save(payout);
-        log.info("Транзакция на выплату успешно создана, id: {}", payout.getId());
         return payout;
     }
 

@@ -2,6 +2,8 @@ package com.example.IT;
 
 import com.example.fake.dto.TransactionRequest;
 import com.example.fake.dto.TransactionResponse;
+import com.example.repository.TransactionRepository;
+import jakarta.ws.rs.core.MediaType;
 import org.apache.http.HttpHeaders;
 import org.assertj.core.api.Condition;
 import org.hamcrest.core.Every;
@@ -16,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -28,12 +31,14 @@ import java.util.Map;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @AutoConfigureMockMvc
 @Testcontainers(disabledWithoutDocker = true)
@@ -46,6 +51,8 @@ public class TransactionIT {
     ObjectMapper objectMapper;
     @Autowired
     JdbcClient jdbc;
+    @MockitoSpyBean
+    private TransactionRepository transactionRepository;
 
     @AfterEach
     void truncate() {
@@ -173,6 +180,60 @@ public class TransactionIT {
     }
 
     @Test
+    void transaction_whenAmountDigitGreaterThan16_shouldReturn400() throws Exception {
+        mvc.perform(post("/api/v1/transactions")
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQxOm1lcmNoYW50IDEgcGFzc3dvcmQ=")
+                        .contentType(APPLICATION_JSON)
+                        .content(//language=JSON
+                                """
+                                        {
+                                            "amount": 12345678901234567.99,
+                                            "currency": "USD",
+                                            "method":  "CARD"
+                                        }
+                                        """))
+                .andExpectAll(status().isBadRequest(),
+                        jsonPath("$.error").value("ERROR_400"),
+                        jsonPath("$.message").exists(),
+                        jsonPath("$.detail").doesNotExist(),
+                        jsonPath("$.instance").doesNotExist(),
+                        jsonPath("$.status").doesNotExist(),
+                        jsonPath("$.title").doesNotExist(),
+                        content().contentType(MediaType.APPLICATION_JSON))
+                .andDo(print());
+
+        verify(transactionRepository, never()).save(any());
+    }
+
+    @Test
+    void transaction_whenDescriptionLengthGreaterThan255_shouldReturn400() throws Exception {
+        mvc.perform(post("/api/v1/transactions")
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQxOm1lcmNoYW50IDEgcGFzc3dvcmQ=")
+                        .contentType(APPLICATION_JSON)
+                        .content(//language=JSON
+                                """
+                                        {
+                                            "amount": 1234567890123.99,
+                                            "currency": "USD",
+                                            "method":  "CARD",
+                                            "description": "abcdasdfadsfaabcdasdfadsfaabcdasdfadsfaabcdasdfadsfaabcdasdfadsfaabcdasdfadsfaabcdasdfadsfaabcdasdfadsfaabcdasdfadsfaabcdasdfadsfaabcdasdfadsfaabcdasdfadsfaabcdasdfadsfaabcdasdfadsfaabcdasdfadsfaabcdasdfadsfaabcdasdfadsfaabcdasdfadsfaabcdasdfadsfaabcdasdfadsfa"
+                                        }
+                                        """))
+                .andExpectAll(status().isBadRequest(),
+                        jsonPath("$.error").value("ERROR_400"),
+                        jsonPath("$.message").exists(),
+                        jsonPath("$.detail").doesNotExist(),
+                        jsonPath("$.instance").doesNotExist(),
+                        jsonPath("$.status").doesNotExist(),
+                        jsonPath("$.title").doesNotExist(),
+                        content().contentType(MediaType.APPLICATION_JSON)
+                )
+                .andDo(print());
+
+        verify(transactionRepository, never()).save(any());
+    }
+
+    @Test
     void transaction_withInvalidAmountScale_shouldReturn400() throws Exception {
         // create transaction
         mvc.perform(post("/api/v1/transactions")
@@ -290,4 +351,3 @@ public class TransactionIT {
                 .andExpect(status().isUnauthorized());
     }
 }
-

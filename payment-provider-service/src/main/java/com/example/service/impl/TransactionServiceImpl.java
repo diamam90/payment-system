@@ -8,7 +8,6 @@ import com.example.mapper.TransactionMapper;
 import com.example.repository.TransactionRepository;
 import com.example.service.TransactionService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,7 +17,6 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
-@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -32,7 +30,6 @@ public class TransactionServiceImpl implements TransactionService {
         Transaction transaction = transactionMapper.create(request);
         transaction.setMerchant(merchant);
         transactionRepository.save(transaction);
-        log.info("Транзакция на пополнение успешно создана, id: {}", transaction.getId());
         return transaction;
     }
 
