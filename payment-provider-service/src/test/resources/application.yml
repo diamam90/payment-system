@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: jdbc:tc:postgresql:17:///payment
+
+fake-payment-provider:
+  webhook-clients:
+    client1: "$2a$10$IxM.qbvWNwQojJz6qSmiPuv3sePoXAb.W6PRg/clqwKQh3fQrkVj2"
+    client2: "$2a$10$2mv/7HtbM05UwzYd4L36ju4tlcT3wUkEd8Gl2L4c7x5f2zYsnJvWq"
