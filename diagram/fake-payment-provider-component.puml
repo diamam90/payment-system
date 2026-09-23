@@ -1,0 +1,49 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Container(fakePaymentProviderContainer,"Fake Payment Provider","Spring boot")
+
+System_Boundary(container,"Fake Payment Provider Service") {
+    Component(transactionController, "Transaction Controller", "Сгенерированные DTO", "Получение и создание транзакций пополнения")
+    Component(payoutController, "Payout Controller", "Сгенерированные DTO", "Получение и создание транзакций выплат")
+    Component(webhookController, "Webhook Controller", "Сгенерированные DTO", "Получение вебхуков транзакций")
+
+    Component(transactionService, "Transaction Service","Сервис","Обработка транзакций пополнения")
+    Component(payoutService, "Payout Service", "Сервис", "Обработка транзакций выплат")
+    Component(webhookService, "Webhook Service","Сервис", "Обработка вебхуков")
+    Component(merchantService, "Merchant Service", "Сервис", "Аутентификация пользователей")
+    Component(webhookAuthService, "Webhook Auth Service", "Использование белых списков", "Аутентификация вебхуков")
+
+    Component(transactionRepository, "Transaction Repository", "Spring Data JPA", "Сохранение транзакций пополнения")
+    Component(payoutRepository, "Payout Repository", "Spring Data JPA", "Сохранение транзакций выплат")
+    Component(webhookRepository, "Webhook Repository", "Spring Data JPA", "Сохранение вебхуков")
+    Component(merchantRepository, "Merchant Repository", "Spring Data JPA", "Сохранение пользователей")
+}
+
+SystemDb_Ext(psql, "Postgre", "База данных",  ,  ,  , SQL)
+
+Lay_R(fakePaymentProviderContainer, transactionController)
+Lay_R(transactionController, payoutController)
+Lay_R(payoutController, webhookController)
+
+Rel_D(transactionController,transactionService, "Вызов")
+Rel_D(payoutController,payoutService, "Вызов")
+Rel_D(webhookController,webhookService, "Вызов")
+
+Rel(webhookService,payoutService, "Вызов")
+Rel(webhookService,transactionService, "Вызов")
+Rel_D(webhookService, webhookAuthService, "Вызов")
+
+Rel_D(transactionService, merchantService, "Вызов")
+Rel_D(payoutService, merchantService, "Вызов")
+
+Rel_D(transactionService,transactionRepository, "Вызов")
+Rel_D(payoutService,payoutRepository, "Вызов")
+Rel_D(webhookService,webhookRepository, "Вызов")
+Rel_D(merchantService, merchantRepository, "Вызов")
+
+Rel_D(merchantRepository, psql, "JDBC")
+Rel_D(transactionRepository, psql, "JDBC")
+Rel_D(payoutRepository, psql, "JDBC")
+Rel_D(webhookRepository, psql, "JDBC")
+@enduml

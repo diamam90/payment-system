@@ -456,6 +456,47 @@ services:
     networks:
       - payment_system_network
 
+  fake-payment-provider:
+    container_name: fake-payment-provider
+    build:
+      context: ./payment-provider-service
+    environment:
+      KEYCLOAK_URL: http://individuals-keycloak:8080
+      TEMPO_URL: http://tempo:4318
+      FAKE_PAYMENT_PROVIDER_DB_HOST: fake-payment-provider-db
+      FAKE_PAYMENT_PROVIDER_DB_PORT: 5432
+      FAKE_PAYMENT_PROVIDER_DB_USERNAME: fakepaymentadmin
+      FAKE_PAYMENT_PROVIDER_DB_PASSWORD: fakepaymentadmin
+    ports:
+      - 8087:8087
+    depends_on:
+      fake-payment-provider-db:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD","wget","--spider","http://localhost:8087/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payment_system_network
+
+  fake-payment-provider-db:
+    container_name: fake-payment-provider-db
+    image: postgres:17
+    environment:
+      POSTGRES_DB: payment
+      POSTGRES_USER: fakepaymentadmin
+      POSTGRES_PASSWORD: fakepaymentadmin
+    ports:
+      - "5439:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d payment -U fakepaymentadmin" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payment_system_network
+
 networks:
   payment_system_network:
     driver: bridge

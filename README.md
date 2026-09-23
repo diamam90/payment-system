@@ -109,24 +109,27 @@
 
 ## Порты сервисов
 
-| Сервис                | Порт  | Описание                                              |
-|-----------------------|-------|-------------------------------------------------------|
-| Nexus                 | 8800  | Maven Репозиторий                                     |
-| Keycloak              | 8080  | Сервис аутентификации                                 |
-| Keycloak-Postgres     | 5433  | БД для Keycloak                                       |
-| Alloy                 | 12345 | Сбор метрик и логов                                   |
-| Prometheus            | 9090  | Хранилище метрик                                      |
-| Loki                  | 3100  | Хранилище логов                                       |
-| Tempo                 | 3200  | Хранилище трассировок                                 |
-| Grafana               | 3000  | Визуализация метрик трейсов и логов                   |
-| Person-service        | 8082  | Сервис пользователей                                  |
-| Person-db             | 5434  | БД для Person-service                                 |
-| Individuals-api       | 8081  | Сервис взаимодействия с системой Payment System       |
-| Transaction-service   | 8083  | Сервис платежных операций                             |
-| Transaction-db1       | 5435  | БД для Transaction-service(шард0)                     |
-| Transaction-db2       | 5436  | БД для Transaction-service(шард1)                     |
-| Transaction-db3       | 5437  | БД для Transaction-service(шард2)                     |
-| Currency-Rate-Service | 8084  | Сервис Валют, инстанс 1                               |
-| Currency-Rate-Service | 8085  | Сервис Валют, инстанс 2                               |
-| Currency-Rate-Service | 8086  | Сервис Валют, инстанс 3                               |
-| Nginx                 | 8000  | Nginx для балансировки запросов Currency-Rate-Service |
+| Сервис                   | Порт  | Описание                                              |
+|--------------------------|-------|-------------------------------------------------------|
+| Nexus                    | 8800  | Maven Репозиторий                                     |
+| Keycloak                 | 8080  | Сервис аутентификации                                 |
+| Keycloak-Postgres        | 5433  | БД для Keycloak                                       |
+| Alloy                    | 12345 | Сбор метрик и логов                                   |
+| Prometheus               | 9090  | Хранилище метрик                                      |
+| Loki                     | 3100  | Хранилище логов                                       |
+| Tempo                    | 3200  | Хранилище трассировок                                 |
+| Grafana                  | 3000  | Визуализация метрик трейсов и логов                   |
+| Person-service           | 8082  | Сервис пользователей                                  |
+| Person-db                | 5434  | БД для Person-service                                 |
+| Individuals-api          | 8081  | Сервис взаимодействия с системой Payment System       |
+| Transaction-service      | 8083  | Сервис платежных операций                             |
+| Transaction-db1          | 5435  | БД для Transaction-service(шард0)                     |
+| Transaction-db2          | 5436  | БД для Transaction-service(шард1)                     |
+| Transaction-db3          | 5437  | БД для Transaction-service(шард2)                     |
+| Currency-Rate-Service    | 8084  | Сервис Валют, инстанс 1                               |
+| Currency-Rate-Service    | 8085  | Сервис Валют, инстанс 2                               |
+| Currency-Rate-Service    | 8086  | Сервис Валют, инстанс 3                               |
+| Currency-Rate-Service-DB | 5438  | БД для Currency-Rate-Service                          |
+| Nginx                    | 8000  | Nginx для балансировки запросов Currency-Rate-Service |
+| Fake-Paymen-Provider     | 8087  | Эмулятор платежной системы                            |
+| Fake-Payment-Provider-DB | 5439  | БД для Fake-Payment-Provider                          |
