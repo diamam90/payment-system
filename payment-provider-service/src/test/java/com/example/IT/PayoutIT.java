@@ -235,23 +235,23 @@ public class PayoutIT {
 
     @Sql("/sql/payout-filter.sql")
     @Test
-    void findPayout_whenStartDateNull_shouldFindFromStartYear() throws Exception {
+    void findPayout_whenStartDateNull_shouldFindFromPayoutsWithCreatedAtBeforeEndDate() throws Exception {
         mvc.perform(get("/api/v1/payouts?end_date={end}",
-                        ZonedDateTime.parse("2027-05-05T12:00:00Z"))
+                        ZonedDateTime.parse("2027-12-31T23:59:59.001Z"))
                         // merchant 1
                         .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQxOm1lcmNoYW50IDEgcGFzc3dvcmQ=")
                 )
                 .andExpectAll(
                         status().isOk(),
-                        jsonPath("$.length()").value(2),
+                        jsonPath("$.length()").value(5),
                         jsonPath("$..merchantId").value(Every.everyItem(IsEqual.equalTo("merchant1"))),
-                        jsonPath("$..id").value(IsIterableContaining.hasItems(12, 13))
+                        jsonPath("$..id").value(IsIterableContaining.hasItems(11, 12, 13, 14,15))
                 );
     }
 
     @Sql("/sql/payout-filter.sql")
     @Test
-    void findPayout_whenEndDateNull_shouldFindForEndYear() throws Exception {
+    void findPayout_whenEndDateNull_shouldFindFromPayoutsWithCreatedAtAfterStartDate() throws Exception {
         when(clock.getZone()).thenReturn(fixed.getZone());
         when(clock.instant()).thenReturn(fixed.instant());
 
@@ -264,16 +264,16 @@ public class PayoutIT {
                         status().isOk(),
                         jsonPath("$.length()").value(3),
                         jsonPath("$..merchantId").value(Every.everyItem(IsEqual.equalTo("merchant1"))),
-                        jsonPath("$..id").value(IsIterableContaining.hasItems(13, 14, 15))
+                        jsonPath("$..id").value(IsIterableContaining.hasItems(14, 15, 16))
                 );
     }
 
     @Sql("/sql/payout-filter.sql")
     @Test
     void findPayout() throws Exception {
-        mvc.perform(get("/api/v1/payouts?start_date={start}",
-                        ZonedDateTime.parse("2027-01-01T03:00:00+03:00"),
-                        ZonedDateTime.parse("2027-12-31T23:59:59Z"))
+        mvc.perform(get("/api/v1/payouts?start_date={start}&end_date={end}",
+                        ZonedDateTime.parse("2027-01-01T02:59:59+03:00"),
+                        ZonedDateTime.parse("2027-12-31T23:59:59.001Z"))
                         // merchant 1
                         .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQxOm1lcmNoYW50IDEgcGFzc3dvcmQ=")
                 )

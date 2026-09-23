@@ -50,15 +50,13 @@ public class PayoutServiceImpl implements PayoutService {
         validateDate(start, end);
 
         if (start == null && end == null) {
-            int currentYear = ZonedDateTime.now(clock).getYear();
-            start = ZonedDateTime.of(currentYear, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
-            end = ZonedDateTime.of(currentYear, 12, 31, 23, 59, 59, 999, ZoneOffset.UTC);
+            return payoutRepository.findByMerchantId(merchantId);
         } else if (start == null) {
-            int currentYear = end.getYear();
-            start = ZonedDateTime.of(currentYear, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+            LocalDateTime endDateTime = end.withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
+            return payoutRepository.findByMerchantIdAndCreatedAtBefore(merchantId, endDateTime);
         } else if (end == null) {
-            int currentYear = start.getYear();
-            end = ZonedDateTime.of(currentYear, 12, 31, 23, 59, 59, 999, ZoneOffset.UTC);
+            LocalDateTime startDateTime = start.withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
+            return payoutRepository.findByMerchantIdAndCreatedAtAfter(merchantId, startDateTime);
         }
 
         LocalDateTime startDateTime = start.withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();

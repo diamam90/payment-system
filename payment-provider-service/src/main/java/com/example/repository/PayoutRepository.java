@@ -18,5 +18,11 @@ public interface PayoutRepository extends JpaRepository<Payout, Long> {
     @Query("SELECT payout FROM Payout payout WHERE payout.id = :id")
     Optional<Payout> findByIdPessimisticWrite(Long id);
 
-    List<Payout> findByMerchantIdAndCreatedAtBetween(Integer merchantId, LocalDateTime createdAtAfter, LocalDateTime createdAtBefore);
+    List<Payout> findByMerchantIdAndCreatedAtBetween(Integer merchantId, LocalDateTime start, LocalDateTime end);
+
+    List<Payout> findByMerchantIdAndCreatedAtAfter(Integer merchantId, LocalDateTime start);
+
+    List<Payout> findByMerchantIdAndCreatedAtBefore(Integer merchantId, LocalDateTime End);
+
+    List<Payout> findByMerchantId(Integer merchantId);
 }
