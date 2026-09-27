@@ -2,61 +2,102 @@
 actor Client
 participant IndividualsAPI
 participant TransactionService
-database TransactionDB
+database tsDb as "Transaction DB"
 participant PaymentService
-database PaymentServiceDB
-participant FakePaymentProvider
-database FakePaymentProviderDB
+database psDb as "Payment DB"
+participant fpp as "FakePaymentProvider"
 
 queue Kafka
 
 == Init ==
+
 Client -> IndividualsAPI: POST /api/v1/transactions/init (type=deposit)
-IndividualsAPI -> TransactionService: POST /api/v1/transactions/init (type=deposit)
-TransactionService -> TransactionService: Проверка кошелька
-alt Пополнение возможно
-    TransactionService --> IndividualsAPI: TransactionInitResponse
-    IndividualsAPI --> Client: TransactionInitResponse
-else Пополнение невозможно
-    TransactionService --> IndividualsAPI: ErrorResponse
-    IndividualsAPI --> Client: ErrorResponse
-end
-== Confirm ==
-Client -> IndividualsAPI: POST /api/v1/transactions/confirm (type=deposit)
 activate IndividualsAPI
-
-IndividualsAPI -> TransactionService: POST /api/v1/transactions/confirm (type=deposit)
-activate TransactionService
-TransactionService -> TransactionService: Проверка кошелька
-break Пополнение невозможно
-    TransactionService --> IndividualsAPI: ErrorResponse
-    IndividualsAPI --> Client: ErrorResponse
-end
-
-group transaction
-    TransactionService -> TransactionDB: Создать транзакцию PENDING
-    TransactionService -> Kafka: TransactionCreatedEvent
-    TransactionDB --> TransactionService: OK, transactionId, PENDING
-end
-    TransactionService --> IndividualsAPI: TransactionConfirmResponse
+    IndividualsAPI -> TransactionService: POST /api/v1/transactions/init (type=deposit)
+    activate TransactionService
+        TransactionService -> TransactionService: Проверка баланса + расчет комиссии
+        alt Пополнение доступено
+            TransactionService --> IndividualsAPI: TransactionInitResponse
+            IndividualsAPI --> Client: TransactionInitResponse
+        else Пополнение недоступно
+            TransactionService --> IndividualsAPI: ErrorResponse
+            IndividualsAPI --> Client: ErrorResponse
+        end
     deactivate TransactionService
-    IndividualsAPI -> PaymentService: POST /api/v1/payments
-    activate PaymentService
-    PaymentService -> PaymentServiceDB: Создать платеж со статусом PENDING
-    PaymentService -> FakePaymentProvider: /api/v1/transactions
-    FakePaymentProvider -> FakePaymentProviderDB: save transaction
-    FakePaymentProviderDB --> FakePaymentProvider: OK, transactionId, PENDING
-    FakePaymentProvider --> PaymentService: Транзакция со статусом PENDING
-     PaymentService --> IndividualsAPI: PaymentResponse
-    deactivate PaymentService
-
-IndividualsAPI --> Client: TransactionConfirmResponse
 deactivate IndividualsAPI
 
-Kafka -> TransactionService: TransactionCompletedEvent (async)
-TransactionService -> TransactionService: Зачислить средства
-group transaction
-    TransactionService -> TransactionDB: Баланс++
-    TransactionService -> TransactionDB: Статус транзакции COMPLETED
+== Confirm ==
+
+Client -> IndividualsAPI: POST /api/v1/transactions/confirm (type=deposit)
+activate IndividualsAPI
+    IndividualsAPI -> TransactionService: POST /api/v1/transactions/confirm (type=deposit)
+    activate TransactionService
+        TransactionService -> TransactionService: Проверка баланса + расчет комиссии
+        break Пополнение недоступно
+            TransactionService --> IndividualsAPI: ErrorResponse
+            IndividualsAPI --> Client: ErrorResponse
+        end
+        TransactionService -> TransactionService: Списать средства
+        group transaction
+            TransactionService -> tsDb: Статус транзакции PENDING
+                break Transaction DB unavailable
+                    TransactionService --> IndividualsAPI: ErrorResponse
+                    IndividualsAPI --> Client: ErrorResponse
+                end
+            TransactionService -> Kafka: TransactionCreatedEvent
+        end
+        TransactionService --> IndividualsAPI: TransactionConfirmResponse
+        IndividualsAPI -> PaymentService: POST /api/v1/payment PaymentRequest type=TRANSACTION
+        activate PaymentService
+            PaymentService -> psDb: insert into payments type=TRANSACTION status=PENDING
+            psDb --> PaymentService: payment id
+
+                activate fpp
+                    alt Payment DB unavailable
+                        PaymentService --> IndividualsAPI: ErrorResponse
+                        IndividualsAPI -> TransactionService: POST /api/v1/transactions/{transactionId}/compensate
+                        group transaction
+                            TransactionService -> tsDb: update transaction by id status=FAILED
+                            TransactionService -> Kafka: TransactionFailedEvent
+                        end
+                        TransactionService --> IndividualsAPI: ok
+                        IndividualsAPI --> Client: ErrorResponse
+
+                    else Fake Payment Provider return Error
+                        PaymentService -> fpp: POST /api/v1/transactions
+                        fpp --> PaymentService: ErrorResponse
+                        PaymentService -> psDb: update Payout by id status=FAILED
+                        PaymentService --> IndividualsAPI: ErrorResponse
+                        IndividualsAPI -> TransactionService: POST /api/v1/transactions/{transactionId}/compensate
+                        group transaction
+                            TransactionService -> tsDb: update transaction by id status=FAILED
+                            TransactionService -> Kafka: TransactionFailedEvent
+                        end
+                        TransactionService --> IndividualsAPI: ok
+                        IndividualsAPI --> Client: ErrorResponse
+                    else Success
+                        PaymentService -> fpp: POST /api/v1/transactions
+                        fpp -> fpp: обработка выплаты
+                        fpp --> PaymentService: Transaction status=PENDING, externalTransactionId
+                        PaymentService -> psDb: update transaction by id set externalTransactionId
+                        psDb --> PaymentService: ok
+                        PaymentService --> IndividualsAPI: PaymentResponse type=TRANSACTION status=PENDING
+                        IndividualsAPI --> Client: TransactionConfirmResponse status=PENDING
+                    end
+                deactivate fpp
+        deactivate PaymentService
+    deactivate TransactionService
+deactivate IndividualsAPI
+
+== Async later ==
+
+Kafka -> TransactionService: TransactionCompletedEvent
+alt completed
+    group transaction
+        TransactionService -> tsDb: Статус транзакции COMPLETED
+        TransactionService -> tsDb: Баланс++
+    end
+else failed
+    TransactionService -> tsDb: Статус транзакции FAILED
 end
 @enduml

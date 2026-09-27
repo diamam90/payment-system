@@ -1,0 +1,29 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Container(ps,"Payment-service","Spring boot")
+
+Component(paymentController, "Payment Controller", "Rest Controller", "Сгенерированные ДТО")
+Component(methodController, "Method Controller", "Rest Controller", "Сгенерированные ДТО")
+
+Component(paymentService,"Payment Service","Service","Операции над выплатами и пополнениями")
+Component(methodService, "Method Service", "Service", "Операции над методами провайдеров")
+ComponentDb(paymentDb,"Provider DB","Postgre")
+
+Component(paymentRepo, "Payment Repository","Jpa Repository", "Хранение выплат и пополнений")
+Component(methodRepo, "Method Repository", "Jpa Repository","Хранение доступных методов оплаты и пополнения")
+
+Lay_R(ps, paymentController)
+Lay_R(paymentController, methodController)
+Lay_D(paymentController, paymentService)
+
+Rel(methodController, methodService, "вызов")
+Rel(paymentController, paymentService, "вызов")
+
+Rel(paymentService, paymentRepo, "вызов")
+Rel(methodService, methodRepo, "вызов")
+
+Rel(methodRepo, paymentDb, "вызов")
+Rel(paymentRepo, paymentDb, "вызов")
+
+@enduml
