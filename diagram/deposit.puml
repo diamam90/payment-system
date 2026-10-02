@@ -2,39 +2,95 @@
 actor Client
 participant IndividualsAPI
 participant TransactionService
-database DB
+database tsDb as "Transaction DB"
+participant PaymentService
+database psDb as "Payment DB"
+participant fpp as "FakePaymentProvider"
+
 queue Kafka
 
 == Init ==
-Client -> IndividualsAPI: POST /api/v1/transactions/init (type=deposit)
-IndividualsAPI -> TransactionService: POST /api/v1/transactions/init (type=deposit)
-TransactionService -> TransactionService: Проверка кошелька
-alt Пополнение возможно
-    TransactionService --> IndividualsAPI: TransactionInitResponse
-    IndividualsAPI --> Client: TransactionInitResponse
-else Пополнение невозможно
-    TransactionService --> IndividualsAPI: ErrorResponse
-    IndividualsAPI --> Client: ErrorResponse
-end
-== Confirm ==
-Client -> IndividualsAPI: POST /api/v1/transactions/confirm (type=deposit)
-IndividualsAPI -> TransactionService: POST /api/v1/transactions/confirm (type=deposit)
-TransactionService -> TransactionService: Проверка кошелька
-alt Пополнение невозможно
-    TransactionService --> IndividualsAPI: ErrorResponse
-    IndividualsAPI --> Client: ErrorResponse
-end
 
-group transaction
-    TransactionService -> Kafka: TransactionCreatedEvent
-    TransactionService -> DB: Создать транзакцию PENDING
-end
-  TransactionService --> IndividualsAPI: TransactionConfirmResponse
-IndividualsAPI --> Client: TransactionConfirmResponse
-Kafka -> TransactionService: TransactionCompletedEvent (async)
-TransactionService -> TransactionService: Зачислить средства
-group transaction
-    TransactionService -> DB: Баланс++
-    TransactionService -> DB: Статус транзакции COMPLETED
-end
+Client -> IndividualsAPI: POST /api/v1/transactions/init (type=deposit)
+activate IndividualsAPI
+    IndividualsAPI -> TransactionService: POST /api/v1/transactions/init (type=deposit)
+    activate TransactionService
+        TransactionService -> TransactionService: Проверка баланса + расчет комиссии
+        alt Пополнение доступено
+            TransactionService --> IndividualsAPI: TransactionInitResponse
+            IndividualsAPI --> Client: TransactionInitResponse
+        else Пополнение недоступно
+            TransactionService --> IndividualsAPI: ErrorResponse
+            IndividualsAPI --> Client: ErrorResponse
+        end
+    deactivate TransactionService
+deactivate IndividualsAPI
+
+== Confirm ==
+
+Client -> IndividualsAPI: POST /api/v1/transactions/confirm (type=deposit)
+activate IndividualsAPI
+    IndividualsAPI -> TransactionService: POST /api/v1/transactions/confirm (type=deposit)
+    activate TransactionService
+        TransactionService -> TransactionService: Проверка баланса + расчет комиссии
+        break Пополнение недоступно
+            TransactionService --> IndividualsAPI: ErrorResponse
+            IndividualsAPI --> Client: ErrorResponse
+        end
+        group transaction
+            TransactionService -> tsDb: Статус транзакции PENDING
+                break Transaction DB unavailable
+                    TransactionService --> IndividualsAPI: ErrorResponse
+                    IndividualsAPI --> Client: ErrorResponse
+                end
+            TransactionService -> Kafka: TransactionCreatedEvent
+        end
+        TransactionService --> IndividualsAPI: TransactionConfirmResponse
+        IndividualsAPI -> PaymentService: POST /api/v1/payments PaymentRequest type=TRANSACTION
+        activate PaymentService
+            PaymentService -> psDb: insert into payments type=TRANSACTION status=PENDING
+
+
+                activate fpp
+                    break Payment DB unavailable
+                        PaymentService --> IndividualsAPI: ErrorResponse
+                        IndividualsAPI -> TransactionService: POST /api/v1/transactions/{transactionId}/compensate
+                        group transaction
+                            TransactionService -> tsDb: update transaction by id status=FAILED
+                            TransactionService -> Kafka: TransactionFailedEvent
+                        end
+                        TransactionService --> IndividualsAPI: ok
+                        IndividualsAPI --> Client: ErrorResponse
+                    end
+                    psDb --> PaymentService: payment id
+                    break Fake Payment Provider return Error
+                        PaymentService -> fpp: POST /api/v1/transactions
+                        fpp --> PaymentService: ErrorResponse
+                        PaymentService -> psDb: update payment by id status=FAILED
+                        PaymentService --> IndividualsAPI: ErrorResponse
+                        IndividualsAPI -> TransactionService: POST /api/v1/transactions/{transactionId}/compensate
+                        group transaction
+                            TransactionService -> tsDb: update transaction by id status=FAILED
+                            TransactionService -> Kafka: TransactionFailedEvent
+                        end
+                        TransactionService --> IndividualsAPI: ok
+                        IndividualsAPI --> Client: ErrorResponse
+                    end
+
+                    PaymentService -> fpp: POST /api/v1/transactions
+                    fpp -> fpp: обработка выплаты
+                    fpp --> PaymentService: Transaction status=PENDING, externalTransactionId
+                    PaymentService -> psDb: update payment by id set externalTransactionId
+                    psDb --> PaymentService: ok
+                    PaymentService --> IndividualsAPI: PaymentResponse type=TRANSACTION status=PENDING
+                    IndividualsAPI -> TransactionService: POST /api/v1/transactions/{transactionId}
+                    TransactionService -> tsDb: update transaction by id set externalTransactionId
+                    tsDb --> TransactionService: ok
+                    TransactionService --> IndividualsAPI: ok
+                    IndividualsAPI --> Client: TransactionConfirmResponse status=PENDING
+                deactivate fpp
+        deactivate PaymentService
+    deactivate TransactionService
+deactivate IndividualsAPI
+
 @enduml
