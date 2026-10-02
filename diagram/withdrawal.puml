@@ -48,13 +48,12 @@ activate IndividualsAPI
             TransactionService -> Kafka: TransactionCreatedEvent
         end
         TransactionService --> IndividualsAPI: TransactionConfirmResponse
-        IndividualsAPI -> PaymentService: POST /api/v1/payment PaymentRequest type=PAYOUT
+        IndividualsAPI -> PaymentService: POST /api/v1/payments PaymentRequest type=PAYOUT
         activate PaymentService
-            PaymentService -> psDb: insert into payments type=PAYOUT status=FAILED
-            psDb --> PaymentService: payment id
+            PaymentService -> psDb: insert into payments type=PAYOUT status=PENDING
 
                 activate fpp
-                    alt Payment DB unavailable
+                    break Payment DB unavailable
                         PaymentService --> IndividualsAPI: ErrorResponse
                         IndividualsAPI -> TransactionService: POST /api/v1/transactions/{transactionId}/compensate
                         TransactionService -> TransactionService: Вернуть средства
@@ -65,9 +64,10 @@ activate IndividualsAPI
                         end
                         TransactionService --> IndividualsAPI: ok
                         IndividualsAPI --> Client: ErrorResponse
-
-                    else Fake Payment Provider return Error
-                        PaymentService -> fpp: POST /api/v1/payouts
+                    end
+                    psDb --> PaymentService: payment id
+                    PaymentService -> fpp: POST /api/v1/payouts
+                    break Fake Payment Provider return Error
                         fpp --> PaymentService: ErrorResponse
                         PaymentService -> psDb: update Payout by id status=FAILED
                         PaymentService --> IndividualsAPI: ErrorResponse
@@ -80,31 +80,20 @@ activate IndividualsAPI
                         end
                         TransactionService --> IndividualsAPI: ok
                         IndividualsAPI --> Client: ErrorResponse
-                    else Success
-                        PaymentService -> fpp: POST /api/v1/payouts
+                    end
                         fpp -> fpp: обработка выплаты
                         fpp --> PaymentService: Payout status=PENDING, externalTransactionId
                         PaymentService -> psDb: update payout by id set externalTransactionId
                         psDb --> PaymentService: ok
                         PaymentService --> IndividualsAPI: PaymentResponse type=PAYOUT status=PENDING
+                        IndividualsAPI -> TransactionService: POST /api/v1/transactions/{transactionId}
+                        TransactionService -> tsDb: update transaction by id set externalTransactionId
+                        tsDb --> TransactionService: ok
+                        TransactionService --> IndividualsAPI: ok
                         IndividualsAPI --> Client: TransactionConfirmResponse status=PENDING
-                    end
                 deactivate fpp
         deactivate PaymentService
     deactivate TransactionService
 deactivate IndividualsAPI
-
-== Async later ==
-
-Kafka -> TransactionService: TransactionCompletedEvent
-alt completed
-    TransactionService -> tsDb: Статус транзакции COMPLETED
-else failed
-    TransactionService -> TransactionService: Вернуть средства
-    group transaction
-        TransactionService -> tsDb: Баланс++
-        TransactionService -> tsDb: Статус транзакции FAILED
-    end
-end
 
 @enduml

@@ -37,7 +37,6 @@ activate IndividualsAPI
             TransactionService --> IndividualsAPI: ErrorResponse
             IndividualsAPI --> Client: ErrorResponse
         end
-        TransactionService -> TransactionService: Списать средства
         group transaction
             TransactionService -> tsDb: Статус транзакции PENDING
                 break Transaction DB unavailable
@@ -47,13 +46,13 @@ activate IndividualsAPI
             TransactionService -> Kafka: TransactionCreatedEvent
         end
         TransactionService --> IndividualsAPI: TransactionConfirmResponse
-        IndividualsAPI -> PaymentService: POST /api/v1/payment PaymentRequest type=TRANSACTION
+        IndividualsAPI -> PaymentService: POST /api/v1/payments PaymentRequest type=TRANSACTION
         activate PaymentService
             PaymentService -> psDb: insert into payments type=TRANSACTION status=PENDING
-            psDb --> PaymentService: payment id
+
 
                 activate fpp
-                    alt Payment DB unavailable
+                    break Payment DB unavailable
                         PaymentService --> IndividualsAPI: ErrorResponse
                         IndividualsAPI -> TransactionService: POST /api/v1/transactions/{transactionId}/compensate
                         group transaction
@@ -62,11 +61,12 @@ activate IndividualsAPI
                         end
                         TransactionService --> IndividualsAPI: ok
                         IndividualsAPI --> Client: ErrorResponse
-
-                    else Fake Payment Provider return Error
+                    end
+                    psDb --> PaymentService: payment id
+                    break Fake Payment Provider return Error
                         PaymentService -> fpp: POST /api/v1/transactions
                         fpp --> PaymentService: ErrorResponse
-                        PaymentService -> psDb: update Payout by id status=FAILED
+                        PaymentService -> psDb: update payment by id status=FAILED
                         PaymentService --> IndividualsAPI: ErrorResponse
                         IndividualsAPI -> TransactionService: POST /api/v1/transactions/{transactionId}/compensate
                         group transaction
@@ -75,29 +75,22 @@ activate IndividualsAPI
                         end
                         TransactionService --> IndividualsAPI: ok
                         IndividualsAPI --> Client: ErrorResponse
-                    else Success
-                        PaymentService -> fpp: POST /api/v1/transactions
-                        fpp -> fpp: обработка выплаты
-                        fpp --> PaymentService: Transaction status=PENDING, externalTransactionId
-                        PaymentService -> psDb: update transaction by id set externalTransactionId
-                        psDb --> PaymentService: ok
-                        PaymentService --> IndividualsAPI: PaymentResponse type=TRANSACTION status=PENDING
-                        IndividualsAPI --> Client: TransactionConfirmResponse status=PENDING
                     end
+
+                    PaymentService -> fpp: POST /api/v1/transactions
+                    fpp -> fpp: обработка выплаты
+                    fpp --> PaymentService: Transaction status=PENDING, externalTransactionId
+                    PaymentService -> psDb: update payment by id set externalTransactionId
+                    psDb --> PaymentService: ok
+                    PaymentService --> IndividualsAPI: PaymentResponse type=TRANSACTION status=PENDING
+                    IndividualsAPI -> TransactionService: POST /api/v1/transactions/{transactionId}
+                    TransactionService -> tsDb: update transaction by id set externalTransactionId
+                    tsDb --> TransactionService: ok
+                    TransactionService --> IndividualsAPI: ok
+                    IndividualsAPI --> Client: TransactionConfirmResponse status=PENDING
                 deactivate fpp
         deactivate PaymentService
     deactivate TransactionService
 deactivate IndividualsAPI
 
-== Async later ==
-
-Kafka -> TransactionService: TransactionCompletedEvent
-alt completed
-    group transaction
-        TransactionService -> tsDb: Статус транзакции COMPLETED
-        TransactionService -> tsDb: Баланс++
-    end
-else failed
-    TransactionService -> tsDb: Статус транзакции FAILED
-end
 @enduml
