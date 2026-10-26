@@ -6,7 +6,7 @@ import com.example.transactionservice.entity.Transaction;
 import com.example.transactionservice.entity.TransactionStatus;
 import com.example.transactionservice.entity.TransactionType;
 import com.example.transactionservice.entity.Wallet;
-import com.example.transactionservice.model.kafka.TransactionCompletedEvent;
+import com.example.transactionservice.exception.BadRequestException;
 import com.example.transactionservice.model.kafka.TransactionCreatedEvent;
 import com.example.transactionservice.repository.TransactionRepository;
 import com.example.transactionservice.repository.WalletRepository;
@@ -41,6 +41,7 @@ import java.util.UUID;
 
 import static java.math.RoundingMode.HALF_EVEN;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -318,7 +319,7 @@ class TransactionServiceImplTest {
                 .hasFieldOrPropertyWithValue("walletUid", request.getWalletUid())
                 .hasFieldOrPropertyWithValue("amount", toBeTransferred)
                 .hasFieldOrPropertyWithValue("type", "TRANSFER")
-                .hasFieldOrPropertyWithValue("status", "COMPLETED")
+                .hasFieldOrPropertyWithValue("status", "SUCCESS")
                 .hasFieldOrPropertyWithValue("comment", null)
                 .hasFieldOrPropertyWithValue("fee", expectedFee)
                 .hasFieldOrPropertyWithValue("targetWalletUid", request.getTargetWalletUid())
@@ -329,11 +330,12 @@ class TransactionServiceImplTest {
                 .hasFieldOrPropertyWithValue("wallet_uid", request.getWalletUid())
                 .hasFieldOrPropertyWithValue("amount", toBeTransferred)
                 .hasFieldOrPropertyWithValue("type", "TRANSFER")
-                .hasFieldOrPropertyWithValue("status", "COMPLETED")
+                .hasFieldOrPropertyWithValue("status", "SUCCESS")
                 .hasFieldOrPropertyWithValue("comment", null)
                 .hasFieldOrPropertyWithValue("target_wallet_uid", request.getTargetWalletUid())
                 .hasFieldOrPropertyWithValue("fee", expectedFee)
                 .hasFieldOrPropertyWithValue("uid", result.getUid())
+                .hasFieldOrPropertyWithValue("version", 0)
                 .extracting("created_at").isNotNull();
 
         assertThat(walletParams)
@@ -358,24 +360,21 @@ class TransactionServiceImplTest {
     @Sql("/sql/fail-deposit.sql")
     @Test
     void deposit_whenFail_shouldDoNothingWithBalance() {
-        TransactionCompletedEvent event = new TransactionCompletedEvent(
-                UUID.fromString("00000000-0000-0000-0000-000000000007"),
-                "COMPLETED",
-                "something went wrong",
-                BigDecimal.valueOf(30.00),
-                ZonedDateTime.parse("2026-02-02T15:00:00Z")
-        );
+        UUID transactionId = UUID.fromString("00000000-0000-0000-0000-000000000007");
+        UUID userId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        UUID walletId = UUID.fromString("fa65903f-2441-4ada-81fa-d8cd6a2e00a1");
 
-        var userId = UUID.fromString("00000000-0000-0000-0000-000000000001");
-        var walletId = UUID.fromString("fa65903f-2441-4ada-81fa-d8cd6a2e00a1");
+        PatchTransactionRequest request = new PatchTransactionRequest();
+        request.setStatus(PatchTransactionRequest.StatusEnum.FAILED);
+        request.setUserUid(userId);
 
-        transactionService.fail(event);
+        transactionService.fail(transactionId, request);
 
-        Map<String, Object> transactionParams = jdbc.queryForMap(TRANSACTION_BY_UID_AND_USER_UID, event.transactionId(), userId);
+        Map<String, Object> transactionParams = jdbc.queryForMap(TRANSACTION_BY_UID_AND_USER_UID, transactionId, userId);
         Map<String, Object> walletParams = jdbc.queryForMap(WALLET_BY_UID_AND_USER_UID, walletId, userId);
 
         assertThat(transactionParams)
-                .hasFieldOrPropertyWithValue("uid", event.transactionId())
+                .hasFieldOrPropertyWithValue("uid", transactionId)
                 .hasFieldOrPropertyWithValue("user_uid", userId)
                 .hasFieldOrPropertyWithValue("wallet_uid", walletId)
                 .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(30.00).setScale(2, HALF_EVEN))
@@ -383,7 +382,7 @@ class TransactionServiceImplTest {
                 .hasFieldOrPropertyWithValue("type", TransactionType.DEPOSIT.name())
                 .hasFieldOrPropertyWithValue("status", TransactionStatus.FAILED.name())
                 .hasFieldOrPropertyWithValue("comment", null)
-                .hasFieldOrPropertyWithValue("failure_reason", event.failureReason())
+                .hasFieldOrPropertyWithValue("failure_reason", null)
                 .hasFieldOrPropertyWithValue("created_at", Timestamp.valueOf("2030-01-01 00:00:00"))
                 .extracting("updated_at").isNotNull();
 
@@ -399,24 +398,21 @@ class TransactionServiceImplTest {
     @Sql("/sql/fail-withdrawal.sql")
     @Test
     void withdrawal_whenFail_shouldIncreaseBalance() {
-        TransactionCompletedEvent event = new TransactionCompletedEvent(
-                UUID.fromString("00000000-0000-0000-0000-000000000007"),
-                "FAILED",
-                "something went wrong",
-                BigDecimal.valueOf(30.00),
-                ZonedDateTime.parse("2026-02-02T15:00:00Z")
-        );
+        UUID transactionId = UUID.fromString("00000000-0000-0000-0000-000000000007");
+        UUID userId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        UUID walletId = UUID.fromString("fa65903f-2441-4ada-81fa-d8cd6a2e00a1");
 
-        var userId = UUID.fromString("00000000-0000-0000-0000-000000000001");
-        var walletId = UUID.fromString("fa65903f-2441-4ada-81fa-d8cd6a2e00a1");
+        PatchTransactionRequest request = new PatchTransactionRequest();
+        request.setStatus(PatchTransactionRequest.StatusEnum.FAILED);
+        request.setUserUid(userId);
 
-        transactionService.fail(event);
+        transactionService.fail(transactionId, request);
 
-        Map<String, Object> transactionParams = jdbc.queryForMap(TRANSACTION_BY_UID_AND_USER_UID, event.transactionId(), userId);
+        Map<String, Object> transactionParams = jdbc.queryForMap(TRANSACTION_BY_UID_AND_USER_UID, transactionId, userId);
         Map<String, Object> walletParams = jdbc.queryForMap(WALLET_BY_UID_AND_USER_UID, walletId, userId);
 
         assertThat(transactionParams)
-                .hasFieldOrPropertyWithValue("uid", event.transactionId())
+                .hasFieldOrPropertyWithValue("uid", transactionId)
                 .hasFieldOrPropertyWithValue("user_uid", userId)
                 .hasFieldOrPropertyWithValue("wallet_uid", walletId)
                 .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(30.00).setScale(2, HALF_EVEN))
@@ -424,7 +420,7 @@ class TransactionServiceImplTest {
                 .hasFieldOrPropertyWithValue("type", TransactionType.WITHDRAWAL.name())
                 .hasFieldOrPropertyWithValue("status", TransactionStatus.FAILED.name())
                 .hasFieldOrPropertyWithValue("comment", null)
-                .hasFieldOrPropertyWithValue("failure_reason", event.failureReason())
+                .hasFieldOrPropertyWithValue("failure_reason", null)
                 .hasFieldOrPropertyWithValue("created_at", Timestamp.valueOf("2030-01-01 00:00:00"))
                 .extracting("updated_at").isNotNull();
 
@@ -440,30 +436,27 @@ class TransactionServiceImplTest {
     @Sql("/sql/complete-deposit.sql")
     @Test
     void deposit_whenComplete_shouldIncreaseBalance() {
-        TransactionCompletedEvent event = new TransactionCompletedEvent(
-                UUID.fromString("00000000-0000-0000-0000-000000000007"),
-                "COMPLETED",
-                null,
-                BigDecimal.valueOf(30.00),
-                ZonedDateTime.parse("2026-02-02T15:00:00Z")
-        );
+        UUID transactionId = UUID.fromString("00000000-0000-0000-0000-000000000007");
+        UUID userId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        UUID walletId = UUID.fromString("fa65903f-2441-4ada-81fa-d8cd6a2e00a1");
 
-        var userId = UUID.fromString("00000000-0000-0000-0000-000000000001");
-        var walletId = UUID.fromString("fa65903f-2441-4ada-81fa-d8cd6a2e00a1");
+        PatchTransactionRequest request = new PatchTransactionRequest();
+        request.setStatus(PatchTransactionRequest.StatusEnum.SUCCESS);
+        request.setUserUid(userId);
 
-        transactionService.complete(event);
+        transactionService.complete(transactionId, request);
 
-        Map<String, Object> transactionParams = jdbc.queryForMap(TRANSACTION_BY_UID_AND_USER_UID, event.transactionId(), userId);
+        Map<String, Object> transactionParams = jdbc.queryForMap(TRANSACTION_BY_UID_AND_USER_UID, transactionId, userId);
         Map<String, Object> walletParams = jdbc.queryForMap(WALLET_BY_UID_AND_USER_UID, walletId, userId);
 
         assertThat(transactionParams)
-                .hasFieldOrPropertyWithValue("uid", event.transactionId())
+                .hasFieldOrPropertyWithValue("uid", transactionId)
                 .hasFieldOrPropertyWithValue("user_uid", userId)
                 .hasFieldOrPropertyWithValue("wallet_uid", walletId)
                 .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(30.00).setScale(2, HALF_EVEN))
                 .hasFieldOrPropertyWithValue("fee", BigDecimal.valueOf(0.16).setScale(2, HALF_EVEN))
                 .hasFieldOrPropertyWithValue("type", TransactionType.DEPOSIT.name())
-                .hasFieldOrPropertyWithValue("status", TransactionStatus.COMPLETED.name())
+                .hasFieldOrPropertyWithValue("status", TransactionStatus.SUCCESS.name())
                 .hasFieldOrPropertyWithValue("comment", null)
                 .hasFieldOrPropertyWithValue("failure_reason", null)
                 .hasFieldOrPropertyWithValue("created_at", Timestamp.valueOf("2030-01-01 00:00:00"))
@@ -481,30 +474,27 @@ class TransactionServiceImplTest {
     @Sql("/sql/complete-withdrawal.sql")
     @Test
     void withdrawal_whenComplete_shouldDoNothingBalance() {
-        TransactionCompletedEvent event = new TransactionCompletedEvent(
-                UUID.fromString("00000000-0000-0000-0000-000000000007"),
-                "COMPLETE",
-                null,
-                BigDecimal.valueOf(30.00),
-                ZonedDateTime.parse("2026-02-02T15:00:00Z")
-        );
+        UUID transactionId = UUID.fromString("00000000-0000-0000-0000-000000000007");
+        UUID userId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        UUID walletId = UUID.fromString("fa65903f-2441-4ada-81fa-d8cd6a2e00a1");
 
-        var userId = UUID.fromString("00000000-0000-0000-0000-000000000001");
-        var walletId = UUID.fromString("fa65903f-2441-4ada-81fa-d8cd6a2e00a1");
+        PatchTransactionRequest request = new PatchTransactionRequest();
+        request.setStatus(PatchTransactionRequest.StatusEnum.SUCCESS);
+        request.setUserUid(userId);
 
-        transactionService.complete(event);
+        transactionService.complete(transactionId, request);
 
-        Map<String, Object> transactionParams = jdbc.queryForMap(TRANSACTION_BY_UID_AND_USER_UID, event.transactionId(), userId);
+        Map<String, Object> transactionParams = jdbc.queryForMap(TRANSACTION_BY_UID_AND_USER_UID, transactionId, userId);
         Map<String, Object> walletParams = jdbc.queryForMap(WALLET_BY_UID_AND_USER_UID, walletId, userId);
 
         assertThat(transactionParams)
-                .hasFieldOrPropertyWithValue("uid", event.transactionId())
+                .hasFieldOrPropertyWithValue("uid", transactionId)
                 .hasFieldOrPropertyWithValue("user_uid", userId)
                 .hasFieldOrPropertyWithValue("wallet_uid", walletId)
                 .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(30.00).setScale(2, HALF_EVEN))
                 .hasFieldOrPropertyWithValue("fee", BigDecimal.valueOf(0.16).setScale(2, HALF_EVEN))
                 .hasFieldOrPropertyWithValue("type", TransactionType.WITHDRAWAL.name())
-                .hasFieldOrPropertyWithValue("status", TransactionStatus.COMPLETED.name())
+                .hasFieldOrPropertyWithValue("status", TransactionStatus.SUCCESS.name())
                 .hasFieldOrPropertyWithValue("comment", null)
                 .hasFieldOrPropertyWithValue("failure_reason", null)
                 .hasFieldOrPropertyWithValue("created_at", Timestamp.valueOf("2030-01-01 00:00:00"))
@@ -522,14 +512,14 @@ class TransactionServiceImplTest {
     @Sql("/sql/transaction-failed-status.sql")
     @Test
     void depositComplete_whenTransactionHasFailedStatus_shouldDoNothing() {
-        TransactionCompletedEvent event = new TransactionCompletedEvent(
-                UUID.fromString("00000000-0000-0000-0000-000000000007"),
-                "COMPLETED",
-                null,
-                BigDecimal.valueOf(30.00),
-                ZonedDateTime.parse("2026-02-02T15:00:00Z")
-        );
-        transactionService.complete(event);
+        UUID transactionId = UUID.fromString("00000000-0000-0000-0000-000000000007");
+        PatchTransactionRequest request = new PatchTransactionRequest();
+        request.setStatus(PatchTransactionRequest.StatusEnum.SUCCESS);
+        request.setUserUid(UUID.fromString("00000000-0000-0000-0000-000000000001"));
+
+        assertThatThrownBy(() -> transactionService.complete(transactionId, request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Транзакция с идентификатором %s в финальном статусе".formatted(transactionId));
 
         verify(transactionRepository, never()).save(any(Transaction.class));
         verify(walletRepository, never()).save(any(Wallet.class));
