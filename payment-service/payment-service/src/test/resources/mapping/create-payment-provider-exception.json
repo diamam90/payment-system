@@ -1,0 +1,24 @@
+{
+  "request": {
+    "urlPath": "/api/v1/payouts",
+    "method": "POST",
+    "bodyPatterns": [
+      {
+        "matchesJsonPath": {
+          "expression": "$.externalId",
+          "equalTo": "13"
+        }
+      }
+    ]
+  },
+  "response": {
+    "status": 502,
+    "jsonBody": {
+      "error": "FAKE_PROVIDER_DB_502",
+      "message": "Database is unavailable"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

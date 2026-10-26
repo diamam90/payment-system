@@ -7,11 +7,16 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
 @Entity
 @Table(schema = "payment", name = "payment_methods")
+@NamedEntityGraph(name = "withDefinitionAndRequiredField", attributeNodes = {
+        @NamedAttributeNode("paymentMethodDefinition"),
+        @NamedAttributeNode("paymentMethodRequiredFields")
+})
 public class PaymentMethod {
 
     @Id
@@ -21,14 +26,15 @@ public class PaymentMethod {
     private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id")
+    @JoinColumn(name = "provider_id")
     private Provider provider;
 
     @Column(name = "provider_id", updatable = false, insertable = false)
     private Integer providerId;
 
+    @Enumerated(value = EnumType.STRING)
     @Column(name = "type")
-    private String type;
+    private PaymentType type;
 
     @Column(name = "name")
     private String name;
@@ -53,11 +59,12 @@ public class PaymentMethod {
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at")
+    @Column(name = "modified_at")
     private LocalDateTime updatedAt;
 
-    @OneToOne
-    @JoinColumn(name = "payment_method_id")
+    @OneToOne(mappedBy = "paymentMethod")
     private PaymentMethodDefinition paymentMethodDefinition;
 
+    @OneToMany(mappedBy = "paymentMethod", fetch = FetchType.LAZY)
+    private List<PaymentMethodRequiredField> paymentMethodRequiredFields;
 }

@@ -1,0 +1,17 @@
+{
+  "request": {
+    "urlPath": "/api/v1/payouts",
+    "method": "POST",
+    "bodyPatterns": [
+      {
+        "matchesJsonPath": {
+          "expression": "$.externalId",
+          "equalTo": "14"
+        }
+      }
+    ]
+  },
+  "response": {
+    "status": 500
+  }
+}

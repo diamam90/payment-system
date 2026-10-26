@@ -17,7 +17,7 @@ public class Payment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "paymentIdGenerator")
-    @SequenceGenerator(name = "paymentIdGenerator", sequenceName = "payments_id_seq", allocationSize = 1)
+    @SequenceGenerator(schema = "payment", name = "paymentIdGenerator", sequenceName = "payments_id_seq", allocationSize = 1)
     @Column(name = "id")
     private Long id;
 
@@ -49,7 +49,7 @@ public class Payment {
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at")
+    @Column(name = "modified_at")
     private LocalDateTime updatedAt;
 
 }

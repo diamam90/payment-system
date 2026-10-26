@@ -11,7 +11,8 @@ val versions = mapOf(
     "wireMockVersion" to "1.0-alpha-13",
     "shedlockVersion" to "6.3.1",
     "springCloudVersion" to "5.0.2",
-    "bulkheadVersion" to "2.4.0"
+    "bulkheadVersion" to "2.4.0",
+    "fakePaymentVersion" to "1.0.0-SNAPSHOT"
 )
 
 plugins {
@@ -35,6 +36,22 @@ java {
 
 repositories {
     mavenCentral()
+    maven {
+        url = uri("http://localhost:8800/repository/maven-releases")
+        isAllowInsecureProtocol = true
+    }
+    maven {
+        url = uri("http://localhost:8800/repository/maven-snapshots")
+        isAllowInsecureProtocol = true
+    }
+    maven {
+        url = uri("http://host.docker.internal:8800/repository/maven-releases")
+        isAllowInsecureProtocol = true
+    }
+    maven {
+        url = uri("http://host.docker.internal:8800/repository/maven-snapshots")
+        isAllowInsecureProtocol = true
+    }
 }
 
 dependencyManagement {
@@ -53,8 +70,12 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${versions["springdocOpenapiStarterWebmvcUiVersion"]}")
+
+    // PAYMENT SYSTEM
+    implementation("com.example:fake-payment-provider-api:${versions["fakePaymentVersion"]}")
 
     // OBSERVABILITY
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")

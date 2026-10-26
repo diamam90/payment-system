@@ -16,10 +16,11 @@ public class PaymentMethodDefinition {
     @Column(name = "id")
     private Integer id;
 
-    @Column(name = "payment_method_id")
+    @Column(name = "payment_method_id", insertable = false, updatable = false)
     private Integer paymentMethodId;
 
-    @OneToOne(mappedBy = "paymentMethodDefinition")
+    @OneToOne
+    @JoinColumn(name = "payment_method_id", referencedColumnName = "id")
     private PaymentMethod paymentMethod;
 
     @Column(name = "currency_code")

@@ -1,0 +1,28 @@
+{
+  "request": {
+    "urlPath": "/api/v1/payouts",
+    "method": "POST",
+    "bodyPatterns": [
+      {
+        "matchesJsonPath": {
+          "expression": "$.externalId",
+          "equalTo": "12"
+        }
+      }
+    ]
+  },
+  "response": {
+    "status": 201,
+    "jsonBody": {
+      "id": 1,
+      "merchantId": 228,
+      "amount": "{{jsonPath request.body '$.amount'}}",
+      "status": "SUCCESS",
+      "externalId": "{{jsonPath request.body '$.externalId'}}"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "transformers": ["response-template"]
+  }
+}

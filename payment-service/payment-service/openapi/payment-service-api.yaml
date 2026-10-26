@@ -1,0 +1,183 @@
+openapi: 3.0.0
+info:
+  title: Payment Service API
+  version: "1.0"
+servers:
+  - url: http://localhost:8083
+
+security:
+  - jwt: [ ]
+
+tags:
+  - name: Payment
+    description: Апи платежей
+  - name: PaymentMethod
+    description: Апи методов оплаты
+
+paths:
+  /api/v1/payment-methods/{currencyCode}/{countryCode}:
+    get:
+      tags: [ PaymentMethod ]
+      operationId: getPaymentMethods
+      summary: Получение доступных методов оплаты
+      parameters:
+        - in: path
+          name: currencyCode
+          schema:
+            type: string
+            pattern: '[A-Z]{3}'
+          required: true
+        - in: path
+          name: countryCode
+          schema:
+            type: string
+            pattern: '[A-Z]{3}'
+          required: true
+
+      responses:
+        '200':
+          description: Успещный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethodResponse'
+        '400':
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Доступ запрещен
+        '404':
+          description: Метод оплаты не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/payments:
+    post:
+      tags: [ Payment ]
+      operationId: createPayment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        '201':
+          description: Платеж успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '400':
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Доступ запрещен
+
+  /private/api/v1/payments/{paymentId}/compensate:
+    post:
+      tags: [ Payment ]
+      operationId: compensatePayment
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          description: Идентификатор платежа
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 'Платеж успешно отменен'
+
+components:
+  securitySchemes:
+    jwt:
+      description: JWT token
+      type: http
+      scheme: Bearer
+
+  schemas:
+    PaymentMethodResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        providerMethodType:
+          type: string
+        imageUrl:
+          type: string
+        requiredFields:
+          type: array
+          items:
+            $ref: '#/components/schemas/RequiredField'
+
+    RequiredField:
+      type: object
+      properties:
+        uid:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        placeholder:
+          type: string
+        dataType:
+          type: string
+        validationType:
+          type: string
+        validationRule:
+          type: string
+        defaultValue:
+          type: string
+        valuesOptions:
+          type: string
+
+    PaymentRequest:
+      type: object
+      properties:
+        internalTransactionUid:
+          type: string
+        methodId:
+          type: integer
+        amount:
+          type: number
+        currency:
+          type: string
+        userFields:
+          type: object
+          additionalProperties:
+            type: string
+
+    PaymentResponse:
+      type: object
+      properties:
+        providerTransactionId:
+          type: string
+        internalTransactionId:
+          type: number
+          format: int64
+        amount:
+          type: number
+        status:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
