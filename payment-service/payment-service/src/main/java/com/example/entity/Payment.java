@@ -8,6 +8,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -32,7 +33,7 @@ public class Payment {
     private String externalTransactionId;
 
     @Column(name = "internal_transaction_id")
-    private String internalTransactionId;
+    private UUID internalTransactionId;
 
     @Column(name = "amount")
     private BigDecimal amount;

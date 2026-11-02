@@ -2,6 +2,7 @@ package com.example.repository;
 
 import com.example.config.TestConfig;
 import com.example.entity.PaymentMethod;
+import com.example.entity.PaymentType;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.AfterEach;
@@ -44,7 +45,7 @@ class MethodRepositoryTest {
     void findByCurrencyAndCountryCodes_whenCurrencyAndCountryIsPresent_shouldReturnPaymentMethod() {
         String currency = "RUB", country = "USA";
 
-        List<PaymentMethod> result = methodRepository.findByCurrencyCodeAndCountryCode(currency, country);
+        List<PaymentMethod> result = methodRepository.findByCurrencyAndCountryAndType(currency, country, PaymentType.PAYOUT);
 
         assertThat(result)
                 .hasSize(1)

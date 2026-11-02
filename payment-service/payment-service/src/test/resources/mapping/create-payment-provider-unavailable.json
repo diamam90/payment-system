@@ -6,7 +6,7 @@
       {
         "matchesJsonPath": {
           "expression": "$.externalId",
-          "equalTo": "14"
+          "equalTo": "00000000-0000-0000-0000-000000000014"
         }
       }
     ]

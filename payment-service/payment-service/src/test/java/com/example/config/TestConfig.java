@@ -1,8 +1,6 @@
 package com.example.config;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -64,10 +62,5 @@ public class TestConfig {
     JwtDecoder jwtDecoder(KeycloakContainer keycloakContainer) {
         return NimbusJwtDecoder.withJwkSetUri(keycloakContainer.getAuthServerUrl() + "/realms/payment/protocol/openid-connect/certs")
                 .build();
-    }
-
-    @Bean
-    MeterRegistry meterRegistry() {
-        return new SimpleMeterRegistry();
     }
 }

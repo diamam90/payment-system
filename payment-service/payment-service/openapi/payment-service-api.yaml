@@ -15,24 +15,16 @@ tags:
     description: Апи методов оплаты
 
 paths:
-  /api/v1/payment-methods/{currencyCode}/{countryCode}:
+  /api/v1/payment-methods:
     get:
       tags: [ PaymentMethod ]
       operationId: getPaymentMethods
       summary: Получение доступных методов оплаты
       parameters:
-        - in: path
+        - in: query
           name: currencyCode
           schema:
-            type: string
-            pattern: '[A-Z]{3}'
-          required: true
-        - in: path
-          name: countryCode
-          schema:
-            type: string
-            pattern: '[A-Z]{3}'
-          required: true
+            $ref: '#/components/schemas/PaymentMethodFilter'
 
       responses:
         '200':
@@ -106,6 +98,19 @@ components:
       scheme: Bearer
 
   schemas:
+    PaymentMethodFilter:
+      type: object
+      properties:
+        currencyCode:
+          type: string
+          pattern: '[A-Z]{3}'
+        countryCode:
+          type: string
+          pattern: '[A-Z]{3}'
+        type:
+          enum: [ TRANSACTION, PAYOUT ]
+      required: [ currencyCode, type ]
+
     PaymentMethodResponse:
       type: object
       properties:
@@ -150,6 +155,7 @@ components:
       properties:
         internalTransactionUid:
           type: string
+          format: uuid
         methodId:
           type: integer
         amount:
@@ -167,8 +173,8 @@ components:
         providerTransactionId:
           type: string
         internalTransactionId:
-          type: number
-          format: int64
+          type: string
+          format: uuid
         amount:
           type: number
         status:

@@ -23,7 +23,7 @@ public class GlobalErrorHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ObjectNotFoundException.class)
     public ResponseEntity<Object> handleObjectNotFound(ObjectNotFoundException exception, WebRequest request) {
         ErrorResponse response = new ErrorResponse();
-        response.setError(StatusCode.ERROR_400.name());
+        response.setError(StatusCode.ERROR_404.name());
         response.setMessage(exception.getMessage());
 
         return handleExceptionInternal(exception, response, new HttpHeaders(), HttpStatus.NOT_FOUND, request);
@@ -55,7 +55,7 @@ public class GlobalErrorHandler extends ResponseEntityExceptionHandler {
             message = ex.getLocalizedMessage();
         }
 
-        com.example.fake.dto.ErrorResponse response = new com.example.fake.dto.ErrorResponse();
+        ErrorResponse response = new ErrorResponse();
         response.setError(StatusCode.ERROR_400.name());
         response.setMessage(message);
         log.error("Ошибка валидации, вернули ошибку: {}", response, ex);
@@ -65,7 +65,7 @@ public class GlobalErrorHandler extends ResponseEntityExceptionHandler {
     protected @Nullable ResponseEntity<Object> handleHttpMessageNotReadable(
             HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
 
-        com.example.fake.dto.ErrorResponse response = new com.example.fake.dto.ErrorResponse();
+        ErrorResponse response = new ErrorResponse();
         response.setError(StatusCode.ERROR_400.name());
         response.setMessage("Failed to read request");
         log.error("Невалидный запрос, вернули ошибку: {}", response, ex);

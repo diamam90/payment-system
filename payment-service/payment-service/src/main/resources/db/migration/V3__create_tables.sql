@@ -54,7 +54,7 @@ CREATE TABLE payment.payments (
                           id                      SERIAL PRIMARY KEY,
                           payment_method_id       INTEGER REFERENCES payment.payment_methods(id),
                           external_transaction_id VARCHAR(128),
-                          internal_transaction_id VARCHAR(128),
+                          internal_transaction_id UUID,
                           amount                  NUMERIC(18, 2) NOT NULL,
                           currency                VARCHAR(3) NOT NULL,
                           status                  VARCHAR(20) NOT NULL DEFAULT 'PENDING',

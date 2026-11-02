@@ -1,9 +1,11 @@
 package com.example.service.impl;
 
 import com.example.entity.PaymentMethod;
+import com.example.entity.PaymentType;
 import com.example.exception.ObjectNotFoundException;
 import com.example.repository.MethodRepository;
 import com.example.service.MethodService;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,11 +18,9 @@ public class MethodServiceImpl implements MethodService {
     private final MethodRepository methodRepository;
 
     @Override
-    public PaymentMethod findByCurrencyAndCountry(String currency, String country) {
-        return methodRepository.findByCurrencyCodeAndCountryCode(currency, country)
-                .stream()
-                .findFirst()
-                .orElseThrow(() -> new ObjectNotFoundException("PaymentMethod", "currencyCode", currency, "countryCode", country));
+    public PaymentMethod findByCurrencyAndCountryAndType(@NotNull String currency, @NotNull String country, @NotNull PaymentType type) {
+        return methodRepository.findByCurrencyAndCountryAndType(currency, country, type).stream().findAny()
+                .orElseThrow(() -> ObjectNotFoundException.paymentMethod(currency, country, type));
     }
 
     @Override

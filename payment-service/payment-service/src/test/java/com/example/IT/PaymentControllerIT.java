@@ -22,6 +22,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -68,7 +69,7 @@ class PaymentControllerIT {
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                         .content("""
                                 {
-                                    "internalTransactionUid": 12,
+                                    "internalTransactionUid": "00000000-0000-0000-0000-000000000012",
                                     "methodId": 1,
                                     "amount": 50.03,
                                     "currency": "RUB"
@@ -76,11 +77,11 @@ class PaymentControllerIT {
                                 """))
                 .andExpectAll(status().isCreated(),
                         jsonPath("providerTransactionId").value(1),
-                        jsonPath("internalTransactionId").value(12),
+                        jsonPath("internalTransactionId").value("00000000-0000-0000-0000-000000000012"),
                         jsonPath("amount").value(BigDecimal.valueOf(50.03)),
                         jsonPath("status").value("SUCCESS")
                 );
-        Map<String, @Nullable Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, "12");
+        Map<String, @Nullable Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000012"));
         assertThat(params)
                 .hasFieldOrPropertyWithValue("status", "SUCCESS")
                 .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(50.03))
@@ -100,7 +101,7 @@ class PaymentControllerIT {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "internalTransactionUid": 13,
+                                    "internalTransactionUid": "00000000-0000-0000-0000-000000000013",
                                     "methodId": 1,
                                     "amount": 50.03,
                                     "currency": "RUB"
@@ -111,7 +112,7 @@ class PaymentControllerIT {
                         jsonPath("message").value("External service FakePaymentProvider is unavailable")
                 );
 
-        Map<String, @Nullable Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, "13");
+        Map<String, @Nullable Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000013"));
         assertThat(params)
                 .hasFieldOrPropertyWithValue("status", "FAILED")
                 .hasFieldOrPropertyWithValue("payment_method_id", 1)
@@ -128,7 +129,7 @@ class PaymentControllerIT {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "internalTransactionUid": 14,
+                                    "internalTransactionUid": "00000000-0000-0000-0000-000000000014",
                                     "methodId": 1,
                                     "amount": 50.03,
                                     "currency": "RUB"
@@ -139,7 +140,7 @@ class PaymentControllerIT {
                         jsonPath("message").value("External service FakePaymentProvider is unavailable")
                 );
 
-        Map<String, @Nullable Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, "14");
+        Map<String, @Nullable Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000014"));
         assertThat(params)
                 .hasFieldOrPropertyWithValue("status", "FAILED")
                 .hasFieldOrPropertyWithValue("payment_method_id", 1)
@@ -156,7 +157,7 @@ class PaymentControllerIT {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "internalTransactionUid": 12,
+                                    "internalTransactionUid": "00000000-0000-0000-0000-000000000012",
                                     "methodId": 2,
                                     "amount": 50.00,
                                     "currency": "RUB"
@@ -164,11 +165,11 @@ class PaymentControllerIT {
                                 """))
                 .andExpectAll(status().isCreated(),
                         jsonPath("providerTransactionId").value(1),
-                        jsonPath("internalTransactionId").value(12),
+                        jsonPath("internalTransactionId").value("00000000-0000-0000-0000-000000000012"),
                         jsonPath("amount").value(BigDecimal.valueOf(50.00)),
                         jsonPath("status").value("SUCCESS")
                 );
-        Map<String, @Nullable Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, "12");
+        Map<String, @Nullable Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000012"));
         assertThat(params)
                 .hasFieldOrPropertyWithValue("status", "SUCCESS")
                 .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(50.00).setScale(2, RoundingMode.HALF_EVEN))
@@ -186,7 +187,7 @@ class PaymentControllerIT {
         mvc.perform(post("/private/api/v1/payments/2/compensate")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
                 .andExpect(status().isOk());
-        Map<String, @Nullable Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, "12");
+        Map<String, @Nullable Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000012"));
         assertThat(params)
                 .hasFieldOrPropertyWithValue("status", "FAILED")
                 .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(12.22).setScale(2, RoundingMode.HALF_EVEN));
@@ -199,7 +200,7 @@ class PaymentControllerIT {
         mvc.perform(post("/private/api/v1/payments/3/compensate")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
                 .andExpect(status().isOk());
-        Map<String, @Nullable Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, "13");
+        Map<String, @Nullable Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000013"));
         assertThat(params)
                 .hasFieldOrPropertyWithValue("status", "SUCCESS")
                 .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(12.22).setScale(2, RoundingMode.HALF_EVEN));
