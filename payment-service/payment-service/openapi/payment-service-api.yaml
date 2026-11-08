@@ -172,7 +172,7 @@ components:
       properties:
         providerTransactionId:
           type: string
-        internalTransactionId:
+        internalTransactionUid:
           type: string
           format: uuid
         amount:

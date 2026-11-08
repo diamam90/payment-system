@@ -9,5 +9,6 @@ import org.mapstruct.Mapping;
 public interface PaymentMapper {
 
     @Mapping(source = "externalTransactionId", target = "providerTransactionId")
+    @Mapping(source = "internalTransactionId", target = "internalTransactionUid")
     PaymentResponse toResponse(Payment payment);
 }

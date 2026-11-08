@@ -77,7 +77,7 @@ class PaymentControllerIT {
                                 """))
                 .andExpectAll(status().isCreated(),
                         jsonPath("providerTransactionId").value(1),
-                        jsonPath("internalTransactionId").value("00000000-0000-0000-0000-000000000012"),
+                        jsonPath("internalTransactionUid").value("00000000-0000-0000-0000-000000000012"),
                         jsonPath("amount").value(BigDecimal.valueOf(50.03)),
                         jsonPath("status").value("SUCCESS")
                 );
@@ -165,7 +165,7 @@ class PaymentControllerIT {
                                 """))
                 .andExpectAll(status().isCreated(),
                         jsonPath("providerTransactionId").value(1),
-                        jsonPath("internalTransactionId").value("00000000-0000-0000-0000-000000000012"),
+                        jsonPath("internalTransactionUid").value("00000000-0000-0000-0000-000000000012"),
                         jsonPath("amount").value(BigDecimal.valueOf(50.00)),
                         jsonPath("status").value("SUCCESS")
                 );
