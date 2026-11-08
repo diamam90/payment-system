@@ -15,6 +15,7 @@ public class AppProperties {
     private PersonServiceProperties person;
     private TransactionServiceProperties transaction;
     private CurrencyRateServiceProperties currencyRate;
+    private PaymentService payment;
 
     @Getter
     @Setter
@@ -40,6 +41,12 @@ public class AppProperties {
     @Getter
     @Setter
     public static class CurrencyRateServiceProperties {
+        private String baseUrl;
+    }
+
+    @Getter
+    @Setter
+    public static class PaymentService {
         private String baseUrl;
     }
 }

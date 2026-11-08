@@ -218,7 +218,7 @@ class TransactionServiceImplTest {
         var expectedResponse = TransactionStub.IndividualService.transferConfirmResponse(SOURCE_USER_ID, SOURCE_WALLET_ID, TARGET_WALLET_ID);
         var transactionServiceRequest = TransactionStub.TransactionService.transferConfirmRequest(SOURCE_USER_ID, SOURCE_WALLET_ID, TARGET_USER_ID, TARGET_WALLET_ID, rate);
         var transactionServiceResponse = TransactionStub.TransactionService.transferConfirmResponse(SOURCE_USER_ID, SOURCE_WALLET_ID, TARGET_WALLET_ID);
-        RateResponse rateResponse = CurrencyRateStub.rateResponse(sourceCode,targetCode, rate);
+        RateResponse rateResponse = CurrencyRateStub.rateResponse(sourceCode, targetCode, rate);
         // when
         when(clock.getZone()).thenReturn(fixed.getZone());
         when(clock.instant()).thenReturn(fixed.instant());
@@ -226,7 +226,7 @@ class TransactionServiceImplTest {
                 .thenReturn(ResponseEntity.ok(walletResponse_2(SOURCE_USER_ID, SOURCE_WALLET_ID, sourceCode)));
         when(walletApiClient.getWalletById(TARGET_WALLET_ID))
                 .thenReturn(ResponseEntity.ok(walletResponse_2(TARGET_USER_ID, TARGET_WALLET_ID, targetCode)));
-        when(currencyRateApiClient.getRateByFilter(sourceCode,targetCode, ZonedDateTime.now(clock))).thenReturn(ResponseEntity.ok(rateResponse));
+        when(currencyRateApiClient.getRateByFilter(sourceCode, targetCode, ZonedDateTime.now(clock))).thenReturn(ResponseEntity.ok(rateResponse));
         when(transactionApiClient.transactionConfirm(transactionServiceRequest))
                 .thenReturn(new ResponseEntity<>(transactionServiceResponse, HttpStatus.OK));
         // then
@@ -256,8 +256,8 @@ class TransactionServiceImplTest {
         var transactionResponse = TransactionStub.TransactionService.transactionStatusResponse(TRANSACTION_ID);
         var expectedResponse = TransactionStub.IndividualService.transactionStatusResponse(TRANSACTION_ID);
         // when
-        when(transactionApiClient.getTransactionsStatusById(TRANSACTION_ID)).thenReturn(ResponseEntity.ok(transactionResponse));
+        when(transactionApiClient.getTransactionsStatus(TRANSACTION_ID, TARGET_USER_ID)).thenReturn(ResponseEntity.ok(transactionResponse));
         // then
-        StepVerifier.create(transactionService.findById(TRANSACTION_ID)).expectNext(expectedResponse).verifyComplete();
+        StepVerifier.create(transactionService.findByIdAndUserId(TRANSACTION_ID, TARGET_USER_ID)).expectNext(expectedResponse).verifyComplete();
     }
 }

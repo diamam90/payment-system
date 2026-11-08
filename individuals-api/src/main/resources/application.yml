@@ -44,3 +44,4 @@ individuals-api:
 logging:
   level:
     com.example: debug
+    feign: debug

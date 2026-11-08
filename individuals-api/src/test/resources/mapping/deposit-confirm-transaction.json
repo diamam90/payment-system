@@ -1,0 +1,44 @@
+{
+  "request": {
+    "url": "/api/v1/transactions/confirm",
+    "method": "POST",
+    "bodyPatterns": [
+      {
+        "matchesJsonPath": {
+          "expression": "$.type",
+          "contains": "DEPOSIT"
+        }
+      },
+      {
+        "matchesJsonPath": {
+          "expression": "$.userUid",
+          "contains": "dddddddd-dddd-dddd-dddd-dddddddddddd"
+        }
+      },
+      {
+        "matchesJsonPath": {
+          "expression": "$.walletUid",
+          "contains": "99999999-9999-9999-9999-999999999999"
+        }
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": {
+      "uid": "00000000-0000-0000-0000-000000000001",
+      "userUid": "{{jsonPath request.body '$.userUid'}}",
+      "walletUid": "{{jsonPath request.body '$.walletUid'}}",
+      "amount": "40.44",
+      "type": "{{jsonPath request.body '$.type'}}",
+      "status": "PENDING",
+      "fee": "0.33"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "transformers": [
+      "response-template"
+    ]
+  }
+}
