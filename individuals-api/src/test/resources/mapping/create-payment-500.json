@@ -1,0 +1,27 @@
+{
+  "request": {
+    "url": "/api/v1/payments",
+    "method": "POST",
+    "bodyPatterns": [
+      {
+        "matchesJsonPath": {
+          "expression": "$.internalTransactionUid",
+          "or": [
+            {
+              "equalTo": "00000000-0000-0000-0000-000000000011"
+            },
+            {
+              "equalTo": "00000000-0000-0000-0000-000000000012"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "response": {
+    "status": 500,
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

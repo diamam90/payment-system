@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 
 @RequiredArgsConstructor
-public class AdminTokenInterceptor implements RequestInterceptor {
+public class AdminTokenFeignInterceptor implements RequestInterceptor {
 
     private final AdminTokenHolder tokenHolder;
 

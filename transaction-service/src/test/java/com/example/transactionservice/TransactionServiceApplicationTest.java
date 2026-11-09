@@ -1,6 +1,5 @@
 package com.example.transactionservice;
 
-import com.example.transactionservice.config.DatabaseTestConfig;
 import com.example.transactionservice.config.KafkaTestConfig;
 import com.example.transactionservice.config.SecurityTestConfig;
 import org.junit.jupiter.api.Test;

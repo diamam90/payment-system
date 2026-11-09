@@ -1,6 +1,5 @@
 package com.example.individualsapi.config;
 
-import com.example.individualsapi.IT.BaseIntegrationTest;
 import com.example.individualsapi.configuration.AppProperties;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
@@ -37,6 +36,10 @@ public class MockServiceConfig {
             AppProperties.TransactionServiceProperties transactionServiceProperties = new AppProperties.TransactionServiceProperties();
             transactionServiceProperties.setBaseUrl(wireMock.getBaseUrl());
             properties.setTransaction(transactionServiceProperties);
+
+            AppProperties.PaymentService paymentServiceProperties = new AppProperties.PaymentService();
+            paymentServiceProperties.setBaseUrl(wireMock.getBaseUrl());
+            properties.setPayment(paymentServiceProperties);
         };
     }
 }

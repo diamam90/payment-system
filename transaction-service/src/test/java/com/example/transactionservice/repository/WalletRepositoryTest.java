@@ -83,6 +83,7 @@ class WalletRepositoryTest {
         var walletUid = UUID.randomUUID();
         Wallet wallet = createWallet(walletTypeUid, userUid);
         wallet.setId(walletUid);
+        wallet.setVersion(0);
 
         PreparedStatementCreator psc = preparedStatementCreator(wallet);
         jdbc.update(psc);

@@ -275,6 +275,9 @@ components:
           type: string
           description: Необязательное описание или назначение платежа
           maxLength: 255
+        externalId:
+          type: string
+          description: Внешний идентификатор пополнения
     TransactionResponse:
       type: object
       properties:
@@ -316,6 +319,9 @@ components:
           type: string
           pattern: '^[A-Z]{3}$'
           description: Код валюты выплаты
+        externalId:
+          type: string
+          description: Внешний идентификатор выплаты
     PayoutResponse:
       type: object
       properties:

@@ -5,8 +5,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -55,6 +53,11 @@ public class Wallet {
 
     @OneToMany(mappedBy = "targetWallet")
     private Set<Transaction> targetTransactions;
+
+    @Version
+    @Column(name = "version")
+    private Integer version;
+
 
     @Column(name = "created_at")
     @CreationTimestamp

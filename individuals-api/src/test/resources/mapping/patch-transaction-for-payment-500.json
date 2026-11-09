@@ -1,0 +1,21 @@
+{
+  "request": {
+    "urlPathTemplate": "/api/v1/transactions/{transactionId}",
+    "pathParameters": {
+      "transactionId": {
+        "or": [
+          {
+            "equalTo": "00000000-0000-0000-0000-000000000011"
+          },
+          {
+            "equalTo": "00000000-0000-0000-0000-000000000012"
+          }
+        ]
+      }
+    },
+    "method": "PATCH"
+  },
+  "response": {
+    "status": 200
+  }
+}

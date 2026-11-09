@@ -25,11 +25,11 @@ import java.sql.SQLException;
 import java.util.*;
 
 @Import(Containers.class)
-@TestConfiguration(proxyBeanMethods = false)
+@TestConfiguration
 public class DatabaseTestConfig {
 
     @Autowired
-    List<PostgreSQLContainer<?>> containers;
+    private List<PostgreSQLContainer<?>> containers;
     Map<String, DataSource> dataSources;
 
     @Bean
@@ -67,7 +67,6 @@ public class DatabaseTestConfig {
         Map<String, DataSource> result = new HashMap<>();
         for (int i = 0; i < containers.size(); i++) {
             PostgreSQLContainer<?> container = containers.get(i);
-            container.start();
             HikariDataSource shard = new HikariDataSource();
             shard.setDriverClassName("org.postgresql.Driver");
             shard.setJdbcUrl(container.getJdbcUrl());

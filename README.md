@@ -133,3 +133,5 @@
 | Nginx                    | 8000  | Nginx для балансировки запросов Currency-Rate-Service |
 | Fake-Paymen-Provider     | 8087  | Эмулятор платежной системы                            |
 | Fake-Payment-Provider-DB | 5439  | БД для Fake-Payment-Provider                          |
+| Payment-Service          | 8088  | Сервис Платежей                                       |
+| Payment-Service-DB       | 5440  | БД для PaymentService                                 |

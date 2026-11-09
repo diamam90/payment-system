@@ -10,8 +10,10 @@ var properties = mapOf(
     "personServiceApiVersion" to "1.0.0-SNAPSHOT",
     "transactionServiceApiVersion" to "1.0.0-SNAPSHOT",
     "currencyRateServiceApiVersion" to "1.0.0-SNAPSHOT",
+    "paymentServiceApiVersion" to "1.0.0-SNAPSHOT",
     "wireMockVersion" to "1.0-alpha-13",
     "nettyDnsResolver" to "4.1.72.Final:osx-aarch_64",
+    "feignHttpClientVersion" to "13.5",
     "archunitVersion" to "1.4.1",
     "mapstructVersion" to "1.5.5.Final"
 )
@@ -69,6 +71,7 @@ dependencies {
     implementation("com.example:person-service-api:${properties["personServiceApiVersion"]}")
     implementation("com.example:transaction-service-api:${properties["transactionServiceApiVersion"]}")
     implementation("com.example:currency-rate-service-api:${properties["currencyRateServiceApiVersion"]}")
+    implementation("com.example:payment-service-api:${properties["paymentServiceApiVersion"]}")
 
     // OBSERVABILITY
     implementation("io.micrometer:micrometer-registry-prometheus")
@@ -85,6 +88,9 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok")
     annotationProcessor("org.mapstruct:mapstruct-processor:${properties["mapstructVersion"]}")
     implementation("io.netty:netty-resolver-dns-native-macos:${properties["nettyDnsResolver"]}")
+
+    // HTTP
+    implementation("io.github.openfeign:feign-httpclient:${properties["feignHttpClientVersion"]}")
 
     // TEST
     testImplementation("io.projectreactor:reactor-test")
