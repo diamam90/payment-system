@@ -1,0 +1,25 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: payment-service
+  datasource:
+    url: jdbc:postgresql://${PAYMENT_SERVICE_DB_HOST}:${PAYMENT_SERVICE_DB_PORT}/payment
+    username: ${PAYMENT_SERVICE_DB_USERNAME}
+    password: ${PAYMENT_SERVICE_DB_PASSWORD}
+  flyway:
+    url: jdbc:postgresql://${PAYMENT_SERVICE_DB_HOST}:${PAYMENT_SERVICE_DB_PORT}/payment
+    user: ${PAYMENT_SERVICE_DB_USERNAME}
+    password: ${PAYMENT_SERVICE_DB_PASSWORD}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${KEYCLOAK_URL}/realms/payment/protocol/openid-connect/certs
+
+payment-service:
+  fake-payment-provider:
+    base-url: ${FAKE_PAYMENT_PROVIDER_URL}
+    merchant-id: ${FAKE_PAYMENT_PROVIDER_MERCHANT_ID}
+    merchant-password: ${FAKE_PAYMENT_PROVIDER_MERCHANT_PASSWORD}

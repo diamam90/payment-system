@@ -1,10 +1,10 @@
-CREATE TABLE payment.payment_providers (
+CREATE TABLE IF NOT EXISTS payment.payment_providers (
                                    id              SERIAL PRIMARY KEY,
                                    name            VARCHAR(50) NOT NULL,
                                    description     VARCHAR(256)
 );
 
-CREATE TABLE payment.payment_methods (
+CREATE TABLE IF NOT EXISTS payment.payment_methods (
                                  id                      SERIAL PRIMARY KEY,
                                  provider_id             INTEGER REFERENCES payment.payment_providers(id),
                                  type                    VARCHAR(32) NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE payment.payment_methods (
                                  profile_type            VARCHAR(24) DEFAULT 'INDIVIDUAL' NOT NULL
 );
 
-CREATE TABLE payment.payment_method_definitions (
+CREATE TABLE IF NOT EXISTS payment.payment_method_definitions (
                                             id                    SERIAL PRIMARY KEY,
                                             payment_method_id     INTEGER REFERENCES payment.payment_methods(id),
                                             currency_code         VARCHAR(3),
@@ -29,7 +29,7 @@ CREATE TABLE payment.payment_method_definitions (
                                             is_active             BOOLEAN DEFAULT TRUE
 );
 
-CREATE TABLE payment.payment_method_required_fields (
+CREATE TABLE IF NOT EXISTS payment.payment_method_required_fields (
                                                 uid                   UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
                                                 created_at            TIMESTAMP DEFAULT NOW(),
                                                 modified_at           TIMESTAMP DEFAULT NOW(),
@@ -50,7 +50,7 @@ CREATE TABLE payment.payment_method_required_fields (
                                                 UNIQUE (language, name, payment_method_id, payment_type, country_alpha3_code)
 );
 
-CREATE TABLE payment.payments (
+CREATE TABLE IF NOT EXISTS payment.payments (
                           id                      SERIAL PRIMARY KEY,
                           payment_method_id       INTEGER REFERENCES payment.payment_methods(id),
                           external_transaction_id VARCHAR(128),

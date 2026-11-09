@@ -2,6 +2,7 @@ package com.example.service.impl;
 
 import com.example.entity.Payment;
 import com.example.entity.PaymentMethod;
+import com.example.entity.PaymentMethodDefinition;
 import com.example.entity.Status;
 import com.example.exception.ExternalServiceUnavailableException;
 import com.example.fake.api.PayoutApi;
@@ -82,9 +83,13 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = new Payment();
         payment.setPaymentMethod(method);
         payment.setInternalTransactionId(request.getInternalTransactionUid());
-        payment.setCurrency(request.getCurrency());
         payment.setAmount(request.getAmount());
         payment.setStatus(Status.PENDING);
+
+        Optional.ofNullable(method)
+                .map(PaymentMethod::getPaymentMethodDefinition)
+                .map(PaymentMethodDefinition::getCurrencyCode)
+                .ifPresent(payment::setCurrency);
 
         return payment;
     }

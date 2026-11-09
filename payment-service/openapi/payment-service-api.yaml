@@ -160,8 +160,6 @@ components:
           type: integer
         amount:
           type: number
-        currency:
-          type: string
         userFields:
           type: object
           additionalProperties:
