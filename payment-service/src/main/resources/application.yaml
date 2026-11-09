@@ -23,3 +23,28 @@ payment-service:
     base-url: ${FAKE_PAYMENT_PROVIDER_URL}
     merchant-id: ${FAKE_PAYMENT_PROVIDER_MERCHANT_ID}
     merchant-password: ${FAKE_PAYMENT_PROVIDER_MERCHANT_PASSWORD}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  observations:
+    annotations:
+      enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${TEMPO_URL}/v1/traces
+  otlp:
+    metrics:
+      export:
+        enabled: false

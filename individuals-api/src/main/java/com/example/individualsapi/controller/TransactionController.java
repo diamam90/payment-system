@@ -36,7 +36,8 @@ public class TransactionController implements TransactionServiceApi {
                 .filter(principal -> principal instanceof JwtAuthenticationToken)
                 .cast(JwtAuthenticationToken.class)
                 .map(jwt -> jwt.getToken().getClaim("individual_id"))
-                .cast(UUID.class)
+                .cast(String.class)
+                .map(UUID::fromString)
                 .flatMap(id -> transactionService.findByIdAndUserId(transactionId, id))
                 .map(ResponseEntity::ok);
     }
