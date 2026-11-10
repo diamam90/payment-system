@@ -9,7 +9,6 @@ import com.example.transactionservice.exception.BadRequestException;
 import com.example.transactionservice.exception.ObjectNotFoundException;
 import com.example.transactionservice.mapper.TransactionMapper;
 import com.example.transactionservice.model.TransactionFilter;
-import com.example.transactionservice.model.kafka.TransactionCreatedEvent;
 import com.example.transactionservice.repository.TransactionRepository;
 import com.example.transactionservice.repository.TransactionSpecification;
 import com.example.transactionservice.service.TransactionService;
@@ -17,17 +16,13 @@ import com.example.transactionservice.service.WalletService;
 import io.micrometer.core.annotation.Counted;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.Clock;
-import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -42,13 +37,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     private final WalletService walletService;
     private final TransactionRepository transactionRepository;
-    private final KafkaTemplate<String, Object> kafka;
-
     private final TransactionMapper transactionMapper;
-    private final Clock clock;
-
-    @Value("${transaction-service.kafka.topic.out}")
-    private String topic;
 
     @Counted("deposit_init")
     @Override
@@ -128,12 +117,8 @@ public class TransactionServiceImpl implements TransactionService {
         Transaction transaction = deposit(wallet, accrual, fee, request.getComment());
         transactionRepository.save(transaction);
 
-        TransactionCreatedEvent transactionRequest = createMessage(transaction, TransactionType.DEPOSIT);
-
-        kafka.send(topic, transaction.getId().toString(), transactionRequest);
         log.info("Transaction with Id {} has been successfully saved", transaction.getId());
         log.debug("Transaction {} for userId {} ", transaction, request.getUserUid());
-        log.debug("{} sent to kafka", transactionRequest);
 
         return transactionMapper.toResponse(transaction);
     }
@@ -179,13 +164,8 @@ public class TransactionServiceImpl implements TransactionService {
         wallet.decreaseBalance(total);
         Transaction transaction = withdrawal(wallet, amount, fee, request.getComment());
         transactionRepository.save(transaction);
-
-        TransactionCreatedEvent transactionRequest = createMessage(transaction, TransactionType.WITHDRAWAL);
-        kafka.send(topic, transaction.getId().toString(), transactionRequest);
-
         log.info("Transaction with Id {} has been successfully saved", transaction.getId());
         log.debug("Transaction {} for userId {} ", transaction, request.getUserUid());
-        log.debug("{} sent to kafka", transactionRequest);
 
         return transactionMapper.toResponse(transaction);
     }
@@ -331,18 +311,5 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setComment(comment);
 
         return transaction;
-    }
-
-    private TransactionCreatedEvent createMessage(Transaction transaction, TransactionType type) {
-        return TransactionCreatedEvent
-                .builder()
-                .transactionId(transaction.getId())
-                .userId(transaction.getWallet().getUserId())
-                .walletId(transaction.getWallet().getId())
-                .currency(transaction.getWallet().getType().getCurrencyCode())
-                .amount(transaction.getAmount())
-                .timestamp(ZonedDateTime.now(clock))
-                .type(type.name())
-                .build();
     }
 }

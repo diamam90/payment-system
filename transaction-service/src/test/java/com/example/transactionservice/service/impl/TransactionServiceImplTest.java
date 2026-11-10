@@ -7,7 +7,6 @@ import com.example.transactionservice.entity.TransactionStatus;
 import com.example.transactionservice.entity.TransactionType;
 import com.example.transactionservice.entity.Wallet;
 import com.example.transactionservice.exception.BadRequestException;
-import com.example.transactionservice.model.kafka.TransactionCreatedEvent;
 import com.example.transactionservice.repository.TransactionRepository;
 import com.example.transactionservice.repository.WalletRepository;
 import com.example.transactionservice.service.TransactionService;
@@ -50,7 +49,7 @@ import static org.mockito.Mockito.verify;
 @DirtiesContext
 @Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest
-@Import({DatabaseTestConfig.class})
+@Import(DatabaseTestConfig.class)
 class TransactionServiceImplTest {
 
     private static Clock fixed = Clock.fixed(Instant.parse("2026-06-06T13:00:34+03:00"), ZoneOffset.UTC);
@@ -64,19 +63,9 @@ class TransactionServiceImplTest {
     @MockitoSpyBean
     TransactionRepository transactionRepository;
     @MockitoBean
-    KafkaTemplate<String, Object> kafkaTemplate;
-    @MockitoBean
     JwtDecoder jwtDecoder;
     @MockitoBean
     Clock clock;
-
-    @Captor
-    ArgumentCaptor<TransactionCreatedEvent> kafkaValueCaptor;
-    @Captor
-    ArgumentCaptor<String> kafkaKeyCaptor;
-
-    @Value("${transaction-service.kafka.topic.out}")
-    private String topic;
 
     private static final String TRANSACTION_BY_UID_AND_USER_UID = "SELECT * from transaction.transactions WHERE uid = ? and user_uid = ?";
     private static final String WALLET_BY_UID_AND_USER_UID = "SELECT * from transaction.wallets WHERE uid = ? and user_uid = ?";
@@ -108,7 +97,6 @@ class TransactionServiceImplTest {
 
         verify(walletRepository, never()).save(any());
         verify(transactionRepository, never()).save(any());
-        verify(kafkaTemplate, never()).send(eq(topic), any(), any());
     }
 
 
@@ -132,7 +120,6 @@ class TransactionServiceImplTest {
 
         verify(walletRepository, never()).save(any());
         verify(transactionRepository, never()).save(any());
-        verify(kafkaTemplate, never()).send(eq(topic), any(), any());
     }
 
     @Sql("/sql/withdrawal.sql")
@@ -154,7 +141,6 @@ class TransactionServiceImplTest {
 
         verify(walletRepository, never()).save(any());
         verify(transactionRepository, never()).save(any());
-        verify(kafkaTemplate, never()).send(any(), any(), any());
     }
 
     @Sql("/sql/deposit.sql")
@@ -176,15 +162,6 @@ class TransactionServiceImplTest {
         expected.setFee(expectedFee);
         expected.setType("DEPOSIT");
         expected.setStatus("PENDING");
-
-        TransactionCreatedEvent expectedKafkaRequest = TransactionCreatedEvent.builder()
-                .amount(expectedAccrual)
-                .walletId(request.getWalletUid())
-                .userId(request.getUserUid())
-                .currency("RUB")
-                .type("DEPOSIT")
-                .timestamp(ZonedDateTime.parse("2026-06-06T10:00:34Z"))
-                .build();
 
         // when
         Mockito.when(clock.getZone()).thenReturn(fixed.getZone());
@@ -214,13 +191,6 @@ class TransactionServiceImplTest {
 
         assertThat(result)
                 .usingRecursiveComparison().ignoringFields("uid").isEqualTo(expected);
-        verify(kafkaTemplate).send(eq(topic), kafkaKeyCaptor.capture(), kafkaValueCaptor.capture());
-
-        assertThat(kafkaKeyCaptor.getValue()).isEqualTo(result.getUid().toString());
-        assertThat(kafkaValueCaptor.getValue())
-                .hasFieldOrPropertyWithValue("transactionId", result.getUid())
-                .usingRecursiveComparison().ignoringFields("transactionId")
-                .isEqualTo(expectedKafkaRequest);
     }
 
     @Sql("/sql/withdrawal.sql")
@@ -234,15 +204,6 @@ class TransactionServiceImplTest {
         var expectedFee = WITHDRAWAL_FEE.multiply(expectedAmount).setScale(2, HALF_EVEN);
         var expectedFinalAmount = expectedAmount.add(expectedFee).setScale(2, HALF_EVEN);
         var expectedBalance = balance.subtract(expectedFinalAmount).setScale(2, HALF_EVEN);
-
-        TransactionCreatedEvent kafkaRequest = TransactionCreatedEvent.builder()
-                .userId(request.getUserUid())
-                .currency("USD")
-                .timestamp(ZonedDateTime.parse("2026-06-06T10:00:34Z"))
-                .amount(expectedAmount)
-                .walletId(request.getWalletUid())
-                .type("WITHDRAWAL")
-                .build();
 
         // when
         Mockito.when(clock.getZone()).thenReturn(fixed.getZone());
@@ -280,15 +241,6 @@ class TransactionServiceImplTest {
                 .hasFieldOrPropertyWithValue("status", "active")
                 .hasFieldOrPropertyWithValue("archived_at", Timestamp.valueOf("2030-01-01 00:00:00"))
                 .hasFieldOrPropertyWithValue("balance", expectedBalance);
-
-        verify(kafkaTemplate).send(eq(topic), kafkaKeyCaptor.capture(), kafkaValueCaptor.capture());
-
-        assertThat(kafkaKeyCaptor.getValue()).isEqualTo(result.getUid().toString());
-        assertThat(kafkaValueCaptor.getValue())
-                .hasFieldOrPropertyWithValue("transactionId", result.getUid())
-                .usingRecursiveComparison()
-                .ignoringFields("transactionId")
-                .isEqualTo(kafkaRequest);
     }
 
     @Sql("/sql/transfer.sql")
@@ -353,8 +305,6 @@ class TransactionServiceImplTest {
                 .hasFieldOrPropertyWithValue("status", "active")
                 .hasFieldOrPropertyWithValue("archived_at", Timestamp.valueOf("2027-01-01 00:00:00"))
                 .hasFieldOrPropertyWithValue("balance", expectedTargetBalance);
-
-        verify(kafkaTemplate, never()).send(eq(topic), any(), any());
     }
 
     @Sql("/sql/fail-deposit.sql")

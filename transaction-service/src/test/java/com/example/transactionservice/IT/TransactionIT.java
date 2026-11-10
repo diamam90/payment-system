@@ -2,7 +2,6 @@ package com.example.transactionservice.IT;
 
 import com.example.transaction.dto.*;
 import com.example.transactionservice.config.DatabaseTestConfig;
-import com.example.transactionservice.config.KafkaTestConfig;
 import com.example.transactionservice.config.SecurityTestConfig;
 import com.example.transactionservice.entity.TransactionStatus;
 import com.example.transactionservice.repository.TransactionRepository;
@@ -49,8 +48,7 @@ import static org.springframework.http.HttpMethod.POST;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers(disabledWithoutDocker = true)
-@Import({KafkaTestConfig.class,
-        SecurityTestConfig.class,
+@Import({SecurityTestConfig.class,
         DatabaseTestConfig.class})
 public class TransactionIT {
 

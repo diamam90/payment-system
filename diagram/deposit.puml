@@ -7,8 +7,6 @@ participant PaymentService
 database psDb as "Payment DB"
 participant fpp as "FakePaymentProvider"
 
-queue Kafka
-
 == Init ==
 
 Client -> IndividualsAPI: POST /api/v1/transactions/init (type=deposit)
@@ -43,54 +41,53 @@ activate IndividualsAPI
                     TransactionService --> IndividualsAPI: ErrorResponse
                     IndividualsAPI --> Client: ErrorResponse
                 end
-            TransactionService -> Kafka: TransactionCreatedEvent
         end
+        tsDb --> TransactionService: transactionId
         TransactionService --> IndividualsAPI: TransactionConfirmResponse
-        IndividualsAPI -> PaymentService: POST /api/v1/payments PaymentRequest type=TRANSACTION
+        IndividualsAPI -> PaymentService: GET /api/v1/payment-methods PaymentFilter
         activate PaymentService
+            PaymentService -> psDb: get method by currencyCode countryCode and type
+            psDb --> PaymentService: PaymentMethod
+            PaymentService --> IndividualsAPI: PaymentMethodResponse
+            IndividualsAPI -> PaymentService: POST /api/v1/payments PaymentRequest paymentMethodId
             PaymentService -> psDb: insert into payments type=TRANSACTION status=PENDING
-
-
-                activate fpp
-                    break Payment DB unavailable
-                        PaymentService --> IndividualsAPI: ErrorResponse
-                        IndividualsAPI -> TransactionService: POST /api/v1/transactions/{transactionId}/compensate
-                        group transaction
-                            TransactionService -> tsDb: update transaction by id status=FAILED
-                            TransactionService -> Kafka: TransactionFailedEvent
-                        end
-                        TransactionService --> IndividualsAPI: ok
-                        IndividualsAPI --> Client: ErrorResponse
-                    end
-                    psDb --> PaymentService: payment id
-                    break Fake Payment Provider return Error
-                        PaymentService -> fpp: POST /api/v1/transactions
-                        fpp --> PaymentService: ErrorResponse
-                        PaymentService -> psDb: update payment by id status=FAILED
-                        PaymentService --> IndividualsAPI: ErrorResponse
-                        IndividualsAPI -> TransactionService: POST /api/v1/transactions/{transactionId}/compensate
-                        group transaction
-                            TransactionService -> tsDb: update transaction by id status=FAILED
-                            TransactionService -> Kafka: TransactionFailedEvent
-                        end
-                        TransactionService --> IndividualsAPI: ok
-                        IndividualsAPI --> Client: ErrorResponse
-                    end
-
-                    PaymentService -> fpp: POST /api/v1/transactions
-                    fpp -> fpp: обработка выплаты
-                    fpp --> PaymentService: Transaction status=PENDING, externalTransactionId
-                    PaymentService -> psDb: update payment by id set externalTransactionId
-                    psDb --> PaymentService: ok
-                    PaymentService --> IndividualsAPI: PaymentResponse type=TRANSACTION status=PENDING
-                    IndividualsAPI -> TransactionService: POST /api/v1/transactions/{transactionId}
-                    TransactionService -> tsDb: update transaction by id set externalTransactionId
-                    tsDb --> TransactionService: ok
+            activate fpp
+                break Payment DB unavailable
+                    PaymentService --> IndividualsAPI: ErrorResponse
+                    IndividualsAPI -> TransactionService: PATCH /api/v1/transactions/{transactionId} status = FAILED
+                    TransactionService -> tsDb: update transaction by id status=FAILED
                     TransactionService --> IndividualsAPI: ok
-                    IndividualsAPI --> Client: TransactionConfirmResponse status=PENDING
-                deactivate fpp
+                    IndividualsAPI --> Client: ErrorResponse
+                end
+                psDb --> PaymentService: payment id
+                break Fake Payment Provider return Error
+                    PaymentService -> fpp: POST /api/v1/transactions
+                    fpp --> PaymentService: ErrorResponse
+                    PaymentService -> psDb: update payment by id status=FAILED
+                    PaymentService --> IndividualsAPI: ErrorResponse
+                    IndividualsAPI -> TransactionService: PATCH /api/v1/transactions/{transactionId} status = FAILED
+                    TransactionService -> tsDb: update transaction by id status=FAILED
+                    TransactionService --> IndividualsAPI: ok
+                    IndividualsAPI --> Client: ErrorResponse
+                end
+                PaymentService -> fpp: POST /api/v1/transactions
+                fpp -> fpp: обработка выплаты
+                fpp --> PaymentService: Transaction status=SUCCESS, externalTransactionId
+            deactivate fpp
+            PaymentService -> psDb: update payment by id set externalTransactionId, status = SUCCESS
+            psDb --> PaymentService: ok
+            PaymentService --> IndividualsAPI: PaymentResponse type=TRANSACTION status=SUCCESS
         deactivate PaymentService
+        IndividualsAPI -> TransactionService: PATCH /api/v1/transactions/{transactionId} status = SUCCESS
+        group transaction
+            TransactionService -> TransactionService: пополнить баланс
+            TransactionService -> tsDb: update transaction by id set externalTransactionId, status = SUCCESS
+            TransactionService -> tsDb: update wallets increase balance
+        end
+        tsDb --> TransactionService: ok
+        TransactionService --> IndividualsAPI: ok
     deactivate TransactionService
+    IndividualsAPI --> Client: TransactionConfirmResponse status=SUCCESS
 deactivate IndividualsAPI
 
 @enduml

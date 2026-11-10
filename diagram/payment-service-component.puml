@@ -29,7 +29,7 @@ Rel(paymentService, paymentClient, "вызов")
 Rel(paymentService, paymentRepo, "вызов")
 Rel(methodService, methodRepo, "вызов")
 
-Rel(paymentClient, fakePayment, "вызов")
+Rel(paymentClient, fakePayment, "HTTP/REST")
 
 Rel(methodRepo, paymentDb, "вызов")
 Rel(paymentRepo, paymentDb, "вызов")
