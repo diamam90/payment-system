@@ -1,0 +1,17 @@
+{
+  "request": {
+    "url": "/api/v1/payment-methods?currencyCode=RUB&countryCode=RUS&type=PAYOUT",
+    "method": "GET"
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": {
+      "id": "777",
+      "name": "fake provider withdrawal",
+      "providerMethodType":  "fake provider withdrawal-228"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

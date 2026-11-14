@@ -9,8 +9,6 @@ import com.example.transactionservice.exception.BadRequestException;
 import com.example.transactionservice.exception.ObjectNotFoundException;
 import com.example.transactionservice.mapper.TransactionMapper;
 import com.example.transactionservice.model.TransactionFilter;
-import com.example.transactionservice.model.kafka.TransactionCompletedEvent;
-import com.example.transactionservice.model.kafka.TransactionCreatedEvent;
 import com.example.transactionservice.repository.TransactionRepository;
 import com.example.transactionservice.repository.TransactionSpecification;
 import com.example.transactionservice.service.TransactionService;
@@ -18,17 +16,13 @@ import com.example.transactionservice.service.WalletService;
 import io.micrometer.core.annotation.Counted;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.Clock;
-import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -43,13 +37,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     private final WalletService walletService;
     private final TransactionRepository transactionRepository;
-    private final KafkaTemplate<String, Object> kafka;
-
     private final TransactionMapper transactionMapper;
-    private final Clock clock;
-
-    @Value("${transaction-service.kafka.topic.out}")
-    private String topic;
 
     @Counted("deposit_init")
     @Override
@@ -129,12 +117,8 @@ public class TransactionServiceImpl implements TransactionService {
         Transaction transaction = deposit(wallet, accrual, fee, request.getComment());
         transactionRepository.save(transaction);
 
-        TransactionCreatedEvent transactionRequest = createMessage(transaction, TransactionType.DEPOSIT);
-
-        kafka.send(topic, transaction.getId().toString(), transactionRequest);
         log.info("Transaction with Id {} has been successfully saved", transaction.getId());
         log.debug("Transaction {} for userId {} ", transaction, request.getUserUid());
-        log.debug("{} sent to kafka", transactionRequest);
 
         return transactionMapper.toResponse(transaction);
     }
@@ -180,34 +164,34 @@ public class TransactionServiceImpl implements TransactionService {
         wallet.decreaseBalance(total);
         Transaction transaction = withdrawal(wallet, amount, fee, request.getComment());
         transactionRepository.save(transaction);
-
-        TransactionCreatedEvent transactionRequest = createMessage(transaction, TransactionType.WITHDRAWAL);
-        kafka.send(topic, transaction.getId().toString(), transactionRequest);
-
         log.info("Transaction with Id {} has been successfully saved", transaction.getId());
         log.debug("Transaction {} for userId {} ", transaction, request.getUserUid());
-        log.debug("{} sent to kafka", transactionRequest);
 
         return transactionMapper.toResponse(transaction);
     }
 
     @Counted("complete")
     @Override
-    public void complete(TransactionCompletedEvent event) {
-        Optional<Transaction> optionalTransaction = transactionRepository.findById(event.transactionId());
+    public void complete(UUID id, PatchTransactionRequest request) {
+        Optional<Transaction> optionalTransaction = transactionRepository.findByIdAndUserId(id, request.getUserUid());
         if (optionalTransaction.isEmpty()) {
-            log.info("Transaction with Id {} not found", event.transactionId());
-            return;
+            throw new ObjectNotFoundException("Transaction", "Id", id);
         }
 
         Transaction transaction = optionalTransaction.get();
+        if (TransactionType.DEPOSIT != transaction.getType() && TransactionType.WITHDRAWAL != transaction.getType()) {
+            throw new BadRequestException("У транзакции с идентификатором %s неподходящий для обновления тип".formatted(id));
+        }
         if (transaction.isFinished()) {
-            log.info("Transaction with Id {} has finished status", transaction.getId());
-            return;
+            throw new BadRequestException("Транзакция с идентификатором %s в финальном статусе".formatted(id));
         }
 
+        transaction.setStatus(TransactionStatus.valueOf(request.getStatus().name()));
+        transaction.setExternalTransactionId(request.getExternalTransactionId());
+
         Wallet wallet = transaction.getWallet();
-        transaction.setStatus(TransactionStatus.COMPLETED);
+
+        transaction.setStatus(TransactionStatus.SUCCESS);
         log.info("Transaction with id {} completed", transaction.getId());
         if (TransactionType.DEPOSIT.equals(transaction.getType())) {
             BigDecimal accrual = transaction.getAmount().setScale(2, HALF_EVEN);
@@ -218,21 +202,25 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Counted("fail")
     @Override
-    public void fail(TransactionCompletedEvent event) {
-        Optional<Transaction> optionalTransaction = transactionRepository.findById(event.transactionId());
+    public void fail(UUID id, PatchTransactionRequest request) {
+        Optional<Transaction> optionalTransaction = transactionRepository.findByIdAndUserId(id, request.getUserUid());
         if (optionalTransaction.isEmpty()) {
-            log.info("Transaction with Id {} not found", event.transactionId());
-            return;
+            throw new ObjectNotFoundException("Transaction", "Id", id);
         }
 
         Transaction transaction = optionalTransaction.get();
-        if (transaction.isFinished()) {
-            log.info("Transaction with Id {} has finished status", transaction.getId());
-            return;
+        if (TransactionType.DEPOSIT != transaction.getType() && TransactionType.WITHDRAWAL != transaction.getType()) {
+            throw new BadRequestException("У транзакции с идентификатором %s неподходящий для обновления тип".formatted(id));
         }
-        Wallet wallet = transaction.getWallet();
+        if (transaction.isFinished()) {
+            throw new BadRequestException("Транзакция с идентификатором %s в финальном статусе".formatted(id));
+        }
+
         transaction.setStatus(TransactionStatus.FAILED);
-        transaction.setFailureReason(event.failureReason());
+        transaction.setExternalTransactionId(request.getExternalTransactionId());
+
+        Wallet wallet = transaction.getWallet();
+
         log.info("Transaction with id {} failed", transaction.getId());
         if (TransactionType.WITHDRAWAL.equals(transaction.getType())) {
             BigDecimal amount = transaction.getAmount().setScale(2, HALF_EVEN);
@@ -249,8 +237,8 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public Transaction findById(UUID transactionId) {
-        return transactionRepository.findById(transactionId).orElseThrow(() -> new ObjectNotFoundException("Transaction", transactionId));
+    public Transaction findByIdAndUserId(UUID transactionId, UUID userId) {
+        return transactionRepository.findByIdAndUserId(transactionId, userId).orElseThrow(() -> new ObjectNotFoundException("Transaction", transactionId));
     }
 
     private void checkWalletStatus(Wallet wallet, TransactionType type) {
@@ -303,7 +291,7 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setUserId(wallet.getUserId());
         transaction.setWallet(wallet);
         transaction.setTargetWallet(targetWallet);
-        transaction.setStatus(TransactionStatus.COMPLETED);
+        transaction.setStatus(TransactionStatus.SUCCESS);
         transaction.setAmount(accrual);
         transaction.setFee(fee);
         transaction.setType(TransactionType.TRANSFER);
@@ -323,18 +311,5 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setComment(comment);
 
         return transaction;
-    }
-
-    private TransactionCreatedEvent createMessage(Transaction transaction, TransactionType type) {
-        return TransactionCreatedEvent
-                .builder()
-                .transactionId(transaction.getId())
-                .userId(transaction.getWallet().getUserId())
-                .walletId(transaction.getWallet().getId())
-                .currency(transaction.getWallet().getType().getCurrencyCode())
-                .amount(transaction.getAmount())
-                .timestamp(ZonedDateTime.now(clock))
-                .type(type.name())
-                .build();
     }
 }

@@ -9,7 +9,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring", uses = DateTimeMapper.class)
 public interface TransactionMapper {
 
-    @Mapping(target = "status", constant = "PENDING")
+    @Mapping(target = "status", constant = "SUCCESS")
     Transaction create(TransactionRequest request);
 
     @Mapping(target = "createdAt", source = "createdAt", qualifiedByName = {"DateTimeMapper", "toZDT"})

@@ -8,7 +8,6 @@ Component(wsController, "Wallet Controller", "Rest Controller", "Обрабат�
 Component(tsDispatcher, "Transaction Dispatcher", "Component", "Перенаправляет транзакции")
 Component(tsService,"Transaction Service","Service","Пополнение, перевод и  вывод денежных средств")
 Component(wsService, "Wallet Service", "Service", "Операции над кошельками пользователей")
-Component(kafka,"Kafka Client","Spring Kafka")
 ComponentDb(db1,"Transaction DB_1","Шард №1")
 ComponentDb(db2,"Transaction DB_2","Шард №2")
 
@@ -18,7 +17,7 @@ Component(shard,"ShardingSphereDataSource","Шардирование")
 
 Component(tsDto, "Transaction Dto", "Сгенерированные ДТО")
 Component(wsDto, "Wallet Dto", "Сгенерированные ДТО")
-Component(kafkaDto, "Kafka Dto", "Kafka ДТО")
+
 
 Lay_R(ts, wsController)
 Lay_R(wsController, tsController)
@@ -39,11 +38,7 @@ Rel(tsRepo,shard, "вызов")
 Rel(shard,db1,"вызов")
 Rel(shard,db2,"вызов")
 
-Rel_R(kafka, kafkaDto, "использует")
 Rel_R(tsController, tsDto, "использует")
 Rel(wsController, wsDto, "использует")
-
-
-BiRel_R(tsService, kafka,"produce/consume")
 
 @enduml

@@ -2,12 +2,15 @@ package com.example.individualsapi.configuration;
 
 import com.example.currency.api.CurrencyApi;
 import com.example.currency.api.CurrencyRateApi;
+import com.example.payment.api.PaymentApi;
+import com.example.payment.api.PaymentMethodApi;
 import io.micrometer.observation.ObservationRegistry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.support.WebClientAdapter;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 @Configuration
@@ -29,18 +32,48 @@ public class HttpServiceConfig {
     }
 
     @Bean
-    WebClient currateWebClient() {
-        return WebClient
+    RestClient currateRestClient() {
+        return RestClient
                 .builder()
                 .observationRegistry(observationRegistry)
                 .baseUrl(properties.getCurrencyRate().getBaseUrl())
-                .filter(new AdminTokenFilterFunction(tokenHolder))
+                .requestFactory(new SimpleClientHttpRequestFactory())
+                .requestInterceptor(new AdminTokenClientHttpRequestInterceptor(tokenHolder))
                 .build();
     }
 
     @Bean
-    HttpServiceProxyFactory currateHttpServiceProxyFactory(WebClient currateWebClient) {
-        WebClientAdapter webClientAdapter = WebClientAdapter.create(currateWebClient);
-        return HttpServiceProxyFactory.builderFor(webClientAdapter).build();
+    HttpServiceProxyFactory currateHttpServiceProxyFactory(RestClient currateRestClient) {
+        RestClientAdapter restClientAdapter = RestClientAdapter.create(currateRestClient);
+        return HttpServiceProxyFactory.builderFor(restClientAdapter).build();
+    }
+
+    @Bean
+    RestClient paymentRestClient() {
+        return RestClient
+                .builder()
+                .observationRegistry(observationRegistry)
+                .baseUrl(properties.getPayment().getBaseUrl())
+                .requestFactory(new SimpleClientHttpRequestFactory())
+                .requestInterceptor(new AdminTokenClientHttpRequestInterceptor(tokenHolder))
+                .build();
+    }
+
+    @Bean
+    HttpServiceProxyFactory paymentHttpServiceProxyFactory(RestClient paymentRestClient) {
+        RestClientAdapter restClientAdapter = RestClientAdapter.create(paymentRestClient);
+        return HttpServiceProxyFactory.builderFor(restClientAdapter)
+                .customArgumentResolver(new PaymentMethodFilterArgumentResolver())
+                .build();
+    }
+
+    @Bean
+    PaymentApi paymentApi(HttpServiceProxyFactory paymentHttpServiceProxyFactory) {
+        return paymentHttpServiceProxyFactory.createClient(PaymentApi.class);
+    }
+
+    @Bean
+    PaymentMethodApi paymentMethodApi(HttpServiceProxyFactory paymentHttpServiceProxyFactory) {
+        return paymentHttpServiceProxyFactory.createClient(PaymentMethodApi.class);
     }
 }

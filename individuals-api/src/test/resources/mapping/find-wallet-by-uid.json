@@ -4,7 +4,7 @@
     "method": "GET"
   },
   "response": {
-    "status": 201,
+    "status": 200,
     "jsonBody": {
       "uid": "00000000-0000-0000-0000-000000000001",
       "name": "IT test wallet",

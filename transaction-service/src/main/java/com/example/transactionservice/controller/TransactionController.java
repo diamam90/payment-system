@@ -34,8 +34,8 @@ public class TransactionController implements TransactionApi {
     }
 
     @Override
-    public ResponseEntity<TransactionStatusResponse> getTransactionsStatusById(UUID transactionId) {
-        Transaction transaction = transactionService.findById(transactionId);
+    public ResponseEntity<TransactionStatusResponse> getTransactionsStatus(UUID transactionId, UUID userId) {
+        Transaction transaction = transactionService.findByIdAndUserId(transactionId, userId);
         TransactionStatusResponse response = transactionMapper.toTransactionStatusResponse(transaction);
         return ResponseEntity.ok(response);
     }
@@ -50,5 +50,15 @@ public class TransactionController implements TransactionApi {
     public ResponseEntity<TransactionInitResponse> transactionInit(TransactionInitRequest transactionInitRequest) {
         TransactionInitResponse response = transactionDispatcher.dispatchInit(transactionInitRequest);
         return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<Void> updateTransactionStatus(UUID transactionId, PatchTransactionRequest request) {
+        switch (request.getStatus()) {
+            case FAILED -> transactionService.fail(transactionId, request);
+            case SUCCESS -> transactionService.complete(transactionId, request);
+        }
+
+        return ResponseEntity.ok().build();
     }
 }

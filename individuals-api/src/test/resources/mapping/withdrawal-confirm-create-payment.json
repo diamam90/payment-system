@@ -1,0 +1,29 @@
+{
+  "request": {
+    "url": "/api/v1/payments",
+    "method": "POST",
+    "bodyPatterns": [
+      {
+        "matchesJsonPath": {
+          "expression": "$.internalTransactionUid",
+          "equalTo": "00000000-0000-0000-0000-000000000002"
+        }
+      }
+    ]
+  },
+  "response": {
+    "status": 201,
+    "jsonBody": {
+      "providerTransactionId": "prosto transaction id",
+      "internalTransactionId": "{{jsonPath request.body '$.internalTransactionUid'}}",
+      "amount": "{{jsonPath request.body '$.amount'}}",
+      "status": "SUCCESS"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "transformers": [
+      "response-template"
+    ]
+  }
+}

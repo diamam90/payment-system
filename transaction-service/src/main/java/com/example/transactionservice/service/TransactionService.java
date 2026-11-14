@@ -3,7 +3,6 @@ package com.example.transactionservice.service;
 import com.example.transaction.dto.*;
 import com.example.transactionservice.entity.Transaction;
 import com.example.transactionservice.model.TransactionFilter;
-import com.example.transactionservice.model.kafka.TransactionCompletedEvent;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -23,11 +22,12 @@ public interface TransactionService {
 
     TransactionConfirmResponse withdrawalConfirm(WithdrawalConfirmRequest request);
 
-    void complete(TransactionCompletedEvent event);
+    void complete(UUID transactionId, PatchTransactionRequest request);
 
-    void fail(TransactionCompletedEvent event);
+    void fail(UUID transactionId, PatchTransactionRequest request);
 
     Page<Transaction> findBy(TransactionFilter filter, Pageable pageable);
 
-    Transaction findById(UUID transactionId);
+    Transaction findByIdAndUserId(UUID transactionId, UUID userId);
+
 }

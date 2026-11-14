@@ -2,7 +2,6 @@ package com.example.transactionservice.IT;
 
 import com.example.transaction.dto.WalletResponse;
 import com.example.transactionservice.config.DatabaseTestConfig;
-import com.example.transactionservice.config.KafkaTestConfig;
 import com.example.transactionservice.config.SecurityTestConfig;
 import com.example.transactionservice.service.WalletService;
 import com.example.transactionservice.util.KeycloakUtils;
@@ -27,8 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers(disabledWithoutDocker = true)
-@Import({KafkaTestConfig.class,
-        SecurityTestConfig.class,
+@Import({SecurityTestConfig.class,
         DatabaseTestConfig.class})
 public class WalletControllerIT {
 
