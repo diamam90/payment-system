@@ -12,35 +12,38 @@ System_Boundary(payment, "Payment system") {
 
     Container(ts, "Transaction Service", "Spring Boot", "Сервис транзакций")
     ContainerDb(tsDb, "Transaction DB", "Transaction Database")
+
     Container(ngnx, "Nginx", "Балансировка запросов")
     Container(crs1, "Currency Rate Service", "Spring boot", "Получение, хранение, расчет курсов валют")
     Container(crs2, "Currency Rate Service", "Spring boot", "Получение, хранение, расчет курсов валют")
     Container(crs3, "Currency Rate Service", "Spring boot", "Получение, хранение, расчет курсов валют")
-
     ContainerDb(crsDb, "Currency Rate DB", "Currency Rate Database")
+
+    Container(paymentService, "Payment Service", "Spring Boot", "Сервис обработки платежей")
+    ContainerDb(paymentDb, "Payment DB","Хранение платежей")
 }
 
-System_Ext(auth, "Authentication"){
-    Container(kc, "Keycloak", "Keycloak")
-    ContainerDb(kcDb, "Keycloak DB", "Keycloak Database")
+System_Ext(auth, "Authentication") {
+    Container_Ext(kc, "Keycloak", "Keycloak")
+    ContainerDb_Ext(kcDb, "Keycloak DB", "Keycloak Database")
 }
 
 System_Ext(obs, "Observability") {
-    Container(alloy, "Grafana Alloy", "MELT agent")
-    Container(grafana,  "Grafana", "Визуализация логов/метрик/трейсов")
-    ContainerDb(prometheus, "Prometheus", "Хранилище метрик")
-    ContainerDb(loki, "Grafana Loki", "Хранилище логов")
-    ContainerDb(tempo, "Grafana Tempo","Хранилище трассировок")
+    Container_Ext(alloy, "Grafana Alloy", "MELT agent")
+    Container_Ext(grafana,  "Grafana", "Визуализация логов/метрик/трейсов")
+    ContainerDb_Ext(prometheus, "Prometheus", "Хранилище метрик")
+    ContainerDb_Ext(loki, "Grafana Loki", "Хранилище логов")
+    ContainerDb_Ext(tempo, "Grafana Tempo","Хранилище трассировок")
 }
 
 System_Ext(rateProvider, "External Rate Providers") {
-    Container(currate, "Currate")
+    Container_Ext(currate, "Currate")
 }
 
 System_Ext(extProviderSystem, "External Payment Provider System", "Внешняя платежная система") {
-    Container(fakePP, "Fake Payment Provider", "Эмулятор платежного провайдера")
-    Container(extNet, "External Test Service","Имитация внешней сети")
-    ContainerDb(fakePPDb, "Fake Payment Db", "Fake Payment Database")
+    Container_Ext(fakePP, "Fake Payment Provider", "Эмулятор платежного провайдера")
+    Container_Ext(extNet, "External Test Service","Имитация внешней сети")
+    ContainerDb_Ext(fakePPDb, "Fake Payment Db", "Fake Payment Database")
 
     note left of extNet
       Обработка webhook:
@@ -57,26 +60,29 @@ Rel_R(client, indApi,"Http","Запрос пользователя")
 
 Rel_D(indApi, ps,"Http", "Управление пользователями")
 Rel_D(ps,psDb, "Read/Write")
-Rel_D(ts,ngnx, "Http","Расчет валют")
+Rel_D(indApi,ngnx, "Http","Расчет валют")
 Rel_D(ngnx, crs1, "Маршрутизация запросов")
 Rel_D(ngnx, crs2, "Маршрутизация запросов")
 Rel_D(ngnx, crs3, "Маршрутизация запросов")
 Rel_D(crs1, crsDb, "Read/Write")
 Rel_D(crs2, crsDb, "Read/Write")
 Rel_D(crs3, crsDb, "Read/Write")
-Rel(crs1, rateProvider, "Http","Получение курсов валют")
-Rel(crs2, rateProvider, "Http","Получение курсов валют")
-Rel(crs3, rateProvider, "Http","Получение курсов валют")
+Rel_D(crs1, rateProvider, "Http","Получение курсов валют")
+Rel_D(crs2, rateProvider, "Http","Получение курсов валют")
+Rel_D(crs3, rateProvider, "Http","Получение курсов валют")
 
 Rel_D(indApi,ts,"Http","Управление платежами")
 Rel_D(ts,tsDb, "Read/Write")
 
-Rel(indApi, kc, "Http","Создание пользователей")
+Rel_U(indApi, kc, "Http","Создание пользователей")
 Rel_R(kc,kcDb,"Read/Write")
 
 Rel_D(extNet, fakePP, "Http", "Отправка вебхуков")
 Rel_D(fakePP, fakePPDb, "Read/Write","Хранение транзакций и вебхуков")
-Rel_L(ps, fakePP, "Http", "Взаимодействие с выплатами и пополнениями")
+
+Rel(indApi,paymentService,"Http","Проведение платежей")
+Rel_L(paymentService, fakePP, "Http", "Взаимодействие с выплатами и пополнениями")
+Rel_D(paymentService, paymentDb, "Хранение платежей")
 
 Rel_D(grafana, prometheus,"Чтение метрик")
 Rel_D(grafana, loki,"Чтение логов")
@@ -92,4 +98,5 @@ Rel(alloy, kcDb, "Сбор метрик с БД")
 Rel(ps, nexus, "Публикация SDK","JAR")
 Rel(ts, nexus, "Публикация SDK","JAR")
 Rel(crs3, nexus, "Публикация SDK","JAR")
+Rel(paymentService, nexus, "Публикация SDK", "JAR")
 @enduml
