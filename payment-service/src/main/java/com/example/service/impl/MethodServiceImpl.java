@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -18,14 +20,14 @@ public class MethodServiceImpl implements MethodService {
     private final MethodRepository methodRepository;
 
     @Override
-    public PaymentMethod findByCurrencyAndCountryAndType(@NotNull String currency, @NotNull String country, @NotNull PaymentType type) {
-        return methodRepository.findByCurrencyAndCountryAndType(currency, country, type).stream().findAny()
-                .orElseThrow(() -> ObjectNotFoundException.paymentMethod(currency, country, type));
+    public List<PaymentMethod> findByCurrencyAndCountryAndType(@NotNull String currency, String country, PaymentType type) {
+        if (type == null) return methodRepository.findByCurrencyAndCountry(currency, country);
+        return methodRepository.findByCurrencyAndCountryAndType(currency, country, type);
     }
 
     @Override
-    public PaymentMethod findById(Integer id) {
-        return methodRepository.findById(id)
+    public PaymentMethod findActiveById(Integer id) {
+        return methodRepository.findActiveById(id)
                 .orElseThrow(() -> new ObjectNotFoundException("PaymentMethod", "id", id));
     }
 }

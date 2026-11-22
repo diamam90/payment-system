@@ -7,15 +7,17 @@ VALUES (1, 1, 'PAYOUT', 'payout', 'provider 228', 'provider method type 1', true
        (2, 1, 'TRANSACTION', 'transaction', 'provider 228', 'CASH', true),
        (3, 1, 'TRANSACTION', 'transaction', 'provider 228', 'CARD', false),
        (4, 1, 'TRANSACTION', 'transaction', 'provider 228', 'provider method type 4', true),
-       (5, 1, 'TRANSACTION', 'transaction', 'provider 228', 'provider method type 5', true);
+       (5, 1, 'TRANSACTION', 'transaction', 'provider 228', 'provider method type 5', true),
+       (6, 1, 'PAYOUT', 'payout', 'provider 228', 'provider method type 6', true);
 
 INSERT INTO payment.payment_method_definitions (payment_method_id, currency_code, country_alpha3_code,
                                                 is_all_currencies, is_all_countries)
-VALUES (1, 'RUB', 'RUS', true, true),
+VALUES (1, 'JPY', 'RUS', true, true),
        (2, 'USD', 'KZH', true, false),
        (3, 'RUB', 'USA', false, false),
        (4, 'RUB', 'BBB', false, true),
-       (5, 'EUR', 'AAA', false, false);
+       (5, 'EUR', 'AAA', false, false),
+       (6, 'JPY', 'AAA', false, false);
 
 INSERT INTO payment.payment_method_required_fields (payment_method_id, payment_type, name, data_type)
 VALUES (1, 'some payment type 1', '228 name', 'data type 1'),

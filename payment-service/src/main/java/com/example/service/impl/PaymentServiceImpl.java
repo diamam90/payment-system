@@ -45,7 +45,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public Payment create(@NotNull PaymentRequest request) {
-        PaymentMethod method = methodService.findById(request.getMethodId());
+        PaymentMethod method = methodService.findActiveById(request.getMethodId());
         Payment payment = draft(request, method);
         paymentRepository.saveAndFlush(payment);
         meterRegistry.counter("payments", "status", "PENDING").increment();

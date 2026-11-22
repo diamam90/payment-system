@@ -31,19 +31,18 @@ class MethodRepositoryTest {
     @Autowired
     JdbcTemplate jdbc;
 
-    private static final String TRUNCATE_PAYMENTS_QUERY = "TRUNCATE payment.payments";
-    private static final String TRUNCATE_PAYMENTS_PROVIDER = "TRUNCATE payment.payment_providers CASCADE";
-
     @AfterEach
     void clear() {
-        jdbc.execute(TRUNCATE_PAYMENTS_QUERY);
-        jdbc.execute(TRUNCATE_PAYMENTS_PROVIDER);
+        jdbc.execute("DELETE FROM payment.payment_method_definitions WHERE payment_method_id NOT IN (10,11)");
+        jdbc.execute("DELETE FROM payment.payment_method_required_fields WHERE payment_method_id NOT IN (10,11)");
+        jdbc.execute("DELETE FROM payment.payment_methods WHERE id NOT IN (10,11)");
+        jdbc.execute("DELETE FROM payment.payment_providers WHERE id NOT IN (2)");
     }
 
     @Sql("/sql/find-by-currency-and-country-codes.sql")
     @Test
-    void findByCurrencyAndCountryCodes_whenCurrencyAndCountryIsPresent_shouldReturnPaymentMethod() {
-        String currency = "RUB", country = "USA";
+    void findByCurrencyAndCountryAndType_whenCountryNotEqualsButIsAllCountriesIsTrue_shouldReturnPaymentMethod() {
+        String currency = "JPY", country = "USA";
 
         List<PaymentMethod> result = methodRepository.findByCurrencyAndCountryAndType(currency, country, PaymentType.PAYOUT);
 
@@ -51,11 +50,35 @@ class MethodRepositoryTest {
                 .hasSize(1)
                 .first()
                 .hasFieldOrPropertyWithValue("providerMethodType", "provider method type 1")
-                .hasFieldOrPropertyWithValue("paymentMethodDefinition.currencyCode", "RUB")
+                .hasFieldOrPropertyWithValue("paymentMethodDefinition.currencyCode", currency)
                 .hasFieldOrPropertyWithValue("paymentMethodDefinition.countryAlpha3Code", "RUS")
                 .extracting("paymentMethodRequiredFields", InstanceOfAssertFactories.LIST).hasSize(2)
                 .extracting("paymentType", "dataType")
                 .contains(Tuple.tuple("some payment type 1", "data type 1"), Tuple.tuple("some payment type 2", "data type 2"));
+    }
+
+    @Sql("/sql/find-by-currency-and-country-codes.sql")
+    @Test
+    void findByCurrencyAndCountry_whenCountryIsNull_shouldReturnPaymentMethodWithAllCountryIsTrue() {
+        String currency = "JPY", country = null;
+
+        List<PaymentMethod> result = methodRepository.findByCurrencyAndCountry(currency, country);
+        assertThat(result)
+                .hasSize(1)
+                .extracting("id")
+                .containsOnly(1);
+    }
+
+    @Sql("/sql/find-by-currency-and-country-codes.sql")
+    @Test
+    void findByCurrencyAndCountry_whetIsAllCountriesITrue_shouldReturnPaymentMethod() {
+        String currency = "JPY", country = "AAA";
+
+        List<PaymentMethod> result = methodRepository.findByCurrencyAndCountry(currency, country);
+        assertThat(result)
+                .hasSize(2)
+                .extracting("id")
+                .containsOnly(1, 6);
     }
 
     @Sql("/sql/find-by-currency-and-country-codes.sql")

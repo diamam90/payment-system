@@ -22,7 +22,8 @@ paths:
       summary: Получение доступных методов оплаты
       parameters:
         - in: query
-          name: currencyCode
+          name: paymentFilter
+          required: true
           schema:
             $ref: '#/components/schemas/PaymentMethodFilter'
 
@@ -32,7 +33,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaymentMethodResponse'
+                items:
+                  $ref: '#/components/schemas/PaymentMethodResponse'
         '400':
           description: Некорректный запрос
           content:
@@ -109,7 +111,7 @@ components:
           pattern: '[A-Z]{3}'
         type:
           enum: [ TRANSACTION, PAYOUT ]
-      required: [ currencyCode, type ]
+      required: [ currencyCode ]
 
     PaymentMethodResponse:
       type: object

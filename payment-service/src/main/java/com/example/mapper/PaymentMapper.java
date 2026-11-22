@@ -5,7 +5,7 @@ import com.example.payment.dto.PaymentResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring", uses = RequiredFieldMapper.class)
+@Mapper(componentModel = "spring")
 public interface PaymentMapper {
 
     @Mapping(source = "externalTransactionId", target = "providerTransactionId")

@@ -3,6 +3,7 @@ package com.example.IT;
 import com.example.config.TestConfig;
 import com.example.fake.api.PayoutApi;
 import com.example.fake.api.TransactionApi;
+import com.example.repository.PaymentRepository;
 import org.apache.http.HttpHeaders;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
@@ -49,15 +50,18 @@ class PaymentControllerIT {
     PayoutApi payoutApi;
     @MockitoSpyBean
     TransactionApi transactionApi;
+    @MockitoSpyBean
+    PaymentRepository paymentRepository;
 
     private static final String PAYMENT_BY_INTERNAL_ID_QUERY = "SELECT * FROM payment.payments WHERE internal_transaction_id = ?";
-    private static final String TRUNCATE_PAYMENTS_QUERY = "TRUNCATE payment.payments CASCADE";
-    private static final String TRUNCATE_PAYMENTS_PROVIDER = "TRUNCATE payment.payment_providers CASCADE";
 
     @AfterEach
     void clear() {
-        jdbc.execute(TRUNCATE_PAYMENTS_QUERY);
-        jdbc.execute(TRUNCATE_PAYMENTS_PROVIDER);
+        jdbc.execute("DELETE FROM payment.payments");
+        jdbc.execute("DELETE FROM payment.payment_method_definitions WHERE payment_method_id NOT IN (10,11)");
+        jdbc.execute("DELETE FROM payment.payment_method_required_fields WHERE payment_method_id NOT IN (10,11)");
+        jdbc.execute("DELETE FROM payment.payment_methods WHERE id NOT IN (10,11)");
+        jdbc.execute("DELETE FROM payment.payment_providers WHERE id NOT IN (2)");
     }
 
     @Sql("/sql/find-by-currency-and-country-codes.sql")
@@ -89,6 +93,31 @@ class PaymentControllerIT {
                 .hasFieldOrPropertyWithValue("external_transaction_id", "1");
 
         verify(payoutApi).createPayout(any());
+        verify(transactionApi, never()).createTransaction(any());
+    }
+
+    @Sql("/sql/payment-method-is-active-false.sql")
+    @Test
+    void createPayment_WhenMethodIsNotActive_shouldReturnObjectNotFound() throws Exception {
+        String token = keycloakAdmin.tokenManager().getAccessToken().getToken();
+        mvc.perform(post("/api/v1/payments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .content("""
+                                {
+                                    "internalTransactionUid": "00000000-0000-0000-0000-000000000012",
+                                    "methodId": 1,
+                                    "amount": 50.03,
+                                    "currency": "RUB"
+                                }
+                                """))
+                .andExpectAll(status().isNotFound(),
+                        jsonPath("error").value("ERROR_404"),
+                        jsonPath("message").value("PaymentMethod with param id: 1 not found")
+                );
+
+        verify(paymentRepository, never()).saveAndFlush(any());
+        verify(payoutApi, never()).createPayout(any());
         verify(transactionApi, never()).createTransaction(any());
     }
 

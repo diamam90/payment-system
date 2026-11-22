@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 public class MethodController implements PaymentMethodApi {
@@ -19,10 +21,10 @@ public class MethodController implements PaymentMethodApi {
     private final MethodMapper methodMapper;
 
     @Override
-    public ResponseEntity<PaymentMethodResponse> getPaymentMethods(PaymentMethodFilter filter) {
-        PaymentType type = PaymentType.valueOf(filter.getType().name());
-        PaymentMethod method = methodService.findByCurrencyAndCountryAndType(filter.getCurrencyCode(), filter.getCountryCode(), type);
-        PaymentMethodResponse body = methodMapper.toResponse(method);
+    public ResponseEntity<List<PaymentMethodResponse>> getPaymentMethods(PaymentMethodFilter filter) {
+        PaymentType type = filter.getType() != null ? PaymentType.valueOf(filter.getType().name()) : null;
+        List<PaymentMethod> methods = methodService.findByCurrencyAndCountryAndType(filter.getCurrencyCode(), filter.getCountryCode(), type);
+        List<PaymentMethodResponse> body = methods.stream().map(methodMapper::toResponse).toList();
         return ResponseEntity.ok(body);
     }
 }
