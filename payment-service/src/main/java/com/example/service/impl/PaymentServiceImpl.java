@@ -1,12 +1,11 @@
 package com.example.service.impl;
 
+import com.example.client.FakeProviderClient;
 import com.example.entity.Payment;
 import com.example.entity.PaymentMethod;
 import com.example.entity.PaymentMethodDefinition;
 import com.example.entity.Status;
 import com.example.exception.ExternalServiceUnavailableException;
-import com.example.fake.api.PayoutApi;
-import com.example.fake.api.TransactionApi;
 import com.example.fake.dto.PayoutRequest;
 import com.example.fake.dto.PayoutResponse;
 import com.example.fake.dto.TransactionRequest;
@@ -18,17 +17,14 @@ import com.example.service.MethodService;
 import com.example.service.PaymentService;
 import com.example.util.TransactionRunner;
 import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.client.RestClientException;
 
 import java.util.Optional;
-import java.util.UUID;
-import java.util.function.Supplier;
 
 @Slf4j
 @Service
@@ -38,11 +34,12 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final MethodService methodService;
     private final PaymentRepository paymentRepository;
-    private final PayoutApi payoutApi;
-    private final TransactionApi transactionApi;
+    private final FakeProviderClient fakeProviderClient;
     private final TransactionRunner transactionRunner;
     private final FakePaymentProviderMapper fakePaymentProviderMapper;
     private final MeterRegistry meterRegistry;
+
+    private static final String SUCCESS_STATUS = "SUCCESS";
 
     @Override
     public Payment create(@NotNull PaymentRequest request) {
@@ -60,21 +57,11 @@ public class PaymentServiceImpl implements PaymentService {
 
         try {
             switch (method.getType()) {
-                case PAYOUT -> {
-                    PayoutRequest req = fakePaymentProviderMapper.payout(payment);
-                    PayoutResponse response = executeRequest(() -> payoutApi.createPayout(req));
-                    transferToSuccess(payment.getId(), response.getId().toString());
-                }
-                case TRANSACTION -> {
-                    TransactionRequest req = fakePaymentProviderMapper.transaction(payment);
-                    TransactionResponse response = executeRequest(() -> transactionApi.createTransaction(req));
-                    transferToSuccess(payment.getId(), response.getId().toString());
-                }
+                case PAYOUT -> processPayout(payment);
+                case TRANSACTION -> processTransaction(payment);
             }
-            meterRegistry.counter("payments", "status", "SUCCESS").increment();
         } catch (ExternalServiceUnavailableException ex) {
             transferToFailed(payment.getId());
-            meterRegistry.counter("payments", "status", "FAILED").increment();
             throw ex;
         }
         return payment;
@@ -101,6 +88,28 @@ public class PaymentServiceImpl implements PaymentService {
         return payment;
     }
 
+    private void processPayout(Payment payment) {
+        PayoutRequest req = fakePaymentProviderMapper.payout(payment);
+        PayoutResponse response = fakeProviderClient.createPayout(req);
+        if (SUCCESS_STATUS.equals(response.getStatus())) {
+            transferToSuccess(payment.getId(), response.getId().toString());
+        } else {
+            log.error("Ответ от провайдер сервиса не подтвердил выплату, статус: {}", response.getStatus());
+            transferToFailed(payment.getId(), String.valueOf(response.getId()));
+        }
+    }
+
+    private void processTransaction(Payment payment) {
+        TransactionRequest req = fakePaymentProviderMapper.transaction(payment);
+        TransactionResponse response = fakeProviderClient.createTransaction(req);
+        if (SUCCESS_STATUS.equals(response.getStatus())) {
+            transferToSuccess(payment.getId(), response.getId().toString());
+        } else {
+            log.error("Ответ от провайдер сервиса не подтвердил пополнение, статус: {}", response.getStatus());
+            transferToFailed(payment.getId(), String.valueOf(response.getId()));
+        }
+    }
+
     private void transferToSuccess(Long paymentId, String providerId) {
         Status success = Status.SUCCESS;
         boolean isTransferred = transactionRunner.requiredWithResult(() -> {
@@ -120,10 +129,17 @@ public class PaymentServiceImpl implements PaymentService {
             return true;
         });
 
-        if (isTransferred) log.info("Платеж с идентификатором {} переведен в статус {}", paymentId, success);
+        if (isTransferred) {
+            log.info("Платеж с идентификатором {} переведен в статус {}", paymentId, success);
+            meterRegistry.counter("payments", "status", "SUCCESS").increment();
+        }
     }
 
     private void transferToFailed(Long paymentId) {
+        transferToFailed(paymentId, null);
+    }
+
+    private void transferToFailed(Long paymentId, @Nullable String externalTransactionId) {
         Status failed = Status.FAILED;
         boolean isTransferred = transactionRunner.requiredWithResult(() -> {
             Optional<Payment> optional = paymentRepository.findByIdPessimisticWrite(paymentId);
@@ -136,18 +152,13 @@ public class PaymentServiceImpl implements PaymentService {
                 log.error("Платеж с идентификатором {} в финальном статусе {}, перевод не возможен", paymentId, payment.getStatus());
                 return false;
             }
+            if (externalTransactionId != null) payment.setExternalTransactionId(externalTransactionId);
             payment.setStatus(failed);
             return true;
         });
-        if (isTransferred) log.info("Платеж с идентификатором {} переведен в статус {}", paymentId, failed);
-    }
-
-    private <R> R executeRequest(Supplier<ResponseEntity<R>> executable) {
-        try {
-            return executable.get().getBody();
-        } catch (RestClientException ex) {
-            log.error("FakeProviderProvider вернул ошибку: {}", ex.getMessage(), ex);
-            throw new ExternalServiceUnavailableException("FakePaymentProvider");
+        if (isTransferred) {
+            log.info("Платеж с идентификатором {} переведен в статус {}", paymentId, failed);
+            meterRegistry.counter("payments", "status", "FAILED").increment();
         }
     }
 }

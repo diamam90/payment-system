@@ -123,6 +123,38 @@ class PaymentControllerIT {
         verify(transactionApi, never()).createTransaction(any());
     }
 
+    @Sql("/sql/find-by-currency-and-country-codes.sql")
+    @Test
+    void createPayment_whenFakeProviderReturns200WithStatusNotEqualsSuccess_shouldTransferPaymentToFailed() throws Exception {
+        String token = keycloakAdmin.tokenManager().getAccessToken().getToken();
+        mvc.perform(post("/api/v1/payments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .content("""
+                                {
+                                    "internalTransactionUid": "00000000-0000-0000-0000-000000000015",
+                                    "methodId": 1,
+                                    "amount": 50.03,
+                                    "currency": "RUB"
+                                }
+                                """))
+                .andExpectAll(status().isCreated(),
+                        jsonPath("providerTransactionId").value(1),
+                        jsonPath("internalTransactionUid").value("00000000-0000-0000-0000-000000000015"),
+                        jsonPath("amount").value(BigDecimal.valueOf(50.03)),
+                        jsonPath("status").value("FAILED")
+                );
+        Map<String, @Nullable Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000015"));
+        assertThat(params)
+                .hasFieldOrPropertyWithValue("status", "FAILED")
+                .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(50.03))
+                .hasFieldOrPropertyWithValue("payment_method_id", 1)
+                .hasFieldOrPropertyWithValue("external_transaction_id", "1");
+
+        verify(payoutApi).createPayout(any());
+        verify(transactionApi, never()).createTransaction(any());
+    }
+
     @Sql("/sql/payment-method-is-active-false.sql")
     @Test
     void createPayment_WhenMethodIsNotActive_shouldReturnObjectNotFound() throws Exception {
@@ -233,6 +265,38 @@ class PaymentControllerIT {
                 .hasFieldOrPropertyWithValue("external_transaction_id", "1");
 
         verify(payoutApi, never()).createPayout(any());
+        verify(transactionApi).createTransaction(any());
+    }
+
+    @Sql("/sql/find-by-currency-and-country-codes.sql")
+    @Test
+    void createTransaction_whenFakeProviderReturns200WithStatusNotEqualsSuccess_shouldTransferPaymentToFailed() throws Exception {
+        String token = keycloakAdmin.tokenManager().getAccessToken().getToken();
+        mvc.perform(post("/api/v1/payments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .content("""
+                                {
+                                    "internalTransactionUid": "00000000-0000-0000-0000-000000000015",
+                                    "methodId": 2,
+                                    "amount": 50.03,
+                                    "currency": "RUB"
+                                }
+                                """))
+                .andExpectAll(status().isCreated(),
+                        jsonPath("providerTransactionId").value(1),
+                        jsonPath("internalTransactionUid").value("00000000-0000-0000-0000-000000000015"),
+                        jsonPath("amount").value(BigDecimal.valueOf(50.03)),
+                        jsonPath("status").value("FAILED")
+                );
+        Map<String, @Nullable Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000015"));
+        assertThat(params)
+                .hasFieldOrPropertyWithValue("status", "FAILED")
+                .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(50.03))
+                .hasFieldOrPropertyWithValue("payment_method_id", 2)
+                .hasFieldOrPropertyWithValue("external_transaction_id", "1");
+
+        verify(payoutApi,never()).createPayout(any());
         verify(transactionApi).createTransaction(any());
     }
 
