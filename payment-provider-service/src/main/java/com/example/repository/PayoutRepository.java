@@ -25,4 +25,6 @@ public interface PayoutRepository extends JpaRepository<Payout, Long> {
     List<Payout> findByMerchantIdAndCreatedAtBefore(Integer merchantId, LocalDateTime End);
 
     List<Payout> findByMerchantId(Integer merchantId);
+
+    Optional<Payout> findByExternalId(String externalId);
 }

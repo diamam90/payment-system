@@ -16,7 +16,7 @@ tags:
     description: Обработка вебхуков
 
 security:
-  - merchantAuth: []   # По умолчанию все приватные методы требуют Basic Auth
+  - merchantAuth: [ ]   # По умолчанию все приватные методы требуют Basic Auth
 
 paths:
   /api/v1/transactions:
@@ -199,7 +199,7 @@ paths:
       operationId: updateTransaction
       tags: [ Webhook ]
       security:
-        - webhookAuth: []
+        - webhookAuth: [ ]
       requestBody:
         required: true
         content:
@@ -223,7 +223,7 @@ paths:
       operationId: updatePayout
       tags: [ Webhook ]
       security:
-        - webhookAuth: []
+        - webhookAuth: [ ]
       requestBody:
         required: true
         content:
@@ -256,7 +256,7 @@ components:
   schemas:
     TransactionRequest:
       type: object
-      required: [ amount, currency, method ]
+      required: [ amount, currency, method, externalId ]
       properties:
         amount:
           type: number
@@ -269,7 +269,7 @@ components:
           description: Трехбуквенный код валюты (ISO 4217), напр. "USD"
         method:
           type: string
-          enum: ['CARD', 'CASH']
+          enum: [ 'CARD', 'CASH' ]
           description: Способ оплаты, например "CARD" (если не поддерживается, вернется ошибка)
         description:
           type: string
@@ -305,10 +305,10 @@ components:
           type: string
         externalId:
           type: string
-      required: [ id, merchantId, amount, currency, method, status, createdAt ]
+      required: [ id, merchantId, amount, currency, method, status, createdAt, externalId ]
     PayoutRequest:
       type: object
-      required: [ amount, currency ]
+      required: [ amount, currency, externalId ]
       properties:
         amount:
           type: number
@@ -345,7 +345,7 @@ components:
           format: date-time
         externalId:
           type: string
-      required: [ id, merchantId, amount, currency, status, createdAt ]
+      required: [ id, merchantId, amount, currency, status, createdAt, externalId ]
     StatusUpdate: # схема для webhook-уведомления о статусе
       type: object
       required: [ id, status ]

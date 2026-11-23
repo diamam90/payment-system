@@ -94,6 +94,62 @@ public class TransactionIT {
                 .hasEntrySatisfying("id", new Condition<>(Objects::nonNull, "Id must not be null"));
     }
 
+    @Sql("/sql/transaction-with-external-id.sql")
+    @Test
+    void transaction_whenExternalIdAlreadyExists_shouldDoNothing() throws Exception {
+        mvc.perform(post("/api/v1/transactions")
+                        // merchant 1
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQxOm1lcmNoYW50IDEgcGFzc3dvcmQ=")
+                        .contentType(APPLICATION_JSON)
+                        .content(//language=JSON
+                                """
+                                        {
+                                            "amount": 12.99,
+                                            "currency": "RUB",
+                                            "method":  "CARD",
+                                            "externalId": "external id 228"
+                                        }
+                                        """))
+                .andExpectAll(status().isCreated(),
+                        jsonPath("status").value("SUCCESS"),
+                        jsonPath("amount").value(20.54),
+                        jsonPath("method").value("CARD"),
+                        jsonPath("currency").value("USD"),
+                        jsonPath("id").value(4),
+                        jsonPath("merchantId").value("merchant1"),
+                        jsonPath("externalId").value("external id 228"),
+                        jsonPath("createdAt").isNotEmpty())
+                .andDo(print())
+                .andReturn();
+
+        verify(transactionRepository, never()).save(any());
+    }
+
+    @Sql("/sql/transaction-with-external-id.sql")
+    @Test
+    void transaction_whenExternalIdAlreadyExistsAndMerchantDoesNotEqual_shouldThrowBadRequest() throws Exception {
+        mvc.perform(post("/api/v1/transactions")
+                        // merchant 2
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQyOm1lcmNoYW50IDIgcGFzc3dvcmQ=")
+                        .contentType(APPLICATION_JSON)
+                        .content(//language=JSON
+                                """
+                                        {
+                                            "amount": 12.99,
+                                            "currency": "RUB",
+                                            "method":  "CARD",
+                                            "externalId": "external id 228"
+                                        }
+                                        """))
+                .andExpectAll(status().isBadRequest(),
+                        jsonPath("$.error").value("ERROR_400"),
+                        jsonPath("$.message").value("Transaction with external id [external id 228] already exists"))
+                .andDo(print())
+                .andReturn();
+
+        verify(transactionRepository, never()).save(any());
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"RUBS", "RU", "rub"})
     void createTransaction_whenInvalidCurrencyCode_shouldReturn400(String currency) throws Exception {
@@ -138,7 +194,8 @@ public class TransactionIT {
                                         {
                                             "amount": 12.99,
                                             "currency": "USD",
-                                            "method":  "%s"
+                                            "method":  "%s",
+                                            "externalId": "228"
                                         }
                                         """.formatted(method.getValue())))
                 .andExpect(status().isCreated());
@@ -222,6 +279,7 @@ public class TransactionIT {
                         .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQxOm1lcmNoYW50IDEgcGFzc3dvcmQ="))
                 .andExpectAll(status().isOk(),
                         jsonPath("id").value(4),
+                        jsonPath("externalId").value("224"),
                         jsonPath("merchantId").value("merchant1"),
                         jsonPath("amount").value(20.54),
                         jsonPath("currency").value("USD"),
@@ -254,7 +312,8 @@ public class TransactionIT {
                         status().isOk(),
                         jsonPath("$.length()").value(2),
                         jsonPath("$..merchantId").value(Every.everyItem(IsEqual.equalTo("merchant2"))),
-                        jsonPath("$..id").value(IsIterableContaining.hasItems(6, 8))
+                        jsonPath("$..id").value(IsIterableContaining.hasItems(6, 8)),
+                        jsonPath("$..externalId").value(IsIterableContaining.hasItems("226", "228"))
                 );
     }
 
@@ -291,6 +350,7 @@ public class TransactionIT {
                         jsonPath("$.length()").value(4),
                         jsonPath("$..merchantId").value(Every.everyItem(IsEqual.equalTo("merchant2"))),
                         jsonPath("$..id").value(IsIterableContaining.hasItems(10, 11, 12, 13)),
+                        jsonPath("$..externalId").value(IsIterableContaining.hasItems("230", "231", "232", "233")),
                         jsonPath("$..currency").value(Every.everyItem(IsEqual.equalTo("RUB"))),
                         jsonPath("$..status").value(Every.everyItem(IsEqual.equalTo("PENDING")))
                 );

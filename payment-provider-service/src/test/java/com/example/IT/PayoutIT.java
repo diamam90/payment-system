@@ -20,10 +20,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Objects;
 
@@ -95,6 +93,57 @@ public class PayoutIT {
                 .hasEntrySatisfying("id", new Condition<>(Objects::nonNull, "id must not be null"));
     }
 
+    @Sql("/sql/payout-with-external-id.sql")
+    @Test
+    void payout_whenExternalIdAlreadyExists_shouldDoNothing() throws Exception {
+        mvc.perform(post("/api/v1/payouts")
+                        // merchant 1
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQxOm1lcmNoYW50IDEgcGFzc3dvcmQ=")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(//language=JSON
+                                """
+                                        {
+                                          "amount": 66.99,
+                                          "currency": "USD",
+                                          "externalId": "external id 228"
+                                        }
+                                        """))
+                .andExpectAll(status().isCreated(),
+                        jsonPath("$.id").isNotEmpty(),
+                        jsonPath("$.merchantId").value("merchant1"),
+                        jsonPath("$.amount").value(6.6),
+                        jsonPath("$.status").value("FAILED"),
+                        jsonPath("$.currency").value("EUR"),
+                        jsonPath("$.externalId").value("external id 228"),
+                        jsonPath("$.createdAt").value(ZonedDateTime.parse("2027-01-01T12:00:00Z").format(DateTimeFormatter.ISO_DATE_TIME))
+                );
+
+        verify(payoutRepository, never()).save(any());
+    }
+
+    @Sql("/sql/payout-with-external-id.sql")
+    @Test
+    void payout_whenExternalIdAlreadyExistsAndMerchantDoesNotEqual_shouldThrowBadRequest() throws Exception {
+        mvc.perform(post("/api/v1/payouts")
+                        // merchant 2
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQyOm1lcmNoYW50IDIgcGFzc3dvcmQ=")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(//language=JSON
+                                """
+                                        {
+                                          "amount": 66.99,
+                                          "currency": "USD",
+                                          "externalId": "external id 228"
+                                        }
+                                        """))
+                .andExpectAll(status().isBadRequest(),
+                        jsonPath("$.error").value("ERROR_400"),
+                        jsonPath("$.message").value("Payout with external id [external id 228] already exists")
+                );
+
+        verify(payoutRepository, never()).save(any());
+    }
+
     @Test
     void payout_withInvalidAmountScale_shouldReturn400() throws Exception {
         mvc.perform(post("/api/v1/payouts")
@@ -150,7 +199,8 @@ public class PayoutIT {
                         jsonPath("$.amount").value(6.6),
                         jsonPath("$.status").value("FAILED"),
                         jsonPath("$.currency").value("EUR"),
-                        jsonPath("$.createdAt").value("2027-01-01T12:00:00Z")
+                        jsonPath("$.createdAt").value("2027-01-01T12:00:00Z"),
+                        jsonPath("$.externalId").value("external id 23")
                 );
     }
 
@@ -206,7 +256,8 @@ public class PayoutIT {
                         status().isOk(),
                         jsonPath("$.length()").value(5),
                         jsonPath("$..merchantId").value(Every.everyItem(IsEqual.equalTo("merchant1"))),
-                        jsonPath("$..id").value(IsIterableContaining.hasItems(11, 12, 13, 14, 15))
+                        jsonPath("$..id").value(IsIterableContaining.hasItems(11, 12, 13, 14, 15)),
+                        jsonPath("$..externalId").value(IsIterableContaining.hasItems("221", "222", "223", "224", "225"))
                 );
     }
 
@@ -225,7 +276,8 @@ public class PayoutIT {
                         status().isOk(),
                         jsonPath("$.length()").value(3),
                         jsonPath("$..merchantId").value(Every.everyItem(IsEqual.equalTo("merchant1"))),
-                        jsonPath("$..id").value(IsIterableContaining.hasItems(14, 15, 16))
+                        jsonPath("$..id").value(IsIterableContaining.hasItems(14, 15, 16)),
+                        jsonPath("$..externalId").value(IsIterableContaining.hasItems("224", "225", "226"))
                 );
     }
 
