@@ -1,4 +1,5 @@
-begin;
+BEGIN;
+
 INSERT INTO payment.payment_providers (id, name, description)
 VALUES (2, 'fake-provider-2', 'this is fake-2');
 
@@ -14,4 +15,4 @@ VALUES (10, 'RUB', 'RUS', false, false),
 INSERT INTO payment.payment_method_required_fields (payment_method_id, payment_type, name, data_type)
 VALUES (10, 'some payment type 1', '228 name', 'data type 1');
 
-commit;
+COMMIT;

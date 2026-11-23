@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.Optional;
+import java.util.UUID;
 
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
@@ -15,4 +16,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             """)
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Payment> findByIdPessimisticWrite(Long id);
+
+    Optional<Payment> findByInternalTransactionId(UUID internalTransactionId);
 }

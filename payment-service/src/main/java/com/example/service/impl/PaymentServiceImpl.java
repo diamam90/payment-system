@@ -27,6 +27,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.client.RestClientException;
 
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 @Slf4j
@@ -45,6 +46,12 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public Payment create(@NotNull PaymentRequest request) {
+        Optional<Payment> optionalPayment = paymentRepository.findByInternalTransactionId(request.getInternalTransactionUid());
+        if (optionalPayment.isPresent()) {
+            log.info("Платеж с внутренним идентификатором {} уже существует", request.getInternalTransactionUid());
+            return optionalPayment.get();
+        }
+
         PaymentMethod method = methodService.findActiveById(request.getMethodId());
         Payment payment = draft(request, method);
         paymentRepository.saveAndFlush(payment);

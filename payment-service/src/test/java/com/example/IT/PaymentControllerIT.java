@@ -96,6 +96,33 @@ class PaymentControllerIT {
         verify(transactionApi, never()).createTransaction(any());
     }
 
+    @Sql("/sql/same-external-transaction-id.sql")
+    @Test
+    void createPayment_whenExternalTransactionIdAlreadyExists_shouldDoNothing() throws Exception {
+        String token = keycloakAdmin.tokenManager().getAccessToken().getToken();
+        mvc.perform(post("/api/v1/payments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .content("""
+                                {
+                                    "internalTransactionUid": "11111111-1111-1111-1111-111111111111",
+                                    "methodId": 3,
+                                    "amount": 3.03,
+                                    "currency": "EUR"
+                                }
+                                """))
+                .andExpectAll(status().isCreated(),
+                        jsonPath("providerTransactionId").value("external 228"),
+                        jsonPath("internalTransactionUid").value("11111111-1111-1111-1111-111111111111"),
+                        jsonPath("amount").value(BigDecimal.valueOf(50.31)),
+                        jsonPath("status").value("PENDING")
+                );
+
+        verify(paymentRepository, never()).saveAndFlush(any());
+        verify(payoutApi, never()).createPayout(any());
+        verify(transactionApi, never()).createTransaction(any());
+    }
+
     @Sql("/sql/payment-method-is-active-false.sql")
     @Test
     void createPayment_WhenMethodIsNotActive_shouldReturnObjectNotFound() throws Exception {
