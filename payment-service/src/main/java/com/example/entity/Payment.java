@@ -53,4 +53,6 @@ public class Payment {
     @Column(name = "modified_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "merchant_id")
+    private String merchantId;
 }

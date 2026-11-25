@@ -4,15 +4,13 @@ import com.example.config.TestConfig;
 import com.example.fake.api.PayoutApi;
 import com.example.fake.api.TransactionApi;
 import com.example.repository.PaymentRepository;
-import org.apache.http.HttpHeaders;
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.keycloak.admin.client.Keycloak;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
@@ -43,8 +41,6 @@ class PaymentControllerIT {
     MockMvc mvc;
     @Autowired
     JdbcTemplate jdbc;
-    @Autowired
-    Keycloak keycloakAdmin;
 
     @MockitoSpyBean
     PayoutApi payoutApi;
@@ -52,6 +48,9 @@ class PaymentControllerIT {
     TransactionApi transactionApi;
     @MockitoSpyBean
     PaymentRepository paymentRepository;
+
+    private static final String MERCHANT_BASIC_AUTH = "aW5kaXZpZHVhbHMtYXBpOnNlY3JldA==";
+    
 
     private static final String PAYMENT_BY_INTERNAL_ID_QUERY = "SELECT * FROM payment.payments WHERE internal_transaction_id = ?";
 
@@ -67,10 +66,9 @@ class PaymentControllerIT {
     @Sql("/sql/find-by-currency-and-country-codes.sql")
     @Test
     void shouldCreatePayment() throws Exception {
-        String token = keycloakAdmin.tokenManager().getAccessToken().getToken();
         mvc.perform(post("/api/v1/payments")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + MERCHANT_BASIC_AUTH)
                         .content("""
                                 {
                                     "internalTransactionUid": "00000000-0000-0000-0000-000000000012",
@@ -85,7 +83,7 @@ class PaymentControllerIT {
                         jsonPath("amount").value(BigDecimal.valueOf(50.03)),
                         jsonPath("status").value("SUCCESS")
                 );
-        Map<String, @Nullable Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000012"));
+        Map<String, Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000012"));
         assertThat(params)
                 .hasFieldOrPropertyWithValue("status", "SUCCESS")
                 .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(50.03))
@@ -99,10 +97,9 @@ class PaymentControllerIT {
     @Sql("/sql/same-external-transaction-id.sql")
     @Test
     void createPayment_whenExternalTransactionIdAlreadyExists_shouldDoNothing() throws Exception {
-        String token = keycloakAdmin.tokenManager().getAccessToken().getToken();
         mvc.perform(post("/api/v1/payments")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + MERCHANT_BASIC_AUTH)
                         .content("""
                                 {
                                     "internalTransactionUid": "11111111-1111-1111-1111-111111111111",
@@ -126,10 +123,9 @@ class PaymentControllerIT {
     @Sql("/sql/find-by-currency-and-country-codes.sql")
     @Test
     void createPayment_whenFakeProviderReturns200WithStatusNotEqualsSuccess_shouldTransferPaymentToFailed() throws Exception {
-        String token = keycloakAdmin.tokenManager().getAccessToken().getToken();
         mvc.perform(post("/api/v1/payments")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + MERCHANT_BASIC_AUTH)
                         .content("""
                                 {
                                     "internalTransactionUid": "00000000-0000-0000-0000-000000000015",
@@ -144,7 +140,7 @@ class PaymentControllerIT {
                         jsonPath("amount").value(BigDecimal.valueOf(50.03)),
                         jsonPath("status").value("FAILED")
                 );
-        Map<String, @Nullable Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000015"));
+        Map<String, Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000015"));
         assertThat(params)
                 .hasFieldOrPropertyWithValue("status", "FAILED")
                 .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(50.03))
@@ -158,10 +154,9 @@ class PaymentControllerIT {
     @Sql("/sql/payment-method-is-active-false.sql")
     @Test
     void createPayment_WhenMethodIsNotActive_shouldReturnObjectNotFound() throws Exception {
-        String token = keycloakAdmin.tokenManager().getAccessToken().getToken();
         mvc.perform(post("/api/v1/payments")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + MERCHANT_BASIC_AUTH)
                         .content("""
                                 {
                                     "internalTransactionUid": "00000000-0000-0000-0000-000000000012",
@@ -183,9 +178,8 @@ class PaymentControllerIT {
     @Sql("/sql/find-by-currency-and-country-codes.sql")
     @Test
     void createPayment_whenFakeProviderReturnError_shouldSetStatusFailed() throws Exception {
-        String token = keycloakAdmin.tokenManager().getAccessToken().getToken();
         mvc.perform(post("/api/v1/payments")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + MERCHANT_BASIC_AUTH)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -200,7 +194,7 @@ class PaymentControllerIT {
                         jsonPath("message").value("External service FakePaymentProvider is unavailable")
                 );
 
-        Map<String, @Nullable Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000013"));
+        Map<String, Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000013"));
         assertThat(params)
                 .hasFieldOrPropertyWithValue("status", "FAILED")
                 .hasFieldOrPropertyWithValue("payment_method_id", 1)
@@ -211,9 +205,8 @@ class PaymentControllerIT {
     @Sql("/sql/find-by-currency-and-country-codes.sql")
     @Test
     void createPayment_whenFakeProviderIsUnavailable_shouldSetStatusFailed() throws Exception {
-        String token = keycloakAdmin.tokenManager().getAccessToken().getToken();
         mvc.perform(post("/api/v1/payments")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + MERCHANT_BASIC_AUTH)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -228,7 +221,7 @@ class PaymentControllerIT {
                         jsonPath("message").value("External service FakePaymentProvider is unavailable")
                 );
 
-        Map<String, @Nullable Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000014"));
+        Map<String, Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000014"));
         assertThat(params)
                 .hasFieldOrPropertyWithValue("status", "FAILED")
                 .hasFieldOrPropertyWithValue("payment_method_id", 1)
@@ -239,9 +232,8 @@ class PaymentControllerIT {
     @Sql("/sql/find-by-currency-and-country-codes.sql")
     @Test
     void shouldCreateTransaction() throws Exception {
-        String token = keycloakAdmin.tokenManager().getAccessToken().getToken();
         mvc.perform(post("/api/v1/payments")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + MERCHANT_BASIC_AUTH)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -257,7 +249,7 @@ class PaymentControllerIT {
                         jsonPath("amount").value(BigDecimal.valueOf(50.00)),
                         jsonPath("status").value("SUCCESS")
                 );
-        Map<String, @Nullable Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000012"));
+        Map<String, Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000012"));
         assertThat(params)
                 .hasFieldOrPropertyWithValue("status", "SUCCESS")
                 .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(50.00).setScale(2, RoundingMode.HALF_EVEN))
@@ -271,10 +263,9 @@ class PaymentControllerIT {
     @Sql("/sql/find-by-currency-and-country-codes.sql")
     @Test
     void createTransaction_whenFakeProviderReturns200WithStatusNotEqualsSuccess_shouldTransferPaymentToFailed() throws Exception {
-        String token = keycloakAdmin.tokenManager().getAccessToken().getToken();
         mvc.perform(post("/api/v1/payments")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + MERCHANT_BASIC_AUTH)
                         .content("""
                                 {
                                     "internalTransactionUid": "00000000-0000-0000-0000-000000000015",
@@ -289,25 +280,24 @@ class PaymentControllerIT {
                         jsonPath("amount").value(BigDecimal.valueOf(50.03)),
                         jsonPath("status").value("FAILED")
                 );
-        Map<String, @Nullable Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000015"));
+        Map<String, Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000015"));
         assertThat(params)
                 .hasFieldOrPropertyWithValue("status", "FAILED")
                 .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(50.03))
                 .hasFieldOrPropertyWithValue("payment_method_id", 2)
                 .hasFieldOrPropertyWithValue("external_transaction_id", "1");
 
-        verify(payoutApi,never()).createPayout(any());
+        verify(payoutApi, never()).createPayout(any());
         verify(transactionApi).createTransaction(any());
     }
 
     @Sql({"/sql/find-by-currency-and-country-codes.sql", "/sql/compensate-payment.sql"})
     @Test
     void shouldCompensate() throws Exception {
-        String token = keycloakAdmin.tokenManager().getAccessToken().getToken();
         mvc.perform(post("/private/api/v1/payments/2/compensate")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + MERCHANT_BASIC_AUTH))
                 .andExpect(status().isOk());
-        Map<String, @Nullable Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000012"));
+        Map<String, Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000012"));
         assertThat(params)
                 .hasFieldOrPropertyWithValue("status", "FAILED")
                 .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(12.22).setScale(2, RoundingMode.HALF_EVEN));
@@ -316,11 +306,10 @@ class PaymentControllerIT {
     @Sql({"/sql/find-by-currency-and-country-codes.sql", "/sql/compensate-payment.sql"})
     @Test
     void compensate_whenPaymentFinalStatus_shouldDoNothing() throws Exception {
-        String token = keycloakAdmin.tokenManager().getAccessToken().getToken();
         mvc.perform(post("/private/api/v1/payments/3/compensate")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + MERCHANT_BASIC_AUTH))
                 .andExpect(status().isOk());
-        Map<String, @Nullable Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000013"));
+        Map<String, Object> params = jdbc.queryForMap(PAYMENT_BY_INTERNAL_ID_QUERY, UUID.fromString("00000000-0000-0000-0000-000000000013"));
         assertThat(params)
                 .hasFieldOrPropertyWithValue("status", "SUCCESS")
                 .hasFieldOrPropertyWithValue("amount", BigDecimal.valueOf(12.22).setScale(2, RoundingMode.HALF_EVEN));

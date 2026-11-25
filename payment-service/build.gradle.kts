@@ -6,7 +6,6 @@ val versions = mapOf(
     "springdocOpenapiStarterWebmvcUiVersion" to "2.5.0",
     "testContainersVersion" to "1.19.3",
     "hibernateJpamodelgenVersion" to "6.1.7.Final",
-    "testContainersKeycloakVersion" to "3.4.0",
     "logbackEncoderVersion" to "8.0",
     "wireMockVersion" to "1.0-alpha-13",
     "shedlockVersion" to "6.3.1",
@@ -18,7 +17,7 @@ val versions = mapOf(
 plugins {
     idea
     java
-    id("org.springframework.boot") version "4.1.0"
+    id("org.springframework.boot") version "3.5.0"
     id("io.spring.dependency-management") version "1.1.7"
     id("maven-publish")
     id("org.openapi.generator") version "7.23.0"
@@ -30,7 +29,7 @@ description = "Payment Service for study project"
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(24)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
@@ -67,11 +66,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
-    implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${versions["springdocOpenapiStarterWebmvcUiVersion"]}")
 
     // PAYMENT SYSTEM
@@ -79,7 +75,10 @@ dependencies {
 
     // OBSERVABILITY
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
-
+    implementation("io.micrometer:micrometer-tracing-bridge-otel")
+    implementation("io.micrometer:micrometer-observation")
+    implementation("io.micrometer:micrometer-tracing")
+    implementation("io.opentelemetry:opentelemetry-exporter-otlp")
     // PERSISTENCE
     implementation("org.postgresql:postgresql")
     implementation("org.flywaydb:flyway-database-postgresql")
@@ -94,15 +93,12 @@ dependencies {
 
     // TEST
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.boot:spring-boot-data-jpa-test")
-    testImplementation("org.springframework.boot:spring-boot-webmvc-test")
     testImplementation("org.springframework.security:spring-security-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testCompileOnly("org.projectlombok:lombok")
     testAnnotationProcessor("org.projectlombok:lombok")
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.testcontainers:testcontainers:${versions["testContainersVersion"]}")
-    testImplementation("com.github.dasniko:testcontainers-keycloak:${versions["testContainersKeycloakVersion"]}")
     testImplementation("org.testcontainers:postgresql:${versions["testContainersVersion"]}")
     testImplementation("org.testcontainers:junit-jupiter:${versions["testContainersVersion"]}")
     testImplementation("org.wiremock.integrations.testcontainers:wiremock-testcontainers-module:${versions["wireMockVersion"]}")

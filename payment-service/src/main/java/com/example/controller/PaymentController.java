@@ -2,15 +2,18 @@ package com.example.controller;
 
 import com.example.entity.Payment;
 import com.example.mapper.PaymentMapper;
+import com.example.model.Merchant;
 import com.example.payment.api.PaymentApi;
 import com.example.payment.dto.PaymentRequest;
 import com.example.payment.dto.PaymentResponse;
 import com.example.service.PaymentService;
+import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
@@ -23,7 +26,9 @@ public class PaymentController implements PaymentApi {
 
     @Override
     public ResponseEntity<PaymentResponse> createPayment(@Nullable PaymentRequest paymentRequest) {
-        Payment payment = paymentService.create(paymentRequest);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Merchant merchant = (Merchant) authentication.getPrincipal();
+        Payment payment = paymentService.create(paymentRequest, merchant);
         log.info("Платеж успешно создан, идентификатор: {}, статус: {}", payment.getId(), payment.getStatus());
         PaymentResponse response = paymentMapper.toResponse(payment);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

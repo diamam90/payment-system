@@ -6,7 +6,7 @@ servers:
   - url: http://localhost:8083
 
 security:
-  - jwt: [ ]
+  - basic_auth: [ ]
 
 tags:
   - name: Payment
@@ -94,10 +94,11 @@ paths:
 
 components:
   securitySchemes:
-    jwt:
-      description: JWT token
+    basic_auth:
+      description: Http Basic Authorization
       type: http
-      scheme: Bearer
+      in: header
+      scheme: basic
 
   schemas:
     PaymentMethodFilter:

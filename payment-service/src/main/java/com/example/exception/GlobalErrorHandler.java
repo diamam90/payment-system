@@ -1,8 +1,8 @@
 package com.example.exception;
 
 import com.example.payment.dto.ErrorResponse;
+import jakarta.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;

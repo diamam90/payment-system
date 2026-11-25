@@ -8,11 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Getter
 @ConfigurationProperties(prefix = "payment-service.fake-payment-provider")
 public class FakePaymentProviderProperties {
-
     private String baseUrl;
-
     private String merchantId;
-
     private String merchantPassword;
-
 }

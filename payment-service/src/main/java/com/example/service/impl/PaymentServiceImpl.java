@@ -11,6 +11,7 @@ import com.example.fake.dto.PayoutResponse;
 import com.example.fake.dto.TransactionRequest;
 import com.example.fake.dto.TransactionResponse;
 import com.example.mapper.FakePaymentProviderMapper;
+import com.example.model.Merchant;
 import com.example.payment.dto.PaymentRequest;
 import com.example.repository.PaymentRepository;
 import com.example.service.MethodService;
@@ -42,7 +43,7 @@ public class PaymentServiceImpl implements PaymentService {
     private static final String SUCCESS_STATUS = "SUCCESS";
 
     @Override
-    public Payment create(@NotNull PaymentRequest request) {
+    public Payment create(@NotNull PaymentRequest request, Merchant merchant) {
         Optional<Payment> optionalPayment = paymentRepository.findByInternalTransactionId(request.getInternalTransactionUid());
         if (optionalPayment.isPresent()) {
             log.info("Платеж с внутренним идентификатором {} уже существует", request.getInternalTransactionUid());
@@ -50,7 +51,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         PaymentMethod method = methodService.findActiveById(request.getMethodId());
-        Payment payment = draft(request, method);
+        Payment payment = draft(request, method, merchant.getUsername());
         paymentRepository.saveAndFlush(payment);
         meterRegistry.counter("payments", "status", "PENDING").increment();
         log.info("Платеж с идентификатором  {} создан, статус {}", payment.getId(), payment.getStatus());
@@ -73,12 +74,13 @@ public class PaymentServiceImpl implements PaymentService {
         meterRegistry.counter("compensations").increment();
     }
 
-    private Payment draft(PaymentRequest request, PaymentMethod method) {
+    private Payment draft(PaymentRequest request, PaymentMethod method, String merchantId) {
         Payment payment = new Payment();
         payment.setPaymentMethod(method);
         payment.setInternalTransactionId(request.getInternalTransactionUid());
         payment.setAmount(request.getAmount());
         payment.setStatus(Status.PENDING);
+        payment.setMerchantId(merchantId);
 
         Optional.ofNullable(method)
                 .map(PaymentMethod::getPaymentMethodDefinition)

@@ -2,17 +2,16 @@ package com.example.IT;
 
 import com.example.config.TestConfig;
 import com.example.exception.StatusCode;
-import org.apache.http.HttpHeaders;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.keycloak.admin.client.Keycloak;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
@@ -34,8 +33,8 @@ public class PaymentMethodIT {
     MockMvc mvc;
     @Autowired
     JdbcTemplate jdbc;
-    @Autowired
-    Keycloak keycloakAdmin;
+
+    private static final String MERCHANT_BASIC_AUTH = "aW5kaXZpZHVhbHMtYXBpOnNlY3JldA==";
 
     @AfterEach
     void clear() {
@@ -48,13 +47,12 @@ public class PaymentMethodIT {
     @Sql("/sql/find-by-currency-and-country-codes.sql")
     @Test
     void shouldGetMethod() throws Exception {
-        String token = keycloakAdmin.tokenManager().getAccessToken().getToken();
         MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
         map.add("currencyCode", "JPY");
         map.add("countryCode", "RUS");
         map.add("type", "PAYOUT");
         mvc.perform(get("/api/v1/payment-methods")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + MERCHANT_BASIC_AUTH)
                         .params(map))
                 .andExpectAll(status().isOk(),
                         jsonPath("$..id").value(1),
@@ -65,13 +63,12 @@ public class PaymentMethodIT {
     @ParameterizedTest
     @ValueSource(strings = {"TRATATA", "TRANS", "PAY", "PAYOUT1", "TRANSACTION228"})
     void getMethod_whenTypeInvalidShouldReturn400(String type) throws Exception {
-        String token = keycloakAdmin.tokenManager().getAccessToken().getToken();
         MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
         map.add("currencyCode", "RUB");
         map.add("countryCode", "RUS");
         map.add("type", type);
         mvc.perform(get("/api/v1/payment-methods")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + MERCHANT_BASIC_AUTH)
                         .params(map))
                 .andExpectAll(status().isBadRequest(),
                         jsonPath("$.error").value(StatusCode.ERROR_400.name()),
@@ -81,13 +78,12 @@ public class PaymentMethodIT {
 
     @Test
     void getMethod_whenMethodsNotFound_shouldReturnEmptyList() throws Exception {
-        String token = keycloakAdmin.tokenManager().getAccessToken().getToken();
         MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
         map.add("currencyCode", "RUB");
         map.add("countryCode", "RUS");
         map.add("type", "TRANSACTION");
         mvc.perform(get("/api/v1/payment-methods")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + MERCHANT_BASIC_AUTH)
                         .params(map))
                 .andExpectAll(
                         status().isOk(),
@@ -98,12 +94,11 @@ public class PaymentMethodIT {
     @Test
     @Sql("/sql/payment-methods-with-required-field-and-logo.sql")
     void getMethod_whenTypeISNull_shouldReturnMethod() throws Exception {
-        String token = keycloakAdmin.tokenManager().getAccessToken().getToken();
         MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
         map.add("currencyCode", "RUB");
         map.add("countryCode", "RUS");
         mvc.perform(get("/api/v1/payment-methods")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + MERCHANT_BASIC_AUTH)
                         .params(map))
                 .andExpectAll(
                         status().isOk(),
@@ -116,12 +111,11 @@ public class PaymentMethodIT {
     @Sql("/sql/payment-methods-with-required-field-and-logo.sql")
     @Test
     void getMethod_shouldReturnPaymentMethodWithRequiredFieldAndUrl() throws Exception {
-        String token = keycloakAdmin.tokenManager().getAccessToken().getToken();
         MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
         map.add("currencyCode", "JPY");
         map.add("countryCode", "RUS");
         mvc.perform(get("/api/v1/payment-methods")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + MERCHANT_BASIC_AUTH)
                         .params(map))
                 .andExpectAll(
                         status().isOk(),
