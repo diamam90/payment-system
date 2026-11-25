@@ -10,7 +10,8 @@ public enum ExternalService {
     PERSON_SERVICE("Person-service"),
     TRANSACTION_SERVICE("Transaction-service"),
     KEYCLOAK("Keycloak"),
-    CURRENCY_RATE_SERVICE("Currency-rate-service")
+    CURRENCY_RATE_SERVICE("Currency-rate-service"),
+    PAYMENT_SERVICE("Payment-service")
     ;
 
     private final String serviceName;

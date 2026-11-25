@@ -1,7 +1,6 @@
 package com.example.IT;
 
 import com.example.fake.dto.TransactionRequest;
-import com.example.fake.dto.TransactionResponse;
 import com.example.repository.TransactionRepository;
 import jakarta.ws.rs.core.MediaType;
 import org.apache.http.HttpHeaders;
@@ -21,9 +20,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import tools.jackson.databind.ObjectMapper;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -48,8 +45,6 @@ public class TransactionIT {
     @Autowired
     MockMvc mvc;
     @Autowired
-    ObjectMapper objectMapper;
-    @Autowired
     JdbcClient jdbc;
     @MockitoSpyBean
     private TransactionRepository transactionRepository;
@@ -62,8 +57,7 @@ public class TransactionIT {
 
     @Test
     void transactionCycle() throws Exception {
-        // create transaction
-        MvcResult result = mvc.perform(post("/api/v1/transactions")
+        mvc.perform(post("/api/v1/transactions")
                         .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQxOm1lcmNoYW50IDEgcGFzc3dvcmQ=")
                         .contentType(APPLICATION_JSON)
                         .content(//language=JSON
@@ -71,62 +65,89 @@ public class TransactionIT {
                                         {
                                             "amount": 12.99,
                                             "currency": "RUB",
-                                            "method":  "CARD"
+                                            "method":  "CARD",
+                                            "externalId": "trans 228"
                                         }
                                         """))
                 .andExpectAll(status().isCreated(),
-                        jsonPath("status").value("PENDING"),
-                        jsonPath("amount").value(12.99),
-                        jsonPath("method").value("CARD"),
-                        jsonPath("currency").value("RUB"),
-                        jsonPath("id").isNotEmpty(),
-                        jsonPath("merchantId").value("merchant1"),
-                        jsonPath("createdAt").isNotEmpty())
-                .andDo(print())
-                .andReturn();
-
-        String contentAsString = result.getResponse().getContentAsString();
-        TransactionResponse response = objectMapper.readValue(contentAsString, TransactionResponse.class);
-
-        // update transaction client1
-        mvc.perform(post("/webhook/transaction")
-                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "Y2xpZW50MTpwYXNzd29yZA==")
-                        .contentType(APPLICATION_JSON)
-                        .content(//language=JSON//
-                                """
-                                        {
-                                            "id": %s,
-                                            "status": "SUCCESS"
-                                        }
-                                        """.formatted(response.getId())))
-                .andExpectAll(status().isOk());
-
-        // get by id
-        mvc.perform(get("/api/v1/transactions/{transactionId}", response.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQxOm1lcmNoYW50IDEgcGFzc3dvcmQ=")
-                )
-                .andExpectAll(status().isOk(),
                         jsonPath("status").value("SUCCESS"),
                         jsonPath("amount").value(12.99),
                         jsonPath("method").value("CARD"),
                         jsonPath("currency").value("RUB"),
                         jsonPath("id").isNotEmpty(),
                         jsonPath("merchantId").value("merchant1"),
+                        jsonPath("externalId").value("trans 228"),
                         jsonPath("createdAt").isNotEmpty())
-                .andDo(print());
+                .andDo(print())
+                .andReturn();
 
-        // check webhook in DB
-        Map<String, Object> webhookParams = jdbc.sql("SELECT * FROM payment.webhooks WHERE event_type = 'TRANSACTION' and entity_id = :entityId")
-                .param("entityId", response.getId())
+
+        Map<String, Object> transactionParams = jdbc.sql("SELECT * FROM payment.transactions WHERE external_id = :externalId")
+                .param("externalId", "trans 228")
                 .query()
                 .singleRow();
 
-        assertThat(webhookParams)
+        assertThat(transactionParams)
                 .isNotEmpty()
-                .containsEntry("event_type", "TRANSACTION")
-                .containsEntry("entity_id", response.getId())
-                .hasEntrySatisfying("payload", new Condition<>(Objects::nonNull, "Payload must not be null"))
-                .hasEntrySatisfying("notification_url", new Condition<>(Objects::isNull, "Notification_url must be null"));
+                .containsEntry("status", "SUCCESS")
+                .containsEntry("currency", "RUB")
+                .hasEntrySatisfying("id", new Condition<>(Objects::nonNull, "Id must not be null"));
+    }
+
+    @Sql("/sql/transaction-with-external-id.sql")
+    @Test
+    void transaction_whenExternalIdAlreadyExists_shouldDoNothing() throws Exception {
+        mvc.perform(post("/api/v1/transactions")
+                        // merchant 1
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQxOm1lcmNoYW50IDEgcGFzc3dvcmQ=")
+                        .contentType(APPLICATION_JSON)
+                        .content(//language=JSON
+                                """
+                                        {
+                                            "amount": 12.99,
+                                            "currency": "RUB",
+                                            "method":  "CARD",
+                                            "externalId": "external id 228"
+                                        }
+                                        """))
+                .andExpectAll(status().isCreated(),
+                        jsonPath("status").value("SUCCESS"),
+                        jsonPath("amount").value(20.54),
+                        jsonPath("method").value("CARD"),
+                        jsonPath("currency").value("USD"),
+                        jsonPath("id").value(4),
+                        jsonPath("merchantId").value("merchant1"),
+                        jsonPath("externalId").value("external id 228"),
+                        jsonPath("createdAt").isNotEmpty())
+                .andDo(print())
+                .andReturn();
+
+        verify(transactionRepository, never()).save(any());
+    }
+
+    @Sql("/sql/transaction-with-external-id.sql")
+    @Test
+    void transaction_whenExternalIdAlreadyExistsAndMerchantDoesNotEqual_shouldThrowBadRequest() throws Exception {
+        mvc.perform(post("/api/v1/transactions")
+                        // merchant 2
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQyOm1lcmNoYW50IDIgcGFzc3dvcmQ=")
+                        .contentType(APPLICATION_JSON)
+                        .content(//language=JSON
+                                """
+                                        {
+                                            "amount": 12.99,
+                                            "currency": "RUB",
+                                            "method":  "CARD",
+                                            "externalId": "external id 228"
+                                        }
+                                        """))
+                .andExpectAll(status().isBadRequest(),
+                        jsonPath("$.error").value("ERROR_400"),
+                        jsonPath("$.message").value("Transaction with external id [external id 228] already exists"))
+                .andDo(print())
+                .andReturn();
+
+        verify(transactionRepository, never()).save(any());
     }
 
     @ParameterizedTest
@@ -173,7 +194,8 @@ public class TransactionIT {
                                         {
                                             "amount": 12.99,
                                             "currency": "USD",
-                                            "method":  "%s"
+                                            "method":  "%s",
+                                            "externalId": "228"
                                         }
                                         """.formatted(method.getValue())))
                 .andExpect(status().isCreated());
@@ -257,6 +279,7 @@ public class TransactionIT {
                         .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQxOm1lcmNoYW50IDEgcGFzc3dvcmQ="))
                 .andExpectAll(status().isOk(),
                         jsonPath("id").value(4),
+                        jsonPath("externalId").value("224"),
                         jsonPath("merchantId").value("merchant1"),
                         jsonPath("amount").value(20.54),
                         jsonPath("currency").value("USD"),
@@ -289,7 +312,8 @@ public class TransactionIT {
                         status().isOk(),
                         jsonPath("$.length()").value(2),
                         jsonPath("$..merchantId").value(Every.everyItem(IsEqual.equalTo("merchant2"))),
-                        jsonPath("$..id").value(IsIterableContaining.hasItems(6, 8))
+                        jsonPath("$..id").value(IsIterableContaining.hasItems(6, 8)),
+                        jsonPath("$..externalId").value(IsIterableContaining.hasItems("226", "228"))
                 );
     }
 
@@ -326,6 +350,7 @@ public class TransactionIT {
                         jsonPath("$.length()").value(4),
                         jsonPath("$..merchantId").value(Every.everyItem(IsEqual.equalTo("merchant2"))),
                         jsonPath("$..id").value(IsIterableContaining.hasItems(10, 11, 12, 13)),
+                        jsonPath("$..externalId").value(IsIterableContaining.hasItems("230", "231", "232", "233")),
                         jsonPath("$..currency").value(Every.everyItem(IsEqual.equalTo("RUB"))),
                         jsonPath("$..status").value(Every.everyItem(IsEqual.equalTo("PENDING")))
                 );

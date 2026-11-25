@@ -1,0 +1,20 @@
+@startuml
+actor Client
+participant IndividualsAPI
+participant PaymentService
+
+Client -> IndividualsAPI: GET /api/v1/payment-methods/{currencyCode}/{countryCode}
+activate IndividualsAPI
+    IndividualsAPI -> PaymentService: GET /api/v1/payment-methods/{currencyCode}/{countryCode}
+    activate PaymentService
+        PaymentService -> PaymentService: get method by currencyCode and countryCode
+        alt success
+            PaymentService --> IndividualsAPI: PaymentMethodResponse
+            IndividualsAPI --> Client: PaymentMethodResponse
+        else method not found
+            PaymentService --> IndividualsAPI: ErrorResponse
+            IndividualsAPI --> Client: ErrorResponse
+        end
+    deactivate PaymentService
+deactivate IndividualsAPI
+@enduml

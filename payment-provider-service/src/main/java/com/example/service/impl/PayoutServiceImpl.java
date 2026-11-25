@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -27,10 +26,18 @@ public class PayoutServiceImpl implements PayoutService {
 
     private final PayoutRepository payoutRepository;
     private final PayoutMapper payoutMapper;
-    private final Clock clock;
 
     @Override
     public Payout create(PayoutRequest request, Merchant merchant) {
+        Optional<Payout> optional = payoutRepository.findByExternalId(request.getExternalId());
+        if (optional.isPresent()){
+            Payout payout = optional.get();
+            if (!merchant.getId().equals(payout.getMerchantId())){
+                throw new BadRequestException("Payout with external id [%s] already exists".formatted(request.getExternalId()));
+            }
+            return optional.get();
+        }
+
         Payout payout = payoutMapper.create(request);
         payout.setMerchant(merchant);
         payoutRepository.save(payout);

@@ -14,5 +14,9 @@ public interface TransactionService {
 
     Flux<TransactionStatusResponse> findBy(TransactionFilterRequest request);
 
-    Mono<TransactionStatusResponse> findById(UUID transactionId);
+    Mono<TransactionStatusResponse> findByIdAndUserId(UUID transactionId, UUID userId);
+
+    Mono<Void> success(UUID internalTransactionId, String externalTransactionId, UUID userId);
+
+    Mono<Void> failed(UUID internalTransactionId, UUID userId);
 }

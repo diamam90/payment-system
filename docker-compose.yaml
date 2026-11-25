@@ -29,6 +29,7 @@ services:
       PERSON_SERVICE_BASE_URL: http://person-service:8082
       TRANSACTION_SERVICE_BASE_URL: http://transaction-service:8083
       CURRENCY_RATE_SERVICE_BASE_URL: http://nginx:80
+      PAYMENT_SERVICE_BASE_URL: http://payment-service:8088
     depends_on:
       keycloak:
         condition: service_healthy
@@ -491,6 +492,52 @@ services:
       - "5439:5432"
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -d payment -U fakepaymentadmin" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payment_system_network
+
+  payment-service:
+    container_name: payment-service
+    build:
+      context: ./payment-service
+    environment:
+      KEYCLOAK_URL: http://individuals-keycloak:8080
+      TEMPO_URL: http://tempo:4318
+      PAYMENT_SERVICE_DB_HOST: payment-service-db
+      PAYMENT_SERVICE_DB_PORT: 5432
+      PAYMENT_SERVICE_DB_USERNAME: paymentserviceadmin
+      PAYMENT_SERVICE_DB_PASSWORD: paymentserviceadmin
+      FAKE_PAYMENT_PROVIDER_URL: http://fake-payment-provider:8087
+      FAKE_PAYMENT_PROVIDER_MERCHANT_ID: merchant1
+      FAKE_PAYMENT_PROVIDER_MERCHANT_PASSWORD: "merchant 1 password"
+    ports:
+      - 8088:8088
+    depends_on:
+      fake-payment-provider:
+        condition: service_healthy
+      payment-service-db:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD","wget","--spider","http://localhost:8088/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payment_system_network
+
+  payment-service-db:
+    container_name: payment-service-db
+    image: postgres:17
+    environment:
+      POSTGRES_DB: payment
+      POSTGRES_USER: paymentserviceadmin
+      POSTGRES_PASSWORD: paymentserviceadmin
+    ports:
+      - "5440:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d payment -U paymentserviceadmin" ]
       interval: 10s
       timeout: 5s
       retries: 5

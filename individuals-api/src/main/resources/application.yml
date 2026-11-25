@@ -41,6 +41,9 @@ individuals-api:
     base-url: ${TRANSACTION_SERVICE_BASE_URL}
   currency-rate:
     base-url: ${CURRENCY_RATE_SERVICE_BASE_URL}
+  payment:
+    base-url: ${PAYMENT_SERVICE_BASE_URL}
 logging:
   level:
     com.example: debug
+    feign: debug

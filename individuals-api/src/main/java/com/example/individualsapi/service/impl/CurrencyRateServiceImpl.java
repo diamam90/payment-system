@@ -4,6 +4,7 @@ import com.example.currency.api.CurrencyRateApi;
 import com.example.currency.dto.RateResponse;
 import com.example.individualsapi.service.CurrencyRateService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.tracing.annotation.NewSpan;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,7 @@ public class CurrencyRateServiceImpl implements CurrencyRateService {
     private static final BigDecimal SAME_CURRENCY_RATE = BigDecimal.ONE;
 
     @Override
+    @NewSpan("currency_rate_service.getRate")
     public Mono<BigDecimal> getRate(String from, String to, ZonedDateTime timestamp) {
         if (from.equals(to)) {
             return Mono.just(SAME_CURRENCY_RATE);

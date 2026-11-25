@@ -8,11 +8,13 @@ import com.example.individualsapi.service.CurrencyRateService;
 import com.example.individualsapi.service.TransactionService;
 import com.example.individualsapi.service.WalletService;
 import com.example.transaction.api.TransactionApiClient;
+import com.example.transaction.dto.PatchTransactionRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.tracing.annotation.NewSpan;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -45,6 +47,7 @@ public class TransactionServiceImpl extends AbstractFeignClientService implement
 
     @Override
     @NewSpan("transaction_service.transaction_init")
+    @PreAuthorize("hasAuthority('transaction_service_wr') || principal.claims['individual_id'] != null")
     public Mono<TransactionInitResponse> transactionInit(TransactionInitRequest request) {
         return switch (request.getType()) {
             case TRANSFER_TYPE -> Mono.just(request)
@@ -69,6 +72,7 @@ public class TransactionServiceImpl extends AbstractFeignClientService implement
 
     @Override
     @NewSpan("transaction_service.transaction_confirm")
+    @PreAuthorize("hasAuthority('transaction_service_wr') || principal.claims['individual_id'] != null")
     public Mono<TransactionConfirmResponse> transactionConfirm(TransactionConfirmRequest request) {
         return switch (request.getType()) {
             case TRANSFER_TYPE -> Mono.just(request)
@@ -92,7 +96,27 @@ public class TransactionServiceImpl extends AbstractFeignClientService implement
     }
 
     @Override
+    @NewSpan("transaction_service.transaction_success")
+    public Mono<Void> success(UUID internalTransactionId, String externalTransactionId, UUID userId) {
+        PatchTransactionRequest request = new PatchTransactionRequest();
+        request.setExternalTransactionId(externalTransactionId);
+        request.setUserUid(userId);
+        request.setStatus(PatchTransactionRequest.StatusEnum.SUCCESS);
+        return Mono.justOrEmpty(executeRequest(() -> transactionApiClient.updateTransactionStatus(internalTransactionId, request)));
+    }
+
+    @Override
+    @NewSpan("transaction_service.transaction_failed")
+    public Mono<Void> failed(UUID internalTransactionId, UUID userId) {
+        PatchTransactionRequest request = new PatchTransactionRequest();
+        request.setUserUid(userId);
+        request.setStatus(PatchTransactionRequest.StatusEnum.FAILED);
+        return Mono.justOrEmpty(executeRequest(() -> transactionApiClient.updateTransactionStatus(internalTransactionId, request)));
+    }
+
+    @Override
     @NewSpan("transaction_service.findBy")
+    @PreAuthorize("hasAuthority('transaction_service_wr') || principal.claims['individual_id'] != null")
     public Flux<TransactionStatusResponse> findBy(TransactionFilterRequest request) {
         com.example.transaction.dto.TransactionFilterRequest filter = transactionMapper.transactionFilterRequest(request);
         return Flux.fromIterable(executeRequest(() -> transactionApiClient.getTransactionsByFilter(filter)))
@@ -101,8 +125,9 @@ public class TransactionServiceImpl extends AbstractFeignClientService implement
 
     @Override
     @NewSpan("transaction_service.findById")
-    public Mono<TransactionStatusResponse> findById(UUID transactionId) {
-        return Mono.just(executeRequest(() -> transactionApiClient.getTransactionsStatusById(transactionId)))
+    @PreAuthorize("hasAuthority('transaction_service_wr') || principal.claims['individual_id'] != null")
+    public Mono<TransactionStatusResponse> findByIdAndUserId(UUID transactionId, UUID userId) {
+        return Mono.just(executeRequest(() -> transactionApiClient.getTransactionsStatus(transactionId, userId)))
                 .map(transactionMapper::toIndividualsResponse);
     }
 
@@ -124,7 +149,6 @@ public class TransactionServiceImpl extends AbstractFeignClientService implement
                 .map(transferConfirmRequest -> executeRequest(() -> transactionApiClient.transactionConfirm(transferConfirmRequest)));
     }
 
-    @NewSpan("currency_rate_service.getRate")
     private Mono<BigDecimal> getRate(UUID sourceWalletUid, UUID targetWalletUid) {
         Mono<WalletResponse> sourceWalletMono = walletService.getById(sourceWalletUid);
         Mono<WalletResponse> targetWalletMono = walletService.getById(targetWalletUid);

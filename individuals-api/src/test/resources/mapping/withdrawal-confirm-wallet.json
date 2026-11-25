@@ -1,0 +1,29 @@
+{
+  "request": {
+    "url": "/api/v1/wallets/88888888-8888-8888-8888-888888888888",
+    "method": "GET"
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": {
+      "uid": "88888888-8888-8888-8888-888888888888",
+      "name": "Deposit test wallet",
+      "type": {
+        "uid": "22222222-2222-2222-2222-222222222222",
+        "name": "WALLET TYPE IT name",
+        "currencyCode": "RUB",
+        "status": "active",
+        "userType": "test type"
+      },
+      "userUid": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      "status": "active",
+      "balance": 3000.00,
+      "archivedAt": "2025-05-05T10:00:00Z",
+      "createdAt": "2025-05-05T11:00:00Z",
+      "updatedAt": "2025-05-05T12:00:00Z"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

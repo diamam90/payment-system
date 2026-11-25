@@ -35,7 +35,7 @@ public class TokenServiceImpl implements TokenService {
         );
         return keycloakClient.auth(request)
                 .doOnSuccess(response ->
-                        log.debug("received access token {} for email {}", response.accessToken(), email));
+                        log.info("received access token {} for email {}", response.accessToken(), email));
     }
 
     @Override
@@ -48,7 +48,7 @@ public class TokenServiceImpl implements TokenService {
         );
         return keycloakClient.refresh(request)
                 .doOnSuccess(response ->
-                        log.debug("received access token {} for refresh token {}", response.accessToken(), refreshToken));
+                        log.info("received access token {} for refresh token {}", response.accessToken(), refreshToken));
     }
 
     @Override
@@ -58,10 +58,10 @@ public class TokenServiceImpl implements TokenService {
             return Mono.just(tokenHolder.getAccessToken());
         }
         var adminTokenRequest = adminRequestToken();
-        log.debug("updating admin token...");
+        log.info("updating admin token...");
         return keycloakClient.adminToken(adminTokenRequest)
                 .doOnNext(tokenResponse -> {
-                    log.debug("updated admin token: {}", tokenResponse.accessToken());
+                    log.info("updated admin token: {}", tokenResponse.accessToken());
                     tokenHolder.update(
                             tokenResponse.accessToken(),
                             tokenResponse.expiresIn()

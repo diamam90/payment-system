@@ -1,7 +1,6 @@
 package com.example.transactionservice.config;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
-import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.JwkSetUriJwtDecoderBuilderCustomizer;
@@ -17,11 +16,6 @@ public class SecurityTestConfig {
 
     @Autowired
     KeycloakContainer keycloakContainer;
-
-    @PostConstruct
-    void startContainer() {
-        keycloakContainer.start();
-    }
 
     @Bean
     JwtDecoder jwtDecoderByJwkKeySetUri(@Autowired ObjectProvider<JwkSetUriJwtDecoderBuilderCustomizer> customizers) {

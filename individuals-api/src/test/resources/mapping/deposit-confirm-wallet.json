@@ -1,0 +1,29 @@
+{
+  "request": {
+    "url": "/api/v1/wallets/99999999-9999-9999-9999-999999999999",
+    "method": "GET"
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": {
+      "uid": "99999999-9999-9999-9999-999999999999",
+      "name": "Deposit test wallet",
+      "type": {
+        "uid": "22222222-2222-2222-2222-222222222222",
+        "name": "WALLET TYPE IT name",
+        "currencyCode": "EUR",
+        "status": "active",
+        "userType": "test type"
+      },
+      "userUid": "dddddddd-dddd-dddd-dddd-dddddddddddd",
+      "status": "active",
+      "balance": 0.00,
+      "archivedAt": "2025-05-05T10:00:00Z",
+      "createdAt": "2025-05-05T11:00:00Z",
+      "updatedAt": "2025-05-05T12:00:00Z"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

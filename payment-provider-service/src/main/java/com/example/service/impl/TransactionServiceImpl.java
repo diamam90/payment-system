@@ -2,6 +2,7 @@ package com.example.service.impl;
 
 import com.example.entity.Merchant;
 import com.example.entity.Transaction;
+import com.example.exception.BadRequestException;
 import com.example.exception.ObjectNotFoundException;
 import com.example.fake.dto.TransactionRequest;
 import com.example.mapper.TransactionMapper;
@@ -27,6 +28,14 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public Transaction create(TransactionRequest request, Merchant merchant) {
+        Optional<Transaction> optional = transactionRepository.findByExternalId(request.getExternalId());
+        if (optional.isPresent()) {
+            Transaction transaction = optional.get();
+            if (!merchant.getId().equals(transaction.getMerchantId())) {
+                throw new BadRequestException("Transaction with external id [%s] already exists".formatted(request.getExternalId()));
+            }
+            return optional.get();
+        }
         Transaction transaction = transactionMapper.create(request);
         transaction.setMerchant(merchant);
         transactionRepository.save(transaction);

@@ -1,6 +1,5 @@
 package com.example.IT;
 
-import com.example.fake.dto.TransactionResponse;
 import com.example.repository.PayoutRepository;
 import org.apache.http.HttpHeaders;
 import org.assertj.core.api.Condition;
@@ -18,22 +17,17 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import tools.jackson.databind.ObjectMapper;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -46,10 +40,6 @@ public class PayoutIT {
 
     @Autowired
     MockMvc mvc;
-
-    @Autowired
-    ObjectMapper objectMapper;
-
     @Autowired
     JdbcClient jdbc;
 
@@ -69,8 +59,7 @@ public class PayoutIT {
 
     @Test
     void payoutCycle() throws Exception {
-        // create payout
-        MvcResult result = mvc.perform(post("/api/v1/payouts")
+        mvc.perform(post("/api/v1/payouts")
                         // merchant 2
                         .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQyOm1lcmNoYW50IDIgcGFzc3dvcmQ=")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
@@ -78,60 +67,81 @@ public class PayoutIT {
                                 """
                                         {
                                           "amount": 66.99,
-                                          "currency": "USD"
+                                          "currency": "USD",
+                                          "externalId": "trans228"
                                         }
                                         """))
                 .andExpectAll(status().isCreated(),
                         jsonPath("$.id").isNotEmpty(),
                         jsonPath("$.merchantId").value("merchant2"),
                         jsonPath("$.amount").value(66.99),
-                        jsonPath("$.status").value("PENDING"),
+                        jsonPath("$.status").value("SUCCESS"),
                         jsonPath("$.currency").value("USD"),
+                        jsonPath("$.externalId").value("trans228"),
                         jsonPath("$.createdAt").isNotEmpty()
                 )
                 .andReturn();
 
-        String contentAsString = result.getResponse().getContentAsString();
-        TransactionResponse response = objectMapper.readValue(contentAsString, TransactionResponse.class);
-
-        // update transaction client2
-        mvc.perform(post("/webhook/payout")
-                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "Y2xpZW50MjpwYXNzd29yZDI=")
-                        .contentType(APPLICATION_JSON)
-                        .content(//language=JSON//
-                                """
-                                        {
-                                            "id": %s,
-                                            "status": "SUCCESS"
-                                        }
-                                        """.formatted(response.getId())))
-                .andExpectAll(status().isOk());
-
-        // get by id
-        mvc.perform(get("/api/v1/payouts/{payoutId}", response.getId())
-                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQyOm1lcmNoYW50IDIgcGFzc3dvcmQ=")
-                )
-                .andExpectAll(status().isOk(),
-                        jsonPath("$.id").isNotEmpty(),
-                        jsonPath("$.merchantId").value("merchant2"),
-                        jsonPath("$.amount").value(66.99),
-                        jsonPath("$.status").value("SUCCESS"),
-                        jsonPath("$.currency").value("USD"),
-                        jsonPath("$.createdAt").isNotEmpty()
-                );
-
-        // check webhook in DB
-        Map<String, Object> webhookParams = jdbc.sql("SELECT * FROM payment.webhooks WHERE event_type = 'PAYOUT' and entity_id = :entityId")
-                .param("entityId", response.getId())
+        Map<String, Object> payoutParams = jdbc.sql("SELECT * FROM payment.payouts WHERE external_id = 'trans228'")
                 .query()
                 .singleRow();
 
-        assertThat(webhookParams)
+        assertThat(payoutParams)
                 .isNotEmpty()
-                .containsEntry("event_type", "PAYOUT")
-                .containsEntry("entity_id", response.getId())
-                .hasEntrySatisfying("payload", new Condition<>(Objects::nonNull, "Payload must not be null"))
-                .hasEntrySatisfying("notification_url", new Condition<>(Objects::isNull, "Notification_url must be null"));
+                .containsEntry("status", "SUCCESS")
+                .containsEntry("currency", "USD")
+                .hasEntrySatisfying("id", new Condition<>(Objects::nonNull, "id must not be null"));
+    }
+
+    @Sql("/sql/payout-with-external-id.sql")
+    @Test
+    void payout_whenExternalIdAlreadyExists_shouldDoNothing() throws Exception {
+        mvc.perform(post("/api/v1/payouts")
+                        // merchant 1
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQxOm1lcmNoYW50IDEgcGFzc3dvcmQ=")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(//language=JSON
+                                """
+                                        {
+                                          "amount": 66.99,
+                                          "currency": "USD",
+                                          "externalId": "external id 228"
+                                        }
+                                        """))
+                .andExpectAll(status().isCreated(),
+                        jsonPath("$.id").isNotEmpty(),
+                        jsonPath("$.merchantId").value("merchant1"),
+                        jsonPath("$.amount").value(6.6),
+                        jsonPath("$.status").value("FAILED"),
+                        jsonPath("$.currency").value("EUR"),
+                        jsonPath("$.externalId").value("external id 228"),
+                        jsonPath("$.createdAt").value(ZonedDateTime.parse("2027-01-01T12:00:00Z").format(DateTimeFormatter.ISO_DATE_TIME))
+                );
+
+        verify(payoutRepository, never()).save(any());
+    }
+
+    @Sql("/sql/payout-with-external-id.sql")
+    @Test
+    void payout_whenExternalIdAlreadyExistsAndMerchantDoesNotEqual_shouldThrowBadRequest() throws Exception {
+        mvc.perform(post("/api/v1/payouts")
+                        // merchant 2
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + "bWVyY2hhbnQyOm1lcmNoYW50IDIgcGFzc3dvcmQ=")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(//language=JSON
+                                """
+                                        {
+                                          "amount": 66.99,
+                                          "currency": "USD",
+                                          "externalId": "external id 228"
+                                        }
+                                        """))
+                .andExpectAll(status().isBadRequest(),
+                        jsonPath("$.error").value("ERROR_400"),
+                        jsonPath("$.message").value("Payout with external id [external id 228] already exists")
+                );
+
+        verify(payoutRepository, never()).save(any());
     }
 
     @Test
@@ -189,7 +199,8 @@ public class PayoutIT {
                         jsonPath("$.amount").value(6.6),
                         jsonPath("$.status").value("FAILED"),
                         jsonPath("$.currency").value("EUR"),
-                        jsonPath("$.createdAt").value("2027-01-01T12:00:00Z")
+                        jsonPath("$.createdAt").value("2027-01-01T12:00:00Z"),
+                        jsonPath("$.externalId").value("external id 23")
                 );
     }
 
@@ -245,7 +256,8 @@ public class PayoutIT {
                         status().isOk(),
                         jsonPath("$.length()").value(5),
                         jsonPath("$..merchantId").value(Every.everyItem(IsEqual.equalTo("merchant1"))),
-                        jsonPath("$..id").value(IsIterableContaining.hasItems(11, 12, 13, 14,15))
+                        jsonPath("$..id").value(IsIterableContaining.hasItems(11, 12, 13, 14, 15)),
+                        jsonPath("$..externalId").value(IsIterableContaining.hasItems("221", "222", "223", "224", "225"))
                 );
     }
 
@@ -264,7 +276,8 @@ public class PayoutIT {
                         status().isOk(),
                         jsonPath("$.length()").value(3),
                         jsonPath("$..merchantId").value(Every.everyItem(IsEqual.equalTo("merchant1"))),
-                        jsonPath("$..id").value(IsIterableContaining.hasItems(14, 15, 16))
+                        jsonPath("$..id").value(IsIterableContaining.hasItems(14, 15, 16)),
+                        jsonPath("$..externalId").value(IsIterableContaining.hasItems("224", "225", "226"))
                 );
     }
 

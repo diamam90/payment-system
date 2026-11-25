@@ -13,6 +13,7 @@ import java.util.UUID;
 @Entity
 @Setter
 @Getter
+@IdClass(TransactionPK.class)
 @Table(schema = "transaction", name = "transactions")
 public class Transaction {
 
@@ -21,7 +22,8 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "user_uid", updatable = false)
+    @Id
+    @Column(name = "user_uid", updatable = false, nullable = false)
     private UUID userId;
 
     @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
@@ -61,6 +63,13 @@ public class Transaction {
     @Column(name = "failure_reason")
     private String failureReason;
 
+    @Column(name = "external_transaction_id")
+    private String externalTransactionId;
+
+    @Version
+    @Column(name = "version")
+    private Integer version;
+
     @CreationTimestamp
     @Column(name = "created_at")
     private Instant createdAt;
@@ -90,6 +99,6 @@ public class Transaction {
     }
 
     public boolean isFinished() {
-        return this.status.equals(TransactionStatus.COMPLETED) || this.status.equals(TransactionStatus.FAILED);
+        return this.status.equals(TransactionStatus.SUCCESS) || this.status.equals(TransactionStatus.FAILED);
     }
 }

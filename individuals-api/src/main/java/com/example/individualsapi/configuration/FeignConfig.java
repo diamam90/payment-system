@@ -6,9 +6,12 @@ import com.example.transaction.api.TransactionApiClient;
 import com.example.transaction.api.WalletApiClient;
 import feign.Contract;
 import feign.Feign;
+import feign.Logger;
 import feign.codec.Decoder;
 import feign.codec.Encoder;
+import feign.httpclient.ApacheHttpClient;
 import feign.micrometer.MicrometerObservationCapability;
+import feign.slf4j.Slf4jLogger;
 import io.micrometer.observation.ObservationRegistry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.http.HttpMessageConverters;
@@ -35,7 +38,9 @@ public class FeignConfig {
                 .decoder(decoder)
                 .encoder(encoder)
                 .addCapability(capability)
-                .requestInterceptor(new AdminTokenInterceptor(tokenHolder))
+                .logger(new Slf4jLogger())
+                .logLevel(Logger.Level.BASIC)
+                .requestInterceptor(new AdminTokenFeignInterceptor(tokenHolder))
                 .target(PrivateApiClient.class, properties.getPerson().getBaseUrl());
     }
 
@@ -49,7 +54,9 @@ public class FeignConfig {
                 .decoder(decoder)
                 .encoder(encoder)
                 .addCapability(capability)
-                .requestInterceptor(new AdminTokenInterceptor(tokenHolder))
+                .logger(new Slf4jLogger())
+                .logLevel(Logger.Level.BASIC)
+                .requestInterceptor(new AdminTokenFeignInterceptor(tokenHolder))
                 .target(IndividualsApiClient.class, properties.getPerson().getBaseUrl());
     }
 
@@ -63,7 +70,9 @@ public class FeignConfig {
                 .decoder(decoder)
                 .encoder(encoder)
                 .addCapability(capability)
-                .requestInterceptor(new AdminTokenInterceptor(tokenHolder))
+                .logger(new Slf4jLogger())
+                .logLevel(Logger.Level.BASIC)
+                .requestInterceptor(new AdminTokenFeignInterceptor(tokenHolder))
                 .target(WalletApiClient.class, properties.getTransaction().getBaseUrl());
     }
 
@@ -77,7 +86,10 @@ public class FeignConfig {
                 .decoder(decoder)
                 .encoder(encoder)
                 .addCapability(capability)
-                .requestInterceptor(new AdminTokenInterceptor(tokenHolder))
+                .client(new ApacheHttpClient())
+                .requestInterceptor(new AdminTokenFeignInterceptor(tokenHolder))
+                .logger(new Slf4jLogger())
+                .logLevel(Logger.Level.BASIC)
                 .target(TransactionApiClient.class, properties.getTransaction().getBaseUrl());
     }
 

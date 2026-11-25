@@ -19,7 +19,9 @@ public abstract class AbstractFeignClientService {
 
     protected <T> T executeRequest(Supplier<ResponseEntity<T>> execution) {
         try {
-            return execution.get().getBody();
+            T body = execution.get().getBody();
+            log.info("{} response: {}", getService(), body);
+            return body;
         } catch (FeignException.FeignClientException ex) {
             log.warn("{} return: {}, message: {}", getService(), ex.status(), ex.getMessage());
             if (ex.status() == 401 || ex.status() == 403) {

@@ -16,7 +16,7 @@ CREATE TABLE payment.transactions (
                               created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                               updated_at   TIMESTAMP,
                               description  VARCHAR(255),
-                              external_id  VARCHAR(100),
+                              external_id  VARCHAR(100) NOT NULL,
                               notification_url  VARCHAR(2048)
 );
 CREATE INDEX idx_transactions_merchant_date ON payment.transactions(merchant_id, created_at);
@@ -29,7 +29,7 @@ CREATE TABLE payment.payouts (
                          status       VARCHAR(20) NOT NULL,
                          created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                          updated_at   TIMESTAMP,
-                         external_id  VARCHAR(100),
+                         external_id  VARCHAR(100) NOT NULL,
                          notification_url  VARCHAR(2048)
 );
 CREATE INDEX idx_payouts_merchant_date ON payment.payouts(merchant_id, created_at);

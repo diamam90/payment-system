@@ -4,11 +4,11 @@
     <option name="envFilePaths">
       <option value="$PROJECT_DIR$/.run/local.env" />
     </option>
-    <module name="currency-rate-service.main" />
+    <module name="fake-payment-provider.main" />
     <selectedOptions>
       <option name="environmentVariables" />
     </selectedOptions>
-    <option name="SPRING_BOOT_MAIN_CLASS" value="com.example.currencyrateservice.CurrencyRateServiceApplication" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.example.FakePaymentProviderApplication" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

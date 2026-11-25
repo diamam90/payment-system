@@ -19,4 +19,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     Optional<Transaction> findByIdPessimisticWrite(Long id);
 
     List<Transaction> findByMerchantIdAndCreatedAtBetween(Integer merchantId, LocalDateTime createdAtAfter, LocalDateTime createdAtBefore);
+
+    Optional<Transaction> findByExternalId(String externalId);
 }

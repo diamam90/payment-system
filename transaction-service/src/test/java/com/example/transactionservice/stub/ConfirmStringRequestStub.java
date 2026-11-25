@@ -18,7 +18,6 @@ public class ConfirmStringRequestStub {
                         """.formatted(walletId);
     }
 
-
     public static String withdrawalConfirmRequest(BigDecimal amount) {
         return //language=JSON
                 """
@@ -30,7 +29,6 @@ public class ConfirmStringRequestStub {
                         }
                         """.formatted(amount);
     }
-
 
     public static String transferConfirmRequest(BigDecimal amount, BigDecimal rate) {
         return //language=JSON

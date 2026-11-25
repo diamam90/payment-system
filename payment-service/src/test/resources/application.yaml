@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: jdbc:tc:postgresql:17:///payment
+
+merchant:
+  credentials-list:
+    - username: individuals-api
+      password: $2a$10$U0I9dkwii4fee6WpUu4.E.nwWV9bSewcUDB3Oazi6lOwySfuXZtke
+

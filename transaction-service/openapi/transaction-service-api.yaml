@@ -9,6 +9,9 @@ tags:
   - name: Transaction
   - name: Wallet
 
+security:
+  - bearerAuth: [ ]
+
 paths:
   # Wallets
   /api/v1/wallets:
@@ -122,10 +125,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TransactionConfirmRequest'
-              oneOf:
-                - $ref: '#/components/schemas/DepositConfirmRequest'
-                - $ref: '#/components/schemas/WithdrawalConfirmRequest'
-                - $ref: '#/components/schemas/TransferConfirmRequest'
       responses:
         '200':
           description: Транзакция подтверждена
@@ -140,13 +139,19 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/v1/transactions/{transactionId}/status:
+  /api/v1/transactions/{transactionId}/users/{userId}/status:
     get:
       tags: [ Transaction ]
       summary: Получение статуса транзакции
-      operationId: getTransactionsStatusById
+      operationId: getTransactionsStatus
       parameters:
         - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: userId
           in: path
           required: true
           schema:
@@ -185,6 +190,28 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/TransactionStatusResponse'
+
+  /api/v1/transactions/{transactionId}:
+    patch:
+      tags: [ Transaction ]
+      operationId: updateTransactionStatus
+      summary: Обновление статуса транзакции
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          description: Внутренний идентификатор транзакции
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchTransactionRequest'
+      responses:
+        '200':
+          description: Транзакция успешно обновлена
 
 components:
   securitySchemes:
@@ -434,7 +461,6 @@ components:
         fee:
           type: number
 
-
     TransactionConfirmResponse:
       type: object
       properties:
@@ -487,6 +513,19 @@ components:
         updatedAt:
           type: string
           format: date-time
+
+    PatchTransactionRequest:
+      type: object
+      properties:
+        userUid:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [ SUCCESS, FAILED ]
+        externalTransactionId:
+          type: string
+      required: [ userUid,status ]
 
     WalletTypeResponse:
       type: object

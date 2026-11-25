@@ -61,7 +61,7 @@ class TransactionRepositoryTest {
         transaction.setAmount(new BigDecimal(100));
         transaction.setComment("На еду");
         transaction.setFee(new BigDecimal("2.28"));
-        transaction.setStatus(TransactionStatus.COMPLETED);
+        transaction.setStatus(TransactionStatus.SUCCESS);
         transaction.setType(TransactionType.DEPOSIT);
         transaction.setTargetWallet(targetWAllet);
         transaction.setCreatedAt(Instant.now());
@@ -73,14 +73,16 @@ class TransactionRepositoryTest {
                 .containsEntry("user_uid", transaction.getUserId())
                 .containsEntry("wallet_uid", transaction.getWallet().getId())
                 .containsEntry("amount", transaction.getAmount().setScale(2, RoundingMode.HALF_UP))
-                .containsEntry("status", "COMPLETED");
+                .containsEntry("status", "SUCCESS");
     }
 
     @Sql("/sql/find-by-id-transaction.sql")
     @Test
     void shouldFindById() {
         //when
-        Optional<Transaction> actual = transactionRepository.findById(UUID.fromString("00000000-0000-0000-0000-000000000007"));
+        UUID transactionId =UUID.fromString("00000000-0000-0000-0000-000000000007");
+        UUID userId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        Optional<Transaction> actual = transactionRepository.findByIdAndUserId(transactionId, userId);
         // then
         assertThat(actual).isPresent()
                 .get()
@@ -89,7 +91,7 @@ class TransactionRepositoryTest {
                 .hasFieldOrPropertyWithValue("walletId", UUID.fromString("fa65903f-2441-4ada-81fa-d8cd6a2e00a1"))
                 .hasFieldOrPropertyWithValue("amount", new BigDecimal("2.00"))
                 .hasFieldOrPropertyWithValue("type", TransactionType.DEPOSIT)
-                .hasFieldOrPropertyWithValue("status", TransactionStatus.COMPLETED)
+                .hasFieldOrPropertyWithValue("status", TransactionStatus.SUCCESS)
                 .hasFieldOrPropertyWithValue("targetWalletId", UUID.fromString("fa65903f-2441-4ada-81fa-d8cd6a2e0033"))
                 .hasFieldOrPropertyWithValue("createdAt", Instant.parse("2030-01-01T00:00:00+00:00"));
     }
@@ -157,7 +159,7 @@ class TransactionRepositoryTest {
         TransactionFilter filter = TransactionFilter.builder()
                 .userUid(UUID.fromString("00000000-0000-0000-0000-000000000001"))
                 .walletUid(UUID.fromString("fa65903f-2441-4ada-81fa-d8cd6a2e00a1"))
-                .status(TransactionStatus.COMPLETED)
+                .status(TransactionStatus.SUCCESS)
                 .type(TransactionType.DEPOSIT)
                 .dateFrom(ZonedDateTime.parse("2026-01-02T09:00:00+00:00"))
                 .dateTo(ZonedDateTime.parse("2026-01-04T12:00:00+00:00"))

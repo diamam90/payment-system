@@ -6,7 +6,7 @@ NEXUS_PASSWORD = admin
 INFRA_SERVICES ?= nexus keycloak keycloak-postgres person-db \
     prometheus loki tempo grafana \
     kafka kafka-ui transaction-db1 transaction-db2 transaction-db3 currency-rate-db \
-    fake-payment-provider fake-payment-provider-db
+    fake-payment-provider fake-payment-provider-db payment-service-db
 
 .PHONY: all up start stop logs rebuild infra infra-logs infra-stop eula-agree
 
@@ -48,6 +48,7 @@ build-artifact: up eula-agree
 	$(DOCKER_COMPOSE) build currency-rate-service-2 --no-cache
 	$(DOCKER_COMPOSE) build currency-rate-service-3 --no-cache
 	$(DOCKER_COMPOSE) build fake-payment-provider --no-cache
+	$(DOCKER_COMPOSE) build payment-service --no-cache
 
 start: 
 	$(DOCKER_COMPOSE) up -d
@@ -60,6 +61,7 @@ clean: down
 	rm -rf ./transaction-service/build
 	rm -rf ./currency-rate-service/build
 	rm -rf ./payment-provider-service/build
+	rm -rf ./payment-service/build
 
 logs: 
 	$(DOCKER_COMPOSE) logs -f --tail=200

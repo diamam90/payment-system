@@ -1,0 +1,17 @@
+{
+  "request": {
+    "url": "/api/v1/payment-methods?currencyCode=EUR&countryCode=RUS&type=TRANSACTION",
+    "method": "GET"
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": {
+      "id": "666",
+      "name": "fake provider deposit",
+      "providerMethodType":  "fake provider deposit-228"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

@@ -64,7 +64,7 @@ public class UserServiceImpl implements UserService {
         return tokenService.adminToken()
                 .flatMap(token -> keycloakClient.userInfo(keycloakUserId, token))
                 .map(keycloakMapper::userInfoResponse)
-                .doOnSuccess(info -> log.debug("Received user info {}", info));
+                .doOnSuccess(info -> log.info("Received user info {}", info));
     }
 
     @Override

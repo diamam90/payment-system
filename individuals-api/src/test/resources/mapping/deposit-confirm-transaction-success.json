@@ -1,0 +1,9 @@
+{
+  "request": {
+    "url": "/api/v1/transactions/00000000-0000-0000-0000-000000000001",
+    "method": "PATCH"
+  },
+  "response": {
+    "status": 200
+  }
+}
